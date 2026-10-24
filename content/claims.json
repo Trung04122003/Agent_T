@@ -1,0 +1,128 @@
+[
+  {
+    "id": "edu-duy-tan",
+    "kind": "education",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": { "vi": "Đại học Duy Tân — Trường Công nghệ thông tin", "en": "Duy Tan University — School of Information Technology" },
+    "title": null,
+    "period": { "start": "2021", "end": "2026-06" },
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Chủ dự án cho biết tốt nghiệp cuối tháng 6/2026 (tin nhắn 24/10/2026); hai bản CV ghi 2021–2025. Tên ngành lệch giữa hai bản CV (EN: Software Engineering, VI: Công nghệ thông tin). Cần xác nhận mốc tốt nghiệp và tên ngành đúng theo bằng trước khi điền title."
+  },
+  {
+    "id": "role-bbe-ldc",
+    "kind": "role",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": { "vi": "DNA BBE — Be Better Every Day", "en": "DNA BBE — Be Better Every Day" },
+    "title": {
+      "vi": "Giám đốc mở Chapter (Launch Director Consultant, LDC), thuộc nhóm Giám đốc và đại sứ",
+      "en": "Chapter Launch Director Consultant (LDC)"
+    },
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Chức danh chuẩn do chủ dự án cung cấp ngày 24/10/2026. Hai bản CV cũ lệch nhau (EN: tham gia vận hành; VI: Giám đốc và đại sứ). Dữ kiện từ CV: quy mô 26 người, thời gian 5 tháng, chưa có mốc ngày. summary để null, chủ dự án viết."
+  },
+  {
+    "id": "role-dz-ta",
+    "kind": "role",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": { "vi": "DZ Fullstack", "en": "DZ Fullstack" },
+    "title": { "vi": "Trợ giảng lập trình (thực tập)", "en": "Teaching Assistant (Intern)" },
+    "period": { "start": "2024-02", "end": "2024-06" },
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Theo CV: 20/02/2024 đến 30/06/2024. Hỗ trợ giảng viên các khóa lập trình cho sinh viên CNTT tại Đà Nẵng; hướng dẫn PHP, Laravel, VueJS, Git. Cần bằng chứng kiểm chứng được."
+  },
+  {
+    "id": "project-air-quality",
+    "kind": "project",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": null,
+    "title": { "vi": "Hệ thống giám sát chất lượng không khí", "en": "Air Quality Monitoring System" },
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Theo CV: Spring Boot, ReactJS, MySQL, JWT; thiết kế CSDL 11 bảng, API CRUD, xác thực JWT, dashboard React. Cần đường dẫn mã nguồn hoặc bản chạy thử còn tồn tại thì mới verified."
+  },
+  {
+    "id": "project-student-crud",
+    "kind": "project",
+    "visibility": "hold",
+    "status": "needs-decision",
+    "org": null,
+    "title": { "vi": "API quản lý sinh viên", "en": "Student Management API" },
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Từ CV cũ (Spring Boot, MySQL). Đang để hold, chủ dự án quyết có đưa vào hay không."
+  },
+  {
+    "id": "role-jci",
+    "kind": "role",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": { "vi": "JCI Đà Nẵng", "en": "JCI Da Nang" },
+    "title": null,
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Chủ dự án chọn một dòng trung tính (24/10/2026): thì quá khứ, có mốc ngày, không logo, không chuyện nội bộ. Chức danh gốc: Phó Chủ tịch phụ trách Đào tạo và Phát triển hội viên (chủ dự án xác nhận câu chữ VI và EN). Cần mốc ngày."
+  },
+  {
+    "id": "role-dfl24-ic",
+    "kind": "role",
+    "visibility": "hold",
+    "status": "needs-approval",
+    "org": { "vi": "DFL24 (Danang Fintech Lab) — VIFC Đà Nẵng", "en": "DFL24 (Danang Fintech Lab) — VIFC Da Nang" },
+    "title": { "vi": "Trưởng nhóm Hợp tác quốc tế (IC)", "en": "Leader, International Cooperation (IC) Team" },
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Cần DFL24 cho biết điều gì được công khai. Không đưa tên người khác hay chi tiết đoàn khách vào nội dung."
+  },
+  {
+    "id": "role-prudential",
+    "kind": "role",
+    "visibility": "hold",
+    "status": "needs-approval",
+    "org": { "vi": "Prudential", "en": "Prudential" },
+    "title": { "vi": "Cố vấn bảo hiểm", "en": "Insurance Advisor" },
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "Cần bộ phận tuân thủ của Prudential duyệt cách trình bày chức danh và liên kết trước khi công khai. Hồ sơ khách hàng không bao giờ đưa vào."
+  },
+  {
+    "id": "role-bluesea",
+    "kind": "role",
+    "visibility": "hold",
+    "status": "needs-decision",
+    "org": { "vi": "Bluesea Food", "en": "Bluesea Food" },
+    "title": null,
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": [],
+    "notes": "CV cũ ghi nhân viên kinh doanh part-time, trong khi gia đình sở hữu công ty và chủ dự án dự kiến quay lại năm 2027. Cần chốt một cách kể thống nhất giữa CV và trang web trước khi công bố."
+  },
+  {
+    "id": "classified-client-files",
+    "kind": "classified",
+    "status": "needs-decision",
+    "label": { "vi": "Hồ sơ khách hàng — bảo mật theo nghề", "en": "Client files — confidential by profession" }
+  }
+]

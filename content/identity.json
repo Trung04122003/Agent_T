@@ -1,0 +1,15 @@
+{
+  "legalName": "Lê Thái Trung",
+  "codenames": [
+    { "locale": "en", "name": "Cupid", "positioning": null, "reviewed": true },
+    { "locale": "es", "name": "Calisto", "positioning": null, "reviewed": false },
+    { "locale": "ar", "name": "Khalid", "positioning": null, "reviewed": false },
+    { "locale": "ja", "name": "Musashi", "positioning": null, "reviewed": false }
+  ],
+  "positioning": {
+    "vi": "khả năng dịch hệ thống phức tạp thành hành động cho một người cụ thể, một tập thể cụ thể",
+    "en": "The ability to translate complex systems into action for a specific person, a specific team.",
+    "notes": "Bản vi do chủ dự án chọn. Bản en là bản nháp, chờ chủ dự án duyệt. Mỗi mật danh cần một dòng định vị riêng, chủ dự án viết."
+  },
+  "contact": null
+}
