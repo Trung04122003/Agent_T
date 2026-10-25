@@ -18,7 +18,7 @@ function run(name, files) {
   return { code: r.status, out: r.stdout + r.stderr };
 }
 
-const page = (body) => `<!doctype html><html lang="vi"><body>${body}</body></html>\n`;
+const page = (body) => `<!doctype html><html lang="vi"><head><meta name="robots" content="noindex"></head><body>${body}</body></html>\n`;
 
 describe("check-leaks", () => {
   it("passes a clean page", () => {
@@ -70,5 +70,13 @@ describe("check-leaks", () => {
     const r = run("map", { "app.js.map": "{}" });
     expect(r.code).toBe(1);
     expect(r.out).toContain("app.js.map: source map file");
+  });
+});
+
+describe("check-leaks noindex rule", () => {
+  it("fails on an HTML page without noindex while NOINDEX is on", () => {
+    const r = run("no-noindex", { "page.html": "<!doctype html><html><head><title>x</title></head><body>ok</body></html>\n" });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain("page.html: page without noindex");
   });
 });

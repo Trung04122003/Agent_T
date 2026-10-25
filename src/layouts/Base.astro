@@ -6,7 +6,9 @@ import "../styles/motion.css";
 import LangSwitch from "../components/LangSwitch.astro";
 import ModeToggle from "../components/ModeToggle.astro";
 import { t, type Locale } from "../lib/i18n";
+import { getIdentity } from "../lib/identity";
 import { dirFor, LOCALES } from "../lib/locales";
+import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
 import { MODE_KEY } from "../scripts/mode";
 
@@ -21,6 +23,9 @@ interface Props {
 const { locale, title, path, dir = dirFor(locale) } = Astro.props;
 const updatedLabel = await t("updatedLabel", locale);
 const updated = updatedStamp(new Date());
+// Neutral SEO (ROADMAP 8.4): the positioning line from content/, nothing more.
+const description = (await getIdentity()).positioning[locale];
+const ogLocale = { vi: "vi_VN", en: "en_US" }[locale];
 
 // Runs before first paint: mark JS as available (mode-dependent hiding only applies then, so the
 // no-JS page shows all public content), then apply the saved mode. Default stays "mat".
@@ -34,6 +39,15 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
+    {NOINDEX && <meta name="robots" content="noindex" />}
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={ogLocale} />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     {path !== undefined && LOCALES.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
   </head>
   <body>

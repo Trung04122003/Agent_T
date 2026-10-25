@@ -1,10 +1,12 @@
 // Scan a build output directory for private data (SPEC section 9).
 // Usage: node scripts/check-leaks.mjs [dir]   (default: dist)
-// Also rejects source maps and image metadata (EXIF, GPS, XMP).
+// Also rejects source maps, image metadata (EXIF, GPS, XMP) and, while NOINDEX is on
+// (src/lib/site.ts), any HTML page without <meta name="robots" content="noindex">.
 // Prints file:line and rule only, never the matched text. Exit 1 on any violation.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { NOINDEX } from "../src/lib/site.ts";
 
 const root = resolve(fileURLToPath(import.meta.url), "..", "..");
 const target = resolve(process.argv[2] ?? join(root, "dist"));
@@ -106,7 +108,11 @@ for (const d of files) {
   }
   if (!TEXT_EXT.has(extname(d.name).toLowerCase())) continue;
 
-  const lines = readFileSync(path, "utf8").split(/\r?\n/);
+  const body = readFileSync(path, "utf8");
+  if (NOINDEX && /\.html?$/i.test(d.name) && !/<meta name="robots" content="noindex"\s*\/?>/.test(body)) {
+    violations.push(`${rel}: page without noindex (NOINDEX is on)`);
+  }
+  const lines = body.split(/\r?\n/);
   lines.forEach((raw, i) => {
     const line = decodeEntities(raw);
     const where = `${rel}:${i + 1}`;

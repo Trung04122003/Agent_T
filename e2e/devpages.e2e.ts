@@ -30,7 +30,7 @@ test("dist/ contains no dev-only route or asset", () => {
   expect(files.length).toBeGreaterThan(0);
   expect(files.filter((f) => /(^|[\\/])dev([\\/]|$)/.test(f) || /playfair|name-options/i.test(f))).toEqual([]);
   const html = files.filter((f) => f.endsWith(".html"));
-  expect(html.map((f) => f.replace(/\\/g, "/")).sort()).toEqual(["en/index.html", "index.html", "vi/index.html"]);
+  expect(html.map((f) => f.replace(/\\/g, "/")).sort()).toEqual(["404.html", "en/index.html", "index.html", "vi/index.html"]);
   for (const f of html) {
     const body = readFileSync(join("dist", f), "utf8");
     expect(body).not.toContain("/dev/");

@@ -1,0 +1,42 @@
+---
+// 404 (ROADMAP 8.4). A static host serves this for any unknown path, whatever the language,
+// so it speaks both and links to both home pages.
+import Base from "../layouts/Base.astro";
+import { t } from "../lib/i18n";
+import { LOCALES } from "../lib/locales";
+
+const lines = await Promise.all(
+  LOCALES.map(async (l) => ({ l, text: await t("notFound", l), name: await t("languageName", l) })),
+);
+---
+
+<Base locale="vi" title="404 · Cupid Dossier">
+  <section class="not-found page">
+    <p class="not-found__code">404</p>
+    {
+      lines.map(({ l, text, name }) => (
+        <p class="not-found__line" lang={l}>
+          {text} <a href={`/${l}/`}>{name}</a>
+        </p>
+      ))
+    }
+  </section>
+</Base>
+
+<style>
+  .not-found {
+    min-height: 60vh;
+    padding-block: calc(var(--space) * 8);
+  }
+  .not-found__code {
+    margin: 0 0 calc(var(--space) * 2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .not-found__line a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+</style>
