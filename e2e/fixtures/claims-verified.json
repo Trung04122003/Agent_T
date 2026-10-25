@@ -1,0 +1,32 @@
+[
+  {
+    "id": "fx-verified",
+    "kind": "role",
+    "visibility": "open",
+    "status": "verified",
+    "org": { "vi": "Tổ chức Thử Một", "en": "Test Org One" },
+    "title": { "vi": "Vai trò thử", "en": "Test role" },
+    "period": { "start": "2023-01", "end": "present" },
+    "teaser": null,
+    "summary": null,
+    "evidence": [{ "type": "reference", "note": { "vi": "Tham chiếu thử", "en": "Test reference" } }]
+  },
+  {
+    "id": "fx-hold",
+    "kind": "role",
+    "visibility": "hold",
+    "status": "needs-decision",
+    "org": null,
+    "title": null,
+    "period": null,
+    "teaser": null,
+    "summary": null,
+    "evidence": []
+  },
+  {
+    "id": "fx-classified",
+    "kind": "classified",
+    "status": "needs-decision",
+    "label": { "vi": "Hồ sơ thử", "en": "Test files" }
+  }
+]

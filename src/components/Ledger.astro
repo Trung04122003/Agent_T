@@ -1,0 +1,277 @@
+---
+// Ledger (SPEC sections 5-6, UX section 2): one row per public claim. Both modes always show org,
+// title and period of open entries; Mat adds teaser + redaction, Giai mat adds summary + evidence.
+// Classified entries only ever carry their category label.
+import type { Locale } from "../lib/i18n";
+import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
+import type { Claim } from "../lib/schema";
+import Redaction from "./Redaction.astro";
+
+export interface LedgerLabels {
+  heading: string;
+  verified: string;
+  viewDeclassified: string;
+  classifiedClosed: string;
+  redacted: string;
+  present: string;
+  evidence: string;
+}
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+  labels: LedgerLabels;
+  /** Dev only: badge entries that are not verified yet (SPEC section 6). */
+  showUnverified: boolean;
+  seed?: string;
+}
+const { claims, locale, labels, showUnverified, seed } = Astro.props;
+const rows = publicClaims(claims);
+---
+
+<section class="ledger" aria-labelledby="ledger-heading" data-ledger>
+  <h2 id="ledger-heading" class="ledger__heading">{labels.heading}</h2>
+  <ol class="ledger__list">
+    {
+      rows.map((c, i) => {
+        const code = fileCode(i);
+        const panelId = `panel-${c.id}`;
+        const period = c.period ? formatPeriod(c.period, labels.present) : null;
+
+        if (c.kind === "classified") {
+          return (
+            <li class="row row--classified" id={`claim-${c.id}`} data-claim={c.id} data-kind="classified">
+              <h3 class="row__head">
+                <button class="row__toggle" type="button" aria-expanded="true" aria-controls={panelId} data-row-toggle>
+                  <span class="row__code">{code}</span>
+                  <span class="row__period" dir="ltr">{period}</span>
+                  <span class="row__main">
+                    <Redaction barKey={c.id} label={c.label[locale]} seed={seed} />
+                  </span>
+                </button>
+              </h3>
+              <div class="row__panel" id={panelId}>
+                <div class="row__inner">
+                  <p class="row__closed">{labels.classifiedClosed}</p>
+                </div>
+              </div>
+            </li>
+          );
+        }
+
+        const teaser = c.teaser?.[locale];
+        const summary = c.summary?.[locale];
+        const hasPanel = Boolean(teaser || summary || c.evidence.length);
+        const cells = (
+          <>
+            <span class="row__code">{code}</span>
+            <span class="row__period" dir="ltr">{period}</span>
+            <span class="row__main">
+              {c.org && <span class="row__org">{c.org[locale]}</span>}
+              {c.title && <span class="row__title">{c.title[locale]}</span>}
+            </span>
+            {c.status === "verified" && <span class="row__stamp">{labels.verified}</span>}
+            {showUnverified && c.status !== "verified" && <span class="row__badge">UNVERIFIED</span>}
+          </>
+        );
+
+        return (
+          <li class="row" id={`claim-${c.id}`} data-claim={c.id} data-kind={c.kind}>
+            <h3 class="row__head">
+              {hasPanel ? (
+                <button class="row__toggle" type="button" aria-expanded="true" aria-controls={panelId} data-row-toggle>
+                  {cells}
+                </button>
+              ) : (
+                <span class="row__static">{cells}</span>
+              )}
+            </h3>
+            {hasPanel && (
+              <div class="row__panel" id={panelId}>
+                <div class="row__inner">
+                  {teaser && <p class="row__teaser">{teaser}</p>}
+                  {summary && (
+                    <div class="only-mat row__redacted">
+                      <Redaction barKey={c.id} label={labels.redacted} seed={seed} />
+                      <a class="row__declassify" href={`#claim-${c.id}`} data-declassify={c.id}>
+                        {labels.viewDeclassified}
+                      </a>
+                    </div>
+                  )}
+                  {summary && <p class="only-giai-mat row__summary">{summary}</p>}
+                  {c.evidence.length > 0 && (
+                    <div class="only-giai-mat row__evidence">
+                      <p class="row__evidence-heading">{labels.evidence}</p>
+                      <ul>
+                        {c.evidence.map((e) => (
+                          <li>{e.type === "link" && e.url ? <a href={e.url}>{e.note[locale]}</a> : e.note[locale]}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</section>
+
+<script>
+  import { initLedger } from "../scripts/ledger";
+  initLedger();
+</script>
+
+<style>
+  .ledger {
+    max-width: var(--wide);
+    margin-inline: auto;
+    padding: calc(var(--space) * 6) var(--gutter);
+  }
+  .ledger__heading,
+  .row__code,
+  .row__period,
+  .row__stamp,
+  .row__badge,
+  .row__evidence-heading {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .ledger__heading {
+    margin: 0 0 calc(var(--space) * 2);
+    color: var(--accent);
+  }
+  .ledger__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--accent);
+  }
+  .row {
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: calc(var(--space) * 2);
+  }
+  .row__head {
+    margin: 0;
+    font: inherit;
+  }
+  .row__toggle,
+  .row__static {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr);
+    gap: var(--space) calc(var(--space) * 2);
+    align-items: baseline;
+    width: 100%;
+    min-height: var(--target);
+    padding: calc(var(--space) * 2) 0;
+    font: inherit;
+    text-align: start;
+    color: inherit;
+    background: none;
+    border: 0;
+  }
+  .row__toggle {
+    cursor: pointer;
+  }
+  @media (min-width: 720px) {
+    .row__toggle,
+    .row__static {
+      grid-template-columns: 3ch 20ch minmax(0, 1fr) auto;
+    }
+  }
+  .row__code,
+  .row__period {
+    color: var(--ink-muted);
+  }
+  .row__main {
+    display: grid;
+    gap: 2px;
+    grid-column: 2 / -1;
+  }
+  @media (min-width: 720px) {
+    .row__main {
+      grid-column: auto;
+    }
+  }
+  .row__org {
+    font-weight: 700;
+  }
+  .row__title {
+    color: var(--ink-muted);
+  }
+  .row__stamp,
+  .row__badge {
+    justify-self: start;
+    padding: 2px 6px;
+    border: 1px solid currentColor;
+  }
+  .row__stamp {
+    color: var(--accent);
+  }
+  .row__badge {
+    color: var(--ink-muted);
+    border-style: dashed;
+  }
+
+  /* Open / close: grid-template-rows 0fr <-> 1fr (UX section 3). Without JS every row is open. */
+  .row__panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 250ms ease;
+  }
+  .row__inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  :global(:root[data-js]) .row:not(.is-open) .row__panel {
+    grid-template-rows: 0fr;
+  }
+  :global(:root[data-js]) .row:not(.is-open) .row__inner {
+    visibility: hidden;
+  }
+  @media print {
+    :global(:root[data-js]) .row:not(.is-open) .row__panel {
+      grid-template-rows: 1fr;
+    }
+    :global(:root[data-js]) .row:not(.is-open) .row__inner {
+      visibility: visible;
+    }
+  }
+  .row__inner > * {
+    max-width: var(--measure);
+    margin: 0 0 calc(var(--space) * 2);
+  }
+  @media (min-width: 720px) {
+    .row__inner {
+      padding-inline-start: calc(3ch + 20ch + var(--space) * 4);
+    }
+  }
+  .row__redacted {
+    display: grid;
+    gap: var(--space);
+  }
+  .row__declassify,
+  .row__evidence a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  .row__declassify {
+    justify-self: start;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    min-height: var(--target);
+    display: inline-flex;
+    align-items: center;
+  }
+  .row__evidence ul {
+    margin: var(--space) 0 0;
+    padding-inline-start: 1.25em;
+  }
+  .row__closed {
+    color: var(--ink-muted);
+  }
+</style>

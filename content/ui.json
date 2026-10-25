@@ -1,0 +1,22 @@
+{
+  "modeMat": { "vi": "Mật", "en": "Classified" },
+  "modeGiaiMat": { "vi": "Giải mật", "en": "Declassified" },
+  "modeAnnounceMat": { "vi": "Chế độ Mật", "en": "Classified mode" },
+  "modeAnnounceGiaiMat": { "vi": "Chế độ Giải mật", "en": "Declassified mode" },
+  "codenameLabel": { "vi": "Mật danh", "en": "Codename" },
+  "gateScrollHint": { "vi": "Cuộn để mở hồ sơ", "en": "Scroll to open the file" },
+  "portraitLabel": { "vi": "Hồ sơ cá nhân", "en": "Personal file" },
+  "updatedLabel": { "vi": "Hồ sơ cập nhật", "en": "File updated" },
+  "legalNameRedacted": { "vi": "Tên thật", "en": "Legal name" },
+  "ledgerHeading": { "vi": "Sổ cái", "en": "Ledger" },
+  "statusVerified": { "vi": "Đã kiểm chứng", "en": "Verified" },
+  "viewDeclassified": { "vi": "Xem bản giải mật", "en": "View declassified" },
+  "classifiedClosed": { "vi": "Hồ sơ này không mở theo yêu cầu.", "en": "This file is not open by request." },
+  "redactedLabel": { "vi": "Nội dung đã che", "en": "Redacted content" },
+  "periodPresent": { "vi": "nay", "en": "present" },
+  "evidenceHeading": { "vi": "Bằng chứng", "en": "Evidence" },
+  "languageName": { "vi": "Tiếng Việt", "en": "English" },
+  "mapHeading": { "vi": "Bản đồ", "en": "Map" },
+  "hoangSaLabel": { "vi": "Quần đảo Hoàng Sa (Việt Nam)", "en": "Hoang Sa Archipelago (Viet Nam)" },
+  "truongSaLabel": { "vi": "Quần đảo Trường Sa (Việt Nam)", "en": "Truong Sa Archipelago (Viet Nam)" }
+}

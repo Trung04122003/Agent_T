@@ -1,0 +1,97 @@
+[
+  {
+    "id": "fx-verified",
+    "kind": "role",
+    "visibility": "open",
+    "status": "verified",
+    "org": { "vi": "Tổ chức Thử Một", "en": "Test Org One" },
+    "title": { "vi": "Vai trò thử", "en": "Test role" },
+    "period": { "start": "2023-01", "end": "present" },
+    "teaser": { "vi": "Câu mở đầu thử nghiệm.", "en": "A test teaser." },
+    "summary": { "vi": "Tóm tắt thử nghiệm số một, chỉ hiện ở Giải mật.", "en": "Test summary one, Declassified only." },
+    "evidence": [
+      { "type": "link", "url": "https://example.com/evidence", "note": { "vi": "Bằng chứng thử", "en": "Test evidence" } },
+      { "type": "reference", "note": { "vi": "Tham chiếu thử", "en": "Test reference" } }
+    ],
+    "notes": "NOTES-SENTINEL-ONE"
+  },
+  {
+    "id": "fx-pending",
+    "kind": "project",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": null,
+    "title": { "vi": "Dự án thử", "en": "Test project" },
+    "period": { "start": "2021", "end": "2022-06" },
+    "teaser": null,
+    "summary": { "vi": "Tóm tắt thử nghiệm số hai.", "en": "Test summary two." },
+    "evidence": [],
+    "notes": "NOTES-SENTINEL-TWO"
+  },
+  {
+    "id": "fx-plain",
+    "kind": "education",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": { "vi": "Trường thử", "en": "Test School" },
+    "title": null,
+    "period": { "start": "2019", "end": null },
+    "teaser": null,
+    "summary": null,
+    "evidence": []
+  },
+  {
+    "id": "fx-hold",
+    "kind": "role",
+    "visibility": "hold",
+    "status": "needs-decision",
+    "org": { "vi": "HOLD-SENTINEL-ORG", "en": "HOLD-SENTINEL-ORG" },
+    "title": { "vi": "HOLD-SENTINEL-TITLE", "en": "HOLD-SENTINEL-TITLE" },
+    "period": null,
+    "teaser": null,
+    "summary": { "vi": "HOLD-SENTINEL-SUMMARY", "en": "HOLD-SENTINEL-SUMMARY" },
+    "evidence": []
+  },
+  {
+    "id": "fx-classified",
+    "kind": "classified",
+    "status": "needs-decision",
+    "label": { "vi": "Hồ sơ thử — bảo mật theo nghề", "en": "Test files — confidential by profession" }
+  },
+  {
+    "id": "fx-extra-1",
+    "kind": "project",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": null,
+    "title": { "vi": "Dự án thử bổ sung 1", "en": "Extra test project 1" },
+    "period": { "start": "2020", "end": null },
+    "teaser": null,
+    "summary": { "vi": "Tóm tắt thử bổ sung 1.", "en": "Extra test summary 1." },
+    "evidence": []
+  },
+  {
+    "id": "fx-extra-2",
+    "kind": "project",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": null,
+    "title": { "vi": "Dự án thử bổ sung 2", "en": "Extra test project 2" },
+    "period": { "start": "2020", "end": null },
+    "teaser": null,
+    "summary": { "vi": "Tóm tắt thử bổ sung 2.", "en": "Extra test summary 2." },
+    "evidence": []
+  },
+  {
+    "id": "fx-extra-3",
+    "kind": "project",
+    "visibility": "open",
+    "status": "needs-evidence",
+    "org": null,
+    "title": { "vi": "Lê Thái Trung — Ắ Ằ Ẳ Ẵ Ặ Ế Ề Ể Ễ Ệ Ố Ồ Ổ Ỗ Ộ Ớ Ờ Ở Ỡ Ợ Ứ Ừ Ử Ữ Ự", "en": "Extra test project 3" },
+    "period": { "start": "2020", "end": null },
+    "teaser": null,
+    "summary": { "vi": "Tóm tắt thử bổ sung 3.", "en": "Extra test summary 3." },
+    "evidence": []
+  }
+]

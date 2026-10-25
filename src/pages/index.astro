@@ -1,0 +1,35 @@
+---
+// "/" (SPEC section 4): send readers to the default locale, with links to every locale in case
+// the redirect is blocked. Works without JavaScript.
+import "../styles/fonts.css";
+import "../styles/tokens.css";
+import "../styles/base.css";
+import { t } from "../lib/i18n";
+import { DEFAULT_LOCALE, LOCALES } from "../lib/locales";
+
+const links = await Promise.all(LOCALES.map(async (l) => ({ l, name: await t("languageName", l) })));
+---
+
+<!doctype html>
+<html lang={DEFAULT_LOCALE} data-mode="mat">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content={`0; url=/${DEFAULT_LOCALE}/`} />
+    <link rel="canonical" href={`/${DEFAULT_LOCALE}/`} />
+    <title>Cupid Dossier</title>
+  </head>
+  <body>
+    <ul class="page">
+      {
+        links.map(({ l, name }) => (
+          <li>
+            <a href={`/${l}/`} hreflang={l} lang={l}>
+              {name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+---
+import { t, type Locale } from "../lib/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const label = await t("modeGiaiMat", locale);
+const announceMat = await t("modeAnnounceMat", locale);
+const announceGiaiMat = await t("modeAnnounceGiaiMat", locale);
+---
+
+<!-- Hidden until the script runs: without JavaScript there is no mode switch (UX section 4). -->
+<button
+  type="button"
+  class="mode-toggle"
+  data-mode-toggle
+  aria-pressed="false"
+  data-announce-mat={announceMat}
+  data-announce-giai-mat={announceGiaiMat}
+  hidden
+>
+  {label}
+</button>
+<p class="visually-hidden" aria-live="polite" data-mode-live></p>
+
+<script>
+  import { initModeToggle } from "../scripts/declassify";
+  initModeToggle();
+</script>

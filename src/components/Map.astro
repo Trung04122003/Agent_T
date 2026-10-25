@@ -1,0 +1,185 @@
+---
+// Four-point map (SPEC section 8). Static SVG built from Natural Earth (Viet Nam point of view);
+// Hoang Sa and Truong Sa are always drawn and labelled. No tiles, no third-party requests.
+// Screen readers get the text list below the SVG instead of the drawing (UX section 3).
+import { getCollection } from "astro:content";
+import placesFile from "../../content/places.json";
+import topo from "../assets/map/region.topo.json";
+import { t, type Locale } from "../lib/i18n";
+import { inFileOrder } from "../lib/ledger";
+import { buildMap, VIEW } from "../lib/map";
+import type { Topology } from "topojson-specification";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+// Collections do not keep file order; the owner's order drives the list and the reveal sequence.
+const places = inFileOrder(
+  (await getCollection("places")).map((e) => e.data),
+  placesFile.map((p) => p.id),
+);
+const map = buildMap(
+  topo as unknown as Topology,
+  places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon })),
+);
+const heading = await t("mapHeading", locale);
+const hoangSa = await t("hoangSaLabel", locale);
+const truongSa = await t("truongSaLabel", locale);
+const vn = map.countries.find((c) => c.code === "VNM")!;
+const others = map.countries.filter((c) => c.code !== "VNM");
+const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
+---
+
+<section class="map" aria-labelledby="map-heading" data-map>
+  <h2 id="map-heading" class="map__heading">{heading}</h2>
+  <svg class="map__svg" viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} aria-hidden="true" focusable="false">
+    <g class="map__land">{others.map((c) => <path d={c.d} />)}</g>
+    <path class="map__vn" d={vn.d} pathLength="1" />
+    <g class="map__islands">
+      {
+        [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
+          <circle cx={x} cy={y} r="1.6" />
+        ))
+      }
+    </g>
+    <text class="map__sea-label" x={map.archipelagos.hoangSa.label[0]} y={map.archipelagos.hoangSa.label[1]} text-anchor={map.archipelagos.hoangSa.anchor} data-archipelago="hoang-sa">
+      {hoangSa}
+    </text>
+    <text class="map__sea-label" x={map.archipelagos.truongSa.label[0]} y={map.archipelagos.truongSa.label[1]} text-anchor={map.archipelagos.truongSa.anchor} data-archipelago="truong-sa">
+      {truongSa}
+    </text>
+    <g class="map__points">
+      {
+        map.points.map((p, i) => (
+          <g class="map__point" style={`--i:${i}`} data-place={p.id}>
+            <circle class="map__halo" cx={p.x} cy={p.y} r="4" />
+            <circle class="map__dot" cx={p.x} cy={p.y} r="4" />
+            <text x={p.x + 9} y={p.labelY}>
+              {label(p.id)}
+            </text>
+          </g>
+        ))
+      }
+    </g>
+  </svg>
+  <ul class="visually-hidden" data-map-list>
+    {
+      places.map((p) => (
+        <li>
+          {p.label[locale]}
+          {p.region && `, ${p.region[locale]}`}
+        </li>
+      ))
+    }
+    <li>{hoangSa}</li>
+    <li>{truongSa}</li>
+  </ul>
+</section>
+
+<script>
+  import { initMap } from "../scripts/map-reveal";
+  initMap();
+</script>
+
+<style>
+  .map {
+    max-width: var(--wide);
+    margin-inline: auto;
+    padding: calc(var(--space) * 6) var(--gutter);
+  }
+  .map__heading {
+    margin: 0 0 calc(var(--space) * 2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .map__svg {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    border-top: 1px solid var(--accent);
+  }
+  .map__land path {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 0.6;
+  }
+  .map__vn {
+    fill: var(--surface);
+    stroke: var(--accent);
+    stroke-width: 1;
+    stroke-linejoin: round;
+  }
+  .map__islands circle,
+  .map__dot {
+    fill: var(--accent);
+  }
+  .map__halo {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .map__svg text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    fill: var(--ink-muted);
+  }
+  .map__svg .map__sea-label {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    fill: var(--ink);
+  }
+  .map__point text {
+    fill: var(--ink);
+  }
+
+  /* Draw once when scrolled into view (UX section 3): outline 900 ms, then the points one by one
+     (120 ms each) with a single 600 ms pulse. Armed only with JS and without reduced motion;
+     Hoang Sa, Truong Sa and their labels are never hidden. */
+  @media not print {
+    :global(:root[data-js]) .map.is-armed .map__vn {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    :global(:root[data-js]) .map.is-armed .map__point {
+      opacity: 0;
+    }
+  }
+  .map.is-revealed .map__vn {
+    animation: map-draw 900ms ease-in-out forwards;
+  }
+  .map.is-revealed .map__point {
+    animation: point-in 120ms ease-out calc(900ms + var(--i) * 120ms) forwards;
+  }
+  .map.is-revealed .map__halo {
+    animation: point-pulse 600ms ease-out calc(900ms + var(--i) * 120ms) both;
+  }
+  @keyframes map-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes point-in {
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes point-pulse {
+    from {
+      opacity: 0.8;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(3);
+    }
+  }
+</style>

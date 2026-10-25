@@ -1,0 +1,130 @@
+---
+import { t, type Locale } from "../lib/i18n";
+import { codenameFor, getIdentity } from "../lib/identity";
+import Portrait from "./Portrait.astro";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const identity = await getIdentity();
+const codename = codenameFor(identity, locale);
+const codenameLabel = await t("codenameLabel", locale);
+const scrollHint = await t("gateScrollHint", locale);
+const legalNameLabel = await t("legalNameRedacted", locale);
+---
+
+<!-- Level 0 (SPEC section 4): codename, positioning line, portrait. Nothing else. -->
+<section class="gate" data-gate aria-labelledby="gate-codename">
+  <div class="gate__id">
+    <p class="gate__label">{codenameLabel}</p>
+    <h1 id="gate-codename" class="gate__codename">{codename.name}</h1>
+    {codename.positioning && <p class="gate__codename-line">{codename.positioning}</p>}
+    <!-- Legal name, option B (owner 2026-10-24): a fixed-length bar in Mat, the name in Giai mat.
+         The name is public, so it stays in the HTML; the bar itself holds no text. -->
+    <p class="gate__legal" data-legal-name>
+      <span class="redact" role="img" aria-label={legalNameLabel}></span>
+      <span class="gate__legal-name">{identity.legalName}</span>
+    </p>
+    <p class="gate__positioning">{identity.positioning[locale]}</p>
+  </div>
+  <div class="gate__portrait">
+    <Portrait locale={locale} />
+  </div>
+  <p class="gate__hint">{scrollHint}</p>
+</section>
+
+<style>
+  .gate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(var(--space) * 4);
+    align-content: center;
+    min-height: calc(100svh - var(--bar-height));
+    max-width: var(--wide);
+    margin-inline: auto;
+    padding: calc(var(--space) * 4) var(--gutter);
+  }
+  /* Phone: portrait first, then the name (UX section 4). */
+  .gate__portrait {
+    order: -1;
+  }
+  @media (min-width: 900px) {
+    .gate {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: calc(var(--space) * 3);
+      align-items: center;
+    }
+    .gate__id {
+      grid-column: 1 / span 7;
+    }
+    .gate__portrait {
+      order: 0;
+      grid-column: 8 / span 5;
+    }
+    .gate__hint {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .gate__label,
+  .gate__hint {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .gate__codename {
+    margin: var(--space) 0 0;
+    font-family: var(--font-heading);
+    font-size: clamp(3.5rem, 12vw, 8rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .gate__codename-line {
+    margin: var(--space) 0 0;
+    color: var(--ink-muted);
+  }
+  .gate__legal {
+    margin: calc(var(--space) * 2) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .redact {
+    display: none;
+    width: 12ch;
+    height: 1lh;
+    vertical-align: top;
+    background: var(--redact);
+    border-radius: 1px;
+  }
+  /* Screen only, and only with JS (otherwise nobody could reach Giai mat). Print shows the name. */
+  @media not print {
+    :global(:root[data-js][data-mode="mat"]) .redact {
+      display: inline-block;
+    }
+    :global(:root[data-js][data-mode="mat"]) .gate__legal-name {
+      display: none;
+    }
+  }
+  @media (forced-colors: active) {
+    .redact {
+      border: 1px solid CanvasText;
+    }
+  }
+  .gate__positioning {
+    max-width: 40ch;
+    margin: calc(var(--space) * 3) 0 0;
+    font-size: 1.125rem;
+    line-height: 1.5;
+  }
+  .gate__hint {
+    color: var(--ink-muted);
+  }
+</style>

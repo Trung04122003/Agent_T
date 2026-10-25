@@ -1,0 +1,31 @@
+---
+// Language switch (UX section 4: start of the control bar). Plain links, so it works without JS;
+// src/scripts/lang.ts upgrades them to an in-place swap with the Decode effect.
+import { t } from "../lib/i18n";
+import { LOCALES, type Locale } from "../lib/locales";
+
+interface Props {
+  locale: Locale;
+  /** Path of the current page without the locale prefix, e.g. "/". */
+  path: string;
+}
+const { locale, path } = Astro.props;
+const others = await Promise.all(
+  LOCALES.filter((l) => l !== locale).map(async (l) => ({ l, name: await t("languageName", l) })),
+);
+---
+
+<nav class="lang-switch" data-lang-nav>
+  {
+    others.map(({ l, name }) => (
+      <a href={`/${l}${path}`} hreflang={l} lang={l} data-lang-switch>
+        {name}
+      </a>
+    ))
+  }
+</nav>
+
+<script>
+  import { initLangSwitch } from "../scripts/lang";
+  initLangSwitch();
+</script>

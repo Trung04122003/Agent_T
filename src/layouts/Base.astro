@@ -1,0 +1,54 @@
+---
+import "../styles/fonts.css";
+import "../styles/tokens.css";
+import "../styles/base.css";
+import "../styles/motion.css";
+import LangSwitch from "../components/LangSwitch.astro";
+import ModeToggle from "../components/ModeToggle.astro";
+import { t, type Locale } from "../lib/i18n";
+import { dirFor, LOCALES } from "../lib/locales";
+import { updatedStamp } from "../lib/updated";
+import { MODE_KEY } from "../scripts/mode";
+
+interface Props {
+  locale: Locale;
+  title: string;
+  /** Locale-free path of a page that exists in every locale; enables the language switch. */
+  path?: string;
+  /** Override text direction (dev RTL smoke test only). */
+  dir?: "ltr" | "rtl";
+}
+const { locale, title, path, dir = dirFor(locale) } = Astro.props;
+const updatedLabel = await t("updatedLabel", locale);
+const updated = updatedStamp(new Date());
+
+// Runs before first paint: mark JS as available (mode-dependent hiding only applies then, so the
+// no-JS page shows all public content), then apply the saved mode. Default stays "mat".
+const modeScript = `document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}`;
+---
+
+<!doctype html>
+<html lang={locale} dir={dir} data-mode="mat">
+  <head>
+    <script is:inline set:html={modeScript} />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    {path !== undefined && LOCALES.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
+  </head>
+  <body>
+    <header class="controls">
+      <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} />}<slot name="controls-start" /></div>
+      <div class="controls__end">
+        <ModeToggle locale={locale} />
+      </div>
+    </header>
+    <p class="visually-hidden" aria-live="polite" data-lang-live></p>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="footer">
+      <p class="footer__updated">{updatedLabel}: <time datetime={updated.iso}>{updated.text}</time></p>
+    </footer>
+  </body>
+</html>

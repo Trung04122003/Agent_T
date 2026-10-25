@@ -8,3 +8,6 @@ playwright-report/
 test-results/
 *.log
 Thumbs.db
+
+# Downloaded source data (scripts/fetch-map-data.mjs); only derived files are committed
+data/

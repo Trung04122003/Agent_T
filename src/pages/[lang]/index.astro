@@ -1,0 +1,38 @@
+---
+import { readFileSync } from "node:fs";
+import { getCollection } from "astro:content";
+import Gate from "../../components/Gate.astro";
+import Ledger, { type LedgerLabels } from "../../components/Ledger.astro";
+import Map from "../../components/Map.astro";
+import Base from "../../layouts/Base.astro";
+import { t } from "../../lib/i18n";
+import { inFileOrder } from "../../lib/ledger";
+import { CLAIMS_FILE } from "../../lib/paths";
+import { LOCALES, type Locale } from "../../lib/locales";
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const idsInFile = (JSON.parse(readFileSync(CLAIMS_FILE, "utf8")) as { id: string }[]).map((c) => c.id);
+const claims = inFileOrder(
+  (await getCollection("claims")).map((e) => e.data),
+  idsInFile,
+);
+const labels: LedgerLabels = {
+  heading: await t("ledgerHeading", locale),
+  verified: await t("statusVerified", locale),
+  viewDeclassified: await t("viewDeclassified", locale),
+  classifiedClosed: await t("classifiedClosed", locale),
+  redacted: await t("redactedLabel", locale),
+  present: await t("periodPresent", locale),
+  evidence: await t("evidenceHeading", locale),
+};
+---
+
+<Base locale={locale} title="Cupid Dossier" path="/">
+  <Gate locale={locale} />
+  <Ledger claims={claims} locale={locale} labels={labels} showUnverified={import.meta.env.DEV} />
+  <Map locale={locale} />
+</Base>

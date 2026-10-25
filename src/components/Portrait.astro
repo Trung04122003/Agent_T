@@ -1,0 +1,121 @@
+---
+// Portrait frame (UX section 5): one image per mode. Built only when both images exist and both
+// have alt text in vi and en; until then a neutral, decorative placeholder is shown.
+// Images go through astro:assets, which re-encodes them and drops EXIF/GPS (check-leaks verifies).
+import type { ImageMetadata } from "astro";
+import { Picture } from "astro:assets";
+import placeholder from "../assets/portrait/placeholder.jpg";
+import { t, type Locale } from "../lib/i18n";
+import { usePhotos, type PortraitAlt } from "../lib/portrait";
+
+interface Props {
+  locale: Locale;
+  mat?: ImageMetadata;
+  giaiMat?: ImageMetadata;
+  alt?: PortraitAlt;
+}
+const { locale, mat, giaiMat, alt } = Astro.props;
+
+const hasPhotos = usePhotos(mat, giaiMat, alt);
+const label = await t("portraitLabel", locale);
+
+const picture = {
+  formats: ["avif", "webp"] as ("avif" | "webp")[],
+  fallbackFormat: "webp" as const,
+  widths: [480, 800, 1200],
+  sizes: "(min-width: 900px) 40vw, 100vw",
+};
+---
+
+<div class="portrait" data-portrait>
+  <p class="portrait__label">{label}</p>
+  <span class="mark mark--tl" aria-hidden="true"></span>
+  <span class="mark mark--tr" aria-hidden="true"></span>
+  <span class="mark mark--bl" aria-hidden="true"></span>
+  <span class="mark mark--br" aria-hidden="true"></span>
+  {
+    hasPhotos && mat && giaiMat && alt ? (
+      <>
+        <Picture
+          {...picture}
+          src={mat}
+          alt={alt.mat[locale]}
+          class="portrait__img"
+          pictureAttributes={{ class: "portrait__pic--mat" }}
+          loading="eager"
+        />
+        <Picture
+          {...picture}
+          src={giaiMat}
+          alt={alt.giaiMat[locale]}
+          class="portrait__img"
+          pictureAttributes={{ class: "portrait__pic--giai-mat" }}
+          loading="lazy"
+        />
+      </>
+    ) : (
+      <Picture {...picture} src={placeholder} alt="" class="portrait__img" loading="eager" data-placeholder />
+    )
+  }
+</div>
+
+<style>
+  .portrait {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    background: var(--surface);
+  }
+  /* Frame label (monospace) and four registration marks: a plus sign drawn in CSS at each corner. */
+  .portrait__label {
+    position: absolute;
+    z-index: 1;
+    top: calc(var(--space) * 1.5);
+    inset-inline-start: calc(var(--space) * 1.5);
+    margin: 0;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .mark {
+    --size: 17px;
+    position: absolute;
+    z-index: 1;
+    width: var(--size);
+    height: var(--size);
+    background:
+      linear-gradient(var(--accent), var(--accent)) center / 1px 100% no-repeat,
+      linear-gradient(var(--accent), var(--accent)) center / 100% 1px no-repeat;
+  }
+  .mark--tl { top: calc(var(--size) / -2); left: calc(var(--size) / -2); }
+  .mark--tr { top: calc(var(--size) / -2); right: calc(var(--size) / -2); }
+  .mark--bl { bottom: calc(var(--size) / -2); left: calc(var(--size) / -2); }
+  .mark--br { bottom: calc(var(--size) / -2); right: calc(var(--size) / -2); }
+  @media (forced-colors: active) {
+    .mark { background: none; border: 1px solid CanvasText; }
+  }
+  .portrait :global(picture),
+  .portrait :global(.portrait__img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  :global(:root[data-mode="mat"]) .portrait :global(.portrait__pic--giai-mat),
+  :global(:root[data-mode="giai-mat"]) .portrait :global(.portrait__pic--mat) {
+    display: none;
+  }
+  /* Print is always Giai mat (UX section 4). */
+  @media print {
+    :global(:root[data-mode]) .portrait :global(.portrait__pic--mat) {
+      display: none;
+    }
+    :global(:root[data-mode]) .portrait :global(.portrait__pic--giai-mat) {
+      display: block;
+    }
+  }
+</style>

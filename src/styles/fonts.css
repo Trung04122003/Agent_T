@@ -1,0 +1,6 @@
+/* Self-hosted fonts (DESIGN.md, max 2 families). Weight files carry unicode-range, so the
+   browser downloads only the subsets a page uses (latin + vietnamese for vi). */
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";

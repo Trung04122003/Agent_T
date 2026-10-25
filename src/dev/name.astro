@@ -1,0 +1,108 @@
+---
+// Dev-only (ROADMAP 2.4): options for showing the legal name in Mat mode. In Giai mat every
+// option shows the full name in the same fixed place (SPEC section 7). Toggle the mode to compare.
+import Base from "../layouts/Base.astro";
+import { codenameFor, getIdentity } from "../lib/identity";
+
+const identity = await getIdentity();
+const codename = codenameFor(identity, "vi").name;
+const name = identity.legalName;
+const initials = name
+  .split(/\s+/)
+  .map((w) => `${w[0]}.`)
+  .join(" ");
+
+const options = [
+  { id: "a", title: "A. File line", note: "Name always visible, small and muted under the codename (current Gate)." },
+  {
+    id: "b",
+    title: "B. Redaction bar",
+    note: "Mat: a bar of fixed length where the name sits. Giai mat: the name. The name stays in the HTML (it is public in Giai mat), so this is styling, not secrecy.",
+  },
+  { id: "c", title: "C. Initials", note: `Mat: initials (${initials}). Giai mat: the full name.` },
+];
+---
+
+<Base locale="vi" title="Legal name options (dev)">
+  <div class="page">
+    <h1 class="title">Legal name in Mat mode</h1>
+    {
+      options.map((o) => (
+        <section class="option" data-option={o.id}>
+          <h2>{o.title}</h2>
+          <p class="note">{o.note}</p>
+          <div class="specimen">
+            <p class="label">Mật danh</p>
+            <p class="codename">{codename}</p>
+            {o.id === "a" && <p class="legal">{name}</p>}
+            {o.id === "b" && (
+              <p class="legal">
+                <span class="redact" role="img" aria-label="Tên thật" />
+                <span class="only-giai-mat">{name}</span>
+              </p>
+            )}
+            {o.id === "c" && (
+              <p class="legal">
+                <span class="only-mat">{initials}</span>
+                <span class="only-giai-mat">{name}</span>
+              </p>
+            )}
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<style>
+  .title {
+    font-size: 1.5rem;
+  }
+  .option {
+    padding-block: calc(var(--space) * 3);
+    border-top: 1px solid var(--line);
+  }
+  h2,
+  .label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .note {
+    margin: var(--space) 0 calc(var(--space) * 2);
+    color: var(--ink-muted);
+  }
+  .specimen {
+    padding: calc(var(--space) * 3);
+    background: var(--surface);
+  }
+  .codename {
+    margin: var(--space) 0 0;
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .legal {
+    margin: calc(var(--space) * 2) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .redact {
+    display: inline-block;
+    width: 12ch;
+    height: 1.1em;
+    vertical-align: middle;
+    background: var(--redact);
+  }
+  :global(:root[data-mode="mat"]) .only-giai-mat,
+  :global(:root[data-mode="giai-mat"]) .only-mat,
+  :global(:root[data-mode="giai-mat"]) .redact {
+    display: none;
+  }
+</style>

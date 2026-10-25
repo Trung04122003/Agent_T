@@ -1,0 +1,65 @@
+---
+// Redaction block (SPEC section 5, DESIGN.md): an SVG of solid bars plus a category label.
+// It never contains the hidden text, only `label`, which must be a category, not content.
+import { redactionBars } from "../lib/redaction";
+
+interface Props {
+  /** Stable key (the entry id) so bar lengths stay put between page loads of one build. */
+  barKey: string;
+  label: string;
+  seed?: string | undefined;
+}
+const { barKey, label, seed } = Astro.props;
+const bars = redactionBars(barKey, seed);
+const ROW = 10;
+---
+
+<div class="redaction">
+  <svg
+    class="redaction__bars"
+    role="img"
+    aria-label={label}
+    viewBox={`0 0 100 ${bars.length * ROW}`}
+    preserveAspectRatio="none"
+    style={`--rows:${bars.length}`}
+  >
+    {bars.map((w, i) => <rect x="0" y={i * ROW + 2} width={w} height={ROW - 4} />)}
+  </svg>
+  <span class="redaction__label" aria-hidden="true">{label}</span>
+</div>
+
+<style>
+  .redaction {
+    display: grid;
+    gap: var(--space);
+  }
+  .redaction__bars {
+    display: block;
+    width: 100%;
+    height: calc(var(--rows) * 1.5em);
+    color: var(--redact);
+  }
+  .redaction__bars rect {
+    fill: currentColor;
+  }
+  /* SVG content does not follow text direction: mirror it so bars start at the line start. */
+  :global([dir="rtl"]) .redaction__bars {
+    transform: scaleX(-1);
+  }
+  /* forced-colors: keep the bars visible through an outline (UX section 7). */
+  @media (forced-colors: active) {
+    .redaction__bars rect {
+      fill: Canvas;
+      stroke: CanvasText;
+      stroke-width: 0.5;
+    }
+  }
+  .redaction__label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+</style>

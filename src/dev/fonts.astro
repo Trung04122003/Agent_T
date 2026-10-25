@@ -1,0 +1,58 @@
+---
+// Dev-only font specimen (ROADMAP 1.2). Injected by astro.config.mjs in `astro dev` only,
+// so it never reaches dist/.
+import Base from "../layouts/Base.astro";
+
+const SAMPLE = "Lê Thái Trung — Ắ Ằ Ẳ Ẵ Ặ Ế Ề Ể Ễ Ệ Ố Ồ Ổ Ỗ Ộ Ớ Ờ Ở Ỡ Ợ Ứ Ừ Ử Ữ Ự";
+const LOWER = SAMPLE.toLocaleLowerCase("vi");
+const families = [
+  { name: "Be Vietnam Pro", css: "var(--font-body)", weights: [400, 700], role: "heading + body" },
+  { name: "IBM Plex Mono", css: "var(--font-mono)", weights: [400, 500], role: "labels, codes" },
+];
+---
+
+<Base locale="vi" title="Font specimen (dev)">
+  <div class="page">
+  <h1>Font specimen</h1>
+  {
+    families.map((f) => (
+      <section class="specimen" data-family={f.name}>
+        <h2>
+          {f.name} <small>{f.role}</small>
+        </h2>
+        {f.weights.map((w) => (
+          <>
+            <p style={`font-family:${f.css};font-weight:${w};font-size:2rem`}>{SAMPLE}</p>
+            <p style={`font-family:${f.css};font-weight:${w};font-size:1rem`}>
+              {w} · {LOWER} · 0123456789
+            </p>
+          </>
+        ))}
+      </section>
+    ))
+  }
+  </div>
+</Base>
+
+<style>
+  .specimen {
+    padding-block: calc(var(--space) * 3);
+    border-top: 1px solid var(--line);
+  }
+  .specimen h2 {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .specimen small {
+    color: var(--ink-muted);
+    text-transform: none;
+  }
+  .specimen p {
+    margin: var(--space) 0;
+    line-height: 1.35;
+  }
+</style>

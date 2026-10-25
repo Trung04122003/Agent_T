@@ -1,0 +1,116 @@
+/* Effect layer for mode changes (UX section 3). Driven by src/scripts/declassify.ts, which sets
+   data-vt (open|close) for the View Transition and data-scene (declassify|classify) on the new
+   state. Only transform, opacity and clip-path are animated. With prefers-reduced-motion the
+   script never sets these attributes, and base.css turns off any other motion. */
+
+/* Reveal: the new state grows as a circle from the control that was used. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+:root[data-vt="open"]::view-transition-new(root) {
+  animation: vt-reveal 500ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+:root[data-vt="close"]::view-transition-new(root) {
+  animation: vt-reveal 350ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes vt-reveal {
+  from {
+    clip-path: circle(0 at var(--vt-x) var(--vt-y));
+  }
+  to {
+    clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
+  }
+}
+
+/* Declassify: redaction blocks stay on screen, laid over the text they hid, while their bars
+   shrink to the left one after another; the text fades in underneath. */
+.row__inner,
+.gate__legal {
+  position: relative;
+}
+:root[data-js][data-mode="giai-mat"][data-scene="declassify"] .row__redacted.only-mat {
+  display: grid !important;
+  position: absolute;
+  inset-inline: 0;
+  pointer-events: none;
+}
+:root[data-scene="declassify"] .row__redacted .row__declassify,
+:root[data-scene="declassify"] .row__redacted .redaction__label {
+  visibility: hidden;
+}
+:root[data-js][data-mode="giai-mat"][data-scene="declassify"] .gate__legal .redact {
+  display: inline-block;
+  position: absolute;
+  inset-inline-start: 0;
+}
+.row__redacted .redaction__bars rect,
+.gate__legal .redact {
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+/* RTL: bars shrink toward the start of the line (the right). The SVG is mirrored in Redaction. */
+:root[dir="rtl"] .gate__legal .redact {
+  transform-origin: right center;
+}
+:root[data-scene="declassify"] .row__redacted .redaction__bars rect,
+:root[data-scene="declassify"] .gate__legal .redact {
+  transform: scaleX(0);
+}
+:root[data-scene="declassify"] .bar-anim {
+  animation: bar-out 260ms cubic-bezier(0.4, 0, 0.2, 1) var(--bar-delay, 0ms) both;
+}
+:root[data-scene="declassify"] .only-giai-mat,
+:root[data-scene="declassify"] .gate__legal-name {
+  animation: text-in 300ms ease 150ms both;
+}
+
+/* Classify (closing the file): bars cover again from left to right, faster. */
+:root[data-scene="classify"] .bar-anim {
+  animation: bar-in 200ms cubic-bezier(0.2, 0, 0, 1) var(--bar-delay, 0ms) both;
+}
+
+@keyframes bar-out {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes text-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Portrait: the previous mode's photo stays on top and fades out (300 ms). */
+:root[data-mode="giai-mat"][data-scene="declassify"] .portrait .portrait__pic--mat,
+:root[data-mode="mat"][data-scene="classify"] .portrait .portrait__pic--giai-mat {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  animation: fade-out 300ms ease both;
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
