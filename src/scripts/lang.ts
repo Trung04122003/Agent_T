@@ -3,6 +3,7 @@
 import { initModeToggle } from "./declassify";
 import { revealName } from "./decode";
 import { initLedger } from "./ledger";
+import { initLens } from "./lens";
 
 const REGIONS = ["header.controls", "main", "footer"];
 const FADE_MS = 200;
@@ -28,9 +29,11 @@ async function show(url: string, push: boolean): Promise<void> {
     if (current && incoming) current.replaceWith(document.importNode(incoming, true));
   }
   if (push) history.pushState(null, "", url);
+  shownPath = new URL(url, location.href).pathname;
 
   initModeToggle();
   initLedger();
+  initLens();
   document.querySelector<HTMLElement>("[data-lang-switch]")?.focus({ preventScroll: true });
 
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,6 +52,7 @@ async function show(url: string, push: boolean): Promise<void> {
 }
 
 let ready = false;
+let shownPath = location.pathname;
 export function initLangSwitch(): void {
   if (ready) return;
   ready = true;
@@ -56,7 +60,10 @@ export function initLangSwitch(): void {
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("[data-lang-switch]");
     if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    void show(link.href, true);
+    // Keep the query (?lens=) when switching language.
+    void show(link.href.split("?")[0] + location.search, true);
   });
-  addEventListener("popstate", () => void show(location.href, false));
+  addEventListener("popstate", () => {
+    if (location.pathname !== shownPath) void show(location.href, false); // query-only changes are not ours
+  });
 }

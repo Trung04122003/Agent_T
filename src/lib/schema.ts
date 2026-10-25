@@ -97,6 +97,22 @@ export const identity = z.strictObject({
   contact: z.strictObject({ email: z.email() }).nullable(),
 });
 
+/**
+ * content/lenses.json (P7): reading directions. Higher weight comes first; entries without a weight
+ * keep their claims.json order after the weighted ones. claims.json itself is never changed.
+ */
+export const lenses = z.strictObject({
+  lenses: z
+    .array(
+      z.strictObject({
+        id: z.string().regex(/^[a-z]+$/),
+        label: localized,
+        weights: z.record(text, z.number().int()),
+      }),
+    )
+    .min(1),
+});
+
 /** content/ui.json: interface microcopy (UX section 6), one localized string per key. */
 export const ui = z.record(z.string().regex(/^[a-z][A-Za-z]*$/), localized);
 

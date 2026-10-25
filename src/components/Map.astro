@@ -26,6 +26,7 @@ const map = buildMap(
 const heading = await t("mapHeading", locale);
 const hoangSa = await t("hoangSaLabel", locale);
 const truongSa = await t("truongSaLabel", locale);
+const credit = await t("mapCredit", locale);
 const vn = map.countries.find((c) => c.code === "VNM")!;
 const others = map.countries.filter((c) => c.code !== "VNM");
 const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
@@ -63,6 +64,7 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
       }
     </g>
   </svg>
+  <p class="map__credit" lang="en"><a href="https://www.naturalearthdata.com/">{credit}</a></p>
   <ul class="visually-hidden" data-map-list>
     {
       places.map((p) => (
@@ -103,6 +105,16 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     max-width: 600px;
     height: auto;
     border-top: 1px solid var(--accent);
+  }
+  .map__credit {
+    margin: var(--space) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-muted);
+  }
+  .map__credit a {
+    color: inherit;
+    text-underline-offset: 3px;
   }
   .map__land path {
     fill: var(--surface);

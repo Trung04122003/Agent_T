@@ -18,5 +18,7 @@
   "languageName": { "vi": "Tiếng Việt", "en": "English" },
   "mapHeading": { "vi": "Bản đồ", "en": "Map" },
   "hoangSaLabel": { "vi": "Quần đảo Hoàng Sa (Việt Nam)", "en": "Hoang Sa Archipelago (Viet Nam)" },
-  "truongSaLabel": { "vi": "Quần đảo Trường Sa (Việt Nam)", "en": "Truong Sa Archipelago (Viet Nam)" }
+  "truongSaLabel": { "vi": "Quần đảo Trường Sa (Việt Nam)", "en": "Truong Sa Archipelago (Viet Nam)" },
+  "mapCredit": { "vi": "Made with Natural Earth", "en": "Made with Natural Earth" },
+  "lensQuestion": { "vi": "Bạn đến với tư cách gì?", "en": "In what capacity are you here?" }
 }

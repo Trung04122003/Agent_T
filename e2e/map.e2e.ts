@@ -25,3 +25,10 @@ for (const locale of ["vi", "en"] as const) {
     await map.screenshot({ path: `test-results/screenshots/map-${locale}.png` });
   });
 }
+
+test("credits Natural Earth (owner approved), as a plain link", async ({ page }) => {
+  await page.goto("/vi/");
+  const credit = page.locator(".map__credit a");
+  await expect(credit).toHaveText("Made with Natural Earth");
+  await expect(credit).toHaveAttribute("href", "https://www.naturalearthdata.com/");
+});

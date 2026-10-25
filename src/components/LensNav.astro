@@ -1,0 +1,83 @@
+---
+// "Entry" (UX section 2, v1.1): In what capacity are you here? Partner · Client · Curious.
+// Reorders the ledger by content/lenses.json; state lives in ?lens=. Hidden without JavaScript,
+// where the ledger simply keeps its default order.
+import lensesJson from "../../content/lenses.json";
+import { t, type Locale } from "../lib/i18n";
+import { publicWeights } from "../lib/lens";
+import { lenses as lensesSchema } from "../lib/schema";
+
+interface Props {
+  locale: Locale;
+  /** Ids rendered in the ledger: weights are cut down to these before reaching the HTML. */
+  publicIds: string[];
+}
+const { locale, publicIds } = Astro.props;
+const config = lensesSchema.parse(lensesJson);
+const weights = config.lenses.map((l) => publicWeights(l, publicIds));
+const question = await t("lensQuestion", locale);
+---
+
+<section class="lens" aria-labelledby="lens-question" data-lens-nav data-weights={JSON.stringify(weights)} hidden>
+  <h2 id="lens-question" class="lens__question">{question}</h2>
+  <div class="lens__options" role="group" aria-labelledby="lens-question">
+    {
+      config.lenses.map((l) => (
+        <button type="button" class="lens__card" data-lens={l.id} aria-pressed="false">
+          {l.label[locale]}
+        </button>
+      ))
+    }
+  </div>
+</section>
+
+<script>
+  import { initLens } from "../scripts/lens";
+  initLens();
+</script>
+
+<style>
+  .lens {
+    max-width: var(--wide);
+    margin-inline: auto;
+    padding: calc(var(--space) * 4) var(--gutter) 0;
+  }
+  .lens__question {
+    margin: 0 0 calc(var(--space) * 2);
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .lens__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+  }
+  .lens__card {
+    position: relative;
+    min-height: var(--target);
+    padding: 0 calc(var(--space) * 2.5);
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  /* Selected card: accent outline fades in (150 ms, opacity only). */
+  .lens__card::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 2px solid var(--accent);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .lens__card[aria-pressed="true"]::after {
+    opacity: 1;
+  }
+  .lens__card[aria-pressed="true"] {
+    font-weight: 700;
+  }
+</style>

@@ -29,7 +29,7 @@ const rows = publicClaims(claims);
 ---
 
 <section class="ledger" aria-labelledby="ledger-heading" data-ledger>
-  <h2 id="ledger-heading" class="ledger__heading">{labels.heading}</h2>
+  <h2 id="ledger-heading" class="ledger__heading">{labels.heading}<span class="ledger__lens" data-lens-title></span></h2>
   <ol class="ledger__list">
     {
       rows.map((c, i) => {
@@ -144,6 +144,10 @@ const rows = publicClaims(claims);
   .ledger__heading {
     margin: 0 0 calc(var(--space) * 2);
     color: var(--accent);
+  }
+  /* Current reading direction (P7), e.g. "Sổ cái · Đối tác". */
+  .ledger__lens:not(:empty)::before {
+    content: " · ";
   }
   .ledger__list {
     margin: 0;
