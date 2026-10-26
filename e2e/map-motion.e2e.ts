@@ -12,7 +12,7 @@ const mapAnimations = (page: Page) =>
       }),
   );
 
-test("draws once on first scroll into view: outline 900 ms, points 120 ms apart, one 600 ms pulse", async ({ page }) => {
+test("draws once on first scroll into view: outline 600 ms, points 120 ms apart, one 600 ms pulse", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/vi/");
   const map = page.locator("[data-map]");
@@ -24,9 +24,9 @@ test("draws once on first scroll into view: outline 900 ms, points 120 ms apart,
   await map.scrollIntoViewIfNeeded();
   await expect(map).toHaveClass(/is-revealed/);
   const anims = await mapAnimations(page);
-  expect(anims.find((a) => a.name === "map-draw")?.duration).toBe(900);
+  expect(anims.find((a) => a.name === "map-draw")?.duration).toBe(600); // UX-v2: each effect <= 600 ms
   const points = anims.filter((a) => a.name === "point-in").map((a) => a.delay).sort((a, b) => a - b);
-  expect(points).toEqual([900, 1020, 1140, 1260]);
+  expect(points).toEqual([650, 770, 890, 1010]); // start 50 ms after the outline: never overlapping
   const pulses = anims.filter((a) => a.name === "point-pulse");
   expect(pulses.length).toBe(4);
   for (const p of pulses) expect(p.duration).toBe(600);

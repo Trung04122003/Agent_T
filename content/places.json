@@ -17,11 +17,11 @@
   },
   {
     "id": "da-nang",
-    "role": "home",
+    "role": "current",
     "label": { "vi": "Đà Nẵng", "en": "Da Nang" },
     "region": null,
     "approx": { "lat": 16.05, "lon": 108.2 },
-    "notes": "Toạ độ xấp xỉ, cần kiểm tra lại."
+    "notes": "Toạ độ xấp xỉ, cần kiểm tra lại. Chủ dự án (26/10/2026): nơi sinh ra, lớn lên và đang sống."
   },
   {
     "id": "dien-ban",

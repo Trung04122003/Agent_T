@@ -7,8 +7,13 @@ export function initMap(): void {
   const observer = new IntersectionObserver(
     (entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
-      map.classList.add("is-revealed");
       observer.disconnect();
+      // Motion budget (UX-v2 section 1): never start while a mode change is running.
+      const reveal = (): void => {
+        if (document.documentElement.dataset["scene"] !== undefined) setTimeout(reveal, 100);
+        else map.classList.add("is-revealed");
+      };
+      reveal();
     },
     { threshold: 0.3 },
   );

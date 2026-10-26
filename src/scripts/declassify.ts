@@ -2,11 +2,21 @@
 // src/styles/motion.css, so the effect layer can be cut without touching behaviour (mode.ts).
 import { currentMode, setMode, type Mode } from "./mode";
 
+/**
+ * One sequence, at most 2 effects at a time and each <= 600 ms (UX-v2 section 1), ms from the click:
+ *   open:  stamp 0-220 + reveal 0-500 | portrait 220-520 (+ reveal) | bars + text 540-1010
+ *   close: stamp 0-220 + reveal 0-350 | portrait 220-520 | bars 370-710 (+ portrait until 520)
+ */
 export const TIMING = {
-  open: 500, // scene Mat -> Giai mat
-  close: 350, // scene Giai mat -> Mat
+  open: 500, // reveal, Mat -> Giai mat
+  close: 350, // reveal, Giai mat -> Mat
   fallback: 250, // crossfade when View Transitions are missing
-  stamp: 220, // toggle stamp flip
+  stamp: 220, // toggle stamp flip, runs with the reveal
+  portraitAt: 220, // portrait crossfade starts once the stamp is done
+  barsAtOpen: 540, // bars shrink (and text fades in) after the reveal and portrait
+  barsAtClose: 370, // bars cover again after the (shorter) closing reveal
+  barOpen: 260,
+  barClose: 200,
   barStaggerOpen: 30,
   barStaggerClose: 20,
   maxBars: 8,
@@ -93,6 +103,15 @@ export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () =>
   root.style.setProperty("--vt-y", `${y}px`);
   root.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
   root.dataset["vt"] = opening ? "open" : "close";
+  const barsAt = opening ? TIMING.barsAtOpen : TIMING.barsAtClose;
+  root.style.setProperty("--portrait-at", `${TIMING.portraitAt}ms`);
+  root.style.setProperty("--bars-at", `${barsAt}ms`);
+  // The scene ends with the last bar, after the View Transition itself has finished.
+  const sceneEnd =
+    barsAt +
+    (TIMING.maxBars - 1) * (opening ? TIMING.barStaggerOpen : TIMING.barStaggerClose) +
+    (opening ? TIMING.barOpen : TIMING.barClose);
+  const started = performance.now();
 
   // Opening: the bars on screen now (Mat) shrink away in the new state. Closing: the bars that
   // appear on screen in the new state grow back.
@@ -104,8 +123,10 @@ export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () =>
   });
   transition.finished.finally(() => {
     delete root.dataset["vt"];
-    delete root.dataset["scene"];
-    clearBars();
+    setTimeout(() => {
+      delete root.dataset["scene"];
+      clearBars();
+    }, Math.max(0, sceneEnd - (performance.now() - started)));
   });
 }
 

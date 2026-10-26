@@ -215,7 +215,8 @@ export const ui = z.record(z.string().regex(/^[a-z][A-Za-z0-9]*$/), localized);
 
 export const place = z.strictObject({
   id: text,
-  role: z.enum(["origin", "home"]),
+  /** origin: family hometown; current: born, raised and living there now; home: lived there. */
+  role: z.enum(["origin", "current", "home"]),
   label: localized,
   region: localized.nullable(),
   approx: z.strictObject({

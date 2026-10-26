@@ -30,12 +30,12 @@ const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
 ---
 
-<section class="ledger" aria-labelledby="ledger-heading" data-ledger>
+<section class="ledger sheet sheet--block" aria-labelledby="ledger-heading" data-ledger>
   <h2 id="ledger-heading" class="ledger__heading">{labels.heading}<span class="ledger__lens" data-lens-title></span></h2>
   <ul class="ledger__legend" data-tier-legend>
     {(["T1", "T2", "T3"] as const).map((t) => <li>{labels.tiers[t]}</li>)}
   </ul>
-  <ol class="ledger__list">
+  <ol class="ledger__list brackets">
     {
       rows.map((c, i) => {
         const code = fileCode(i);
@@ -135,11 +135,6 @@ const rows = publicClaims(claims);
 </script>
 
 <style>
-  .ledger {
-    max-width: var(--wide);
-    margin-inline: auto;
-    padding: calc(var(--space) * 6) var(--gutter);
-  }
   .ledger__heading,
   .row__code,
   .row__period,
@@ -196,12 +191,23 @@ const rows = publicClaims(claims);
   @media (min-width: 720px) {
     .row__toggle,
     .row__static {
-      grid-template-columns: 3ch 20ch minmax(0, 1fr) auto;
+      /* Wide enough for the price-board padding and rule (code 5ch, period 22ch). */
+      grid-template-columns: 5ch 22ch minmax(0, 1fr) auto;
     }
   }
+  /* Price-board columns (UX-v2 section 3): code and period read as a ticker table. */
   .row__code,
   .row__period {
-    color: var(--ink-muted);
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+  @media (min-width: 720px) {
+    .row__code,
+    .row__period {
+      align-self: stretch;
+      padding-inline-end: calc(var(--space) * 2);
+      border-inline-end: 1px solid var(--line);
+    }
   }
   .row__main {
     display: grid;
@@ -280,7 +286,7 @@ const rows = publicClaims(claims);
   }
   @media (min-width: 720px) {
     .row__inner {
-      padding-inline-start: calc(3ch + 20ch + var(--space) * 4);
+      padding-inline-start: calc(5ch + 22ch + var(--space) * 4);
     }
   }
   .row__redacted {

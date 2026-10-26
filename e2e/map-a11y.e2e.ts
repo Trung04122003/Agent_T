@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-// ROADMAP 6.4: screen readers get a text list instead of the drawing; axe finds no issue.
+// ROADMAP 6.4: screen readers get a text list (the legend) instead of the drawing; axe finds no issue.
 const places = JSON.parse(readFileSync("content/places.json", "utf8")) as Array<{
+  role: "origin" | "current" | "home";
   label: { vi: string; en: string };
   region: { vi: string; en: string } | null;
 }>;
@@ -14,11 +15,14 @@ for (const locale of ["vi", "en"] as const) {
     await page.goto(`/${locale}/`);
     const map = page.locator("[data-map]");
     await expect(map.locator("svg")).toHaveAttribute("aria-hidden", "true");
-    await expect(map.getByRole("heading", { level: 2 })).toHaveText(ui.mapHeading[locale]);
+    await expect(map.getByRole("heading", { level: 2 })).toHaveText(ui.mapTitle[locale]);
     // What a screen reader reads: the accessible list, in order.
     const items = map.getByRole("list").getByRole("listitem");
     await expect(items).toHaveText([
-      ...places.map((p) => (p.region ? `${p.label[locale]}, ${p.region[locale]}` : p.label[locale])),
+      ...places.map((p) => {
+        const name = p.region ? `${p.label[locale]}, ${p.region[locale]}` : p.label[locale];
+        return `${name} — ${ui[{ origin: "placeRoleOrigin", current: "placeRoleCurrent", home: "placeRoleHome" }[p.role]][locale]}`;
+      }),
       ui.hoangSaLabel[locale],
       ui.truongSaLabel[locale],
     ]);

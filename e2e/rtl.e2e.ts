@@ -17,8 +17,13 @@ for (const width of [360, 1280]) {
     const contentRight = Math.min(width, (width + 1200) / 2) - 16;
     const sample = (await page.locator("[data-rtl-sample]").boundingBox())!;
     expect(sample.x + sample.width).toBeGreaterThan(contentRight - 2);
+    // Ledger codes: at the right edge of the ledger sheet's content box (inside its padding).
+    const ledgerRight = await page.locator("[data-ledger]").evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return el.getBoundingClientRect().right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth);
+    });
     const code = (await page.locator(".row__code").first().boundingBox())!;
-    expect(code.x + code.width).toBeGreaterThan(contentRight - 2);
+    expect(code.x + code.width).toBeGreaterThan(ledgerRight - 2);
     const label = (await page.locator(".portrait__label").boundingBox())!;
     const frame = (await page.locator("[data-portrait]").boundingBox())!;
     expect(label.x + label.width).toBeGreaterThan(frame.x + frame.width - 40);

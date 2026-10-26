@@ -16,8 +16,11 @@ body {
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.5;
-  font-variant-numeric: tabular-nums;
-  background: var(--bg);
+  /* Every number is tabular and lining (UX-v2 section 3). */
+  font-variant-numeric: tabular-nums lining-nums;
+  background-color: var(--bg);
+  background-image: var(--grid-image);
+  background-size: var(--grid-size) var(--grid-size);
   overflow-wrap: anywhere;
 }
 
@@ -28,6 +31,54 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* Corner brackets (UX-v2 section 3): four L-shaped corners just outside the element, drawn on
+   ::before so the element keeps its own background and content. */
+.brackets {
+  position: relative;
+}
+.brackets::before {
+  --c: var(--bracket-color);
+  --s: var(--bracket-size);
+  --w: var(--bracket-weight);
+  content: "";
+  position: absolute;
+  inset: calc(var(--bracket-offset) * -1);
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / var(--s) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / var(--w) var(--s) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--s) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--w) var(--s) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--s) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--w) var(--s) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--s) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--w) var(--s) no-repeat;
+}
+@media (forced-colors: active) {
+  .brackets::before {
+    --c: CanvasText;
+  }
+}
+
+/* Sheet: a solid, hairline-bordered panel. Text sits on sheets so the background grid never runs
+   through it; the grid stays visible in the gaps between them. */
+.sheet {
+  padding: calc(var(--space) * 2);
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+}
+@media (min-width: 720px) {
+  .sheet {
+    padding: calc(var(--space) * 3);
+  }
+}
+/* A page-level sheet: same column as before (--wide), inset from the screen edge on phones. */
+.sheet--block {
+  width: min(100% - 2 * var(--gutter), var(--wide) - 2 * var(--gutter));
+  margin: calc(var(--space) * 4) auto;
 }
 
 .visually-hidden {
@@ -103,6 +154,9 @@ body {
     display: none;
   }
   body {
+    background-image: none;
+  }
+  body {
     padding-bottom: 0;
   }
 }
@@ -115,12 +169,6 @@ body {
     transition: none !important;
     scroll-behavior: auto !important;
   }
-}
-
-.footer {
-  max-width: var(--wide);
-  margin-inline: auto;
-  padding: calc(var(--space) * 4) var(--gutter);
 }
 
 .footer__updated {

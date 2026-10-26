@@ -16,7 +16,7 @@ const legalNameLabel = await t("legalNameRedacted", locale);
 
 <!-- Level 0 (SPEC section 4): codename, positioning line, portrait. Nothing else. -->
 <section class="gate" data-gate aria-labelledby="gate-codename">
-  <div class="gate__id">
+  <div class="gate__id sheet">
     <p class="gate__label">{codenameLabel}</p>
     <h1 id="gate-codename" class="gate__codename">{codename.name}</h1>
     {codename.positioning && <p class="gate__codename-line">{codename.positioning}</p>}
@@ -124,7 +124,12 @@ const legalNameLabel = await t("legalNameRedacted", locale);
     font-size: 1.125rem;
     line-height: 1.5;
   }
+  /* A small tag on its own solid ground, so the grid never crosses it. */
   .gate__hint {
+    justify-self: start;
+    padding: calc(var(--space) * 0.5) var(--space);
     color: var(--ink-muted);
+    background-color: var(--bg);
+    border: 1px solid var(--line);
   }
 </style>

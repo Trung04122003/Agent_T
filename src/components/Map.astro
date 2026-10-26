@@ -1,7 +1,8 @@
 ---
 // Four-point map (SPEC section 8). Static SVG built from Natural Earth (Viet Nam point of view);
 // Hoang Sa and Truong Sa are always drawn and labelled. No tiles, no third-party requests.
-// Screen readers get the text list below the SVG instead of the drawing (UX section 3).
+// The drawing is decorative for screen readers: the legend list beside it carries the same
+// places as text, and its buttons drive the map (highlight, zoom to a place).
 import { getCollection } from "astro:content";
 import placesFile from "../../content/places.json";
 import topo from "../assets/map/region.topo.json";
@@ -24,74 +25,113 @@ const map = buildMap(
   places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon })),
 );
 const heading = await t("mapHeading", locale);
+const title = await t("mapTitle", locale);
+const roles = {
+  origin: await t("placeRoleOrigin", locale),
+  current: await t("placeRoleCurrent", locale),
+  home: await t("placeRoleHome", locale),
+};
+const zoom = { in: await t("mapZoomIn", locale), out: await t("mapZoomOut", locale), reset: await t("mapReset", locale) };
 const hoangSa = await t("hoangSaLabel", locale);
 const truongSa = await t("truongSaLabel", locale);
 const credit = await t("mapCredit", locale);
 const vn = map.countries.find((c) => c.code === "VNM")!;
 const others = map.countries.filter((c) => c.code !== "VNM");
-const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
+const place = (id: string) => places.find((p) => p.id === id)!;
+const seas = [
+  { id: "hoang-sa", text: hoangSa, ...map.archipelagos.hoangSa },
+  { id: "truong-sa", text: truongSa, ...map.archipelagos.truongSa },
+];
 ---
 
-<section class="map" aria-labelledby="map-heading" data-map>
-  <h2 id="map-heading" class="map__heading">{heading}</h2>
-  <svg class="map__svg" viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} aria-hidden="true" focusable="false">
-    <g class="map__land">{others.map((c) => <path d={c.d} />)}</g>
-    <path class="map__vn" d={vn.d} pathLength="1" />
-    <g class="map__islands">
+<section class="map sheet sheet--block" aria-labelledby="map-title" data-map>
+  <p class="map__kicker">{heading}</p>
+  <h2 id="map-title" class="map__title">{title}</h2>
+  <div class="map__body">
+    <ul class="map__legend" data-map-list>
       {
-        [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
-          <circle cx={x} cy={y} r="1.6" />
+        places.map((p) => (
+          <li>
+            <button type="button" class="map__place" data-place-btn={p.id} aria-pressed="false">
+              <span class={`map__marker map__marker--${p.role}`} aria-hidden="true" />
+              <span class="map__place-name">
+                {p.label[locale]}
+                {p.region && `, ${p.region[locale]}`}
+              </span>
+              <span class="map__place-role">
+                <span class="visually-hidden"> — </span>
+                {roles[p.role]}
+              </span>
+            </button>
+          </li>
         ))
       }
-    </g>
-    <text class="map__sea-label" x={map.archipelagos.hoangSa.label[0]} y={map.archipelagos.hoangSa.label[1]} text-anchor={map.archipelagos.hoangSa.anchor} data-archipelago="hoang-sa">
-      {hoangSa}
-    </text>
-    <text class="map__sea-label" x={map.archipelagos.truongSa.label[0]} y={map.archipelagos.truongSa.label[1]} text-anchor={map.archipelagos.truongSa.anchor} data-archipelago="truong-sa">
-      {truongSa}
-    </text>
-    <g class="map__points">
-      {
-        map.points.map((p, i) => (
-          <g class="map__point" style={`--i:${i}`} data-place={p.id}>
-            <circle class="map__halo" cx={p.x} cy={p.y} r="4" />
-            <circle class="map__dot" cx={p.x} cy={p.y} r="4" />
-            <text x={p.x + 9} y={p.labelY}>
-              {label(p.id)}
-            </text>
-          </g>
-        ))
-      }
-    </g>
-  </svg>
+      <li class="map__sea">{hoangSa}</li>
+      <li class="map__sea">{truongSa}</li>
+    </ul>
+    <div class="map__frame brackets" data-map-frame>
+      <svg class="map__svg" viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} aria-hidden="true" focusable="false" data-map-svg>
+        <g class="map__land">{others.map((c) => <path d={c.d} />)}</g>
+        <path class="map__vn" d={vn.d} pathLength="1" />
+        <g class="map__islands">
+          {
+            [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
+              <circle cx={x} cy={y} r="1.6" />
+            ))
+          }
+        </g>
+        {
+          seas.map((s) => (
+            <g transform={`translate(${s.label[0]} ${s.label[1]})`}>
+              <text class="map__sea-label map__fixed" text-anchor={s.anchor} data-archipelago={s.id}>
+                {s.text}
+              </text>
+            </g>
+          ))
+        }
+        <g class="map__points">
+          {
+            map.points.map((p, i) => {
+              const { role, label } = place(p.id);
+              return (
+                <g class={`map__point map__point--${role}`} style={`--i:${i}`} transform={`translate(${p.x} ${p.y})`} data-place={p.id}>
+                  {/* Counter-scaled while zoomed: marks and labels keep their size on screen. */}
+                  <g class="map__fixed">
+                    <circle class="map__halo" r="4" />
+                    {role === "origin" && <circle class="map__ring" r="7" />}
+                    <circle class="map__dot" r={role === "current" ? 5.5 : 4} />
+                    <text x="11" y={p.labelY - p.y}>
+                      {label[locale]}
+                      {/* Same line as the name: close places (Da Nang, Dien Ban) never overlap. */}
+                      <tspan class="map__role" dx="6">{roles[role]}</tspan>
+                    </text>
+                  </g>
+                </g>
+              );
+            })
+          }
+        </g>
+      </svg>
+      <div class="map__zoom" data-map-zoom hidden>
+        <button type="button" data-zoom="in" aria-label={zoom.in} title={zoom.in}>+</button>
+        <button type="button" data-zoom="out" aria-label={zoom.out} title={zoom.out}>−</button>
+        <button type="button" data-zoom="reset" aria-label={zoom.reset} title={zoom.reset}>⟲</button>
+      </div>
+    </div>
+  </div>
   <p class="map__credit" lang="en"><a href="https://www.naturalearthdata.com/">{credit}</a></p>
-  <ul class="visually-hidden" data-map-list>
-    {
-      places.map((p) => (
-        <li>
-          {p.label[locale]}
-          {p.region && `, ${p.region[locale]}`}
-        </li>
-      ))
-    }
-    <li>{hoangSa}</li>
-    <li>{truongSa}</li>
-  </ul>
 </section>
 
 <script>
   import { initMap } from "../scripts/map-reveal";
+  import { initMapView } from "../scripts/map-view";
   initMap();
+  initMapView();
 </script>
 
 <style>
-  .map {
-    max-width: var(--wide);
-    margin-inline: auto;
-    padding: calc(var(--space) * 6) var(--gutter);
-  }
-  .map__heading {
-    margin: 0 0 calc(var(--space) * 2);
+  .map__kicker {
+    margin: 0;
     font-family: var(--font-mono);
     font-size: 0.75rem;
     font-weight: 500;
@@ -99,15 +139,159 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     text-transform: uppercase;
     color: var(--accent);
   }
+  .map__title {
+    margin: var(--space) 0 calc(var(--space) * 3);
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .map__body {
+    display: grid;
+    gap: calc(var(--space) * 3);
+  }
+  @media (min-width: 900px) {
+    .map__body {
+      grid-template-columns: minmax(0, 600px) minmax(0, 1fr);
+      align-items: start;
+    }
+    /* The legend comes first in the source (read before the map controls), right of the map here. */
+    .map__legend {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  /* The map's own frame: hairline border, accent corners, ruler ticks on the edges. It is cut off
+     from the page grid (solid ground) and clips the zoomed drawing. */
+  .map__frame {
+    background-color: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .map__frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 32px) top / 100% 6px no-repeat,
+      repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 32px) bottom / 100% 6px no-repeat,
+      repeating-linear-gradient(var(--line) 0 1px, transparent 1px 32px) left / 6px 100% no-repeat,
+      repeating-linear-gradient(var(--line) 0 1px, transparent 1px 32px) right / 6px 100% no-repeat;
+  }
   .map__svg {
     display: block;
     width: 100%;
-    max-width: 600px;
     height: auto;
-    border-top: 1px solid var(--accent);
+    overflow: hidden;
   }
+  .map.is-zoomed .map__svg {
+    cursor: grab;
+    touch-action: none; /* drag pans the map; at full view the page scrolls as usual */
+  }
+  .map.is-dragging .map__svg {
+    cursor: grabbing;
+  }
+  .map__zoom {
+    position: absolute;
+    /* Bottom corner: tabbed after the legend, which sits beside the top of the map on desktop. */
+    inset-block-end: calc(var(--space) * 1.5);
+    inset-inline-end: calc(var(--space) * 1.5);
+    z-index: 2;
+    display: grid;
+    gap: 4px;
+  }
+  .map__zoom button {
+    width: var(--target);
+    height: var(--target);
+    font-family: var(--font-mono);
+    font-size: 1.125rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .map__zoom button:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+  .map__zoom button:disabled {
+    color: var(--ink-muted);
+    cursor: default;
+  }
+
+  /* Legend: the places as text, each one a button that finds it on the map. */
+  .map__legend {
+    display: grid;
+    gap: var(--space);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .map__place {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: var(--space);
+    align-items: center;
+    width: 100%;
+    min-height: var(--target);
+    padding: var(--space) calc(var(--space) * 1.5);
+    font: inherit;
+    text-align: start;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .map__place:hover,
+  .map__place.is-active {
+    border-color: var(--accent);
+  }
+  .map__place[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .map__place-name {
+    font-weight: 700;
+  }
+  .map__place-role {
+    grid-column: 2;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .map__marker {
+    grid-row: 1 / span 2;
+    justify-self: center;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  /* Markers match the map: ring = family hometown, large dot = where the owner lives now. */
+  .map__marker--current {
+    width: 12px;
+    height: 12px;
+  }
+  .map__marker--origin {
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 3px var(--accent);
+  }
+  .map__sea {
+    padding-inline-start: calc(var(--space) * 1.5);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  @media (forced-colors: active) {
+    .map__marker {
+      background: CanvasText;
+    }
+  }
+
   .map__credit {
-    margin: var(--space) 0 0;
+    margin: calc(var(--space) * 2) 0 0;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
     color: var(--ink-muted);
@@ -116,20 +300,34 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     color: inherit;
     text-underline-offset: 3px;
   }
+
+  /* Drawing. --k is the zoom factor (set by map-view.ts): strokes, dots and labels are divided by
+     it so they keep their screen size while the land gets bigger. */
   .map__land path {
     fill: var(--surface);
     stroke: var(--line);
-    stroke-width: 0.6;
+    stroke-width: calc(0.6px / var(--k, 1));
   }
   .map__vn {
     fill: var(--surface);
     stroke: var(--accent);
-    stroke-width: 1;
+    stroke-width: calc(1px / var(--k, 1));
     stroke-linejoin: round;
+  }
+  .map__islands circle {
+    r: calc(1.6px / var(--k, 1));
+  }
+  .map__fixed {
+    transform: scale(calc(1 / var(--k, 1)));
   }
   .map__islands circle,
   .map__dot {
     fill: var(--accent);
+  }
+  .map__ring {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
   }
   .map__halo {
     fill: none;
@@ -138,6 +336,13 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     opacity: 0;
     transform-box: fill-box;
     transform-origin: center;
+  }
+  .map__point {
+    cursor: default;
+  }
+  .map__point.is-active .map__dot {
+    stroke: var(--ink);
+    stroke-width: 1.5;
   }
   .map__svg text {
     font-family: var(--font-mono);
@@ -156,10 +361,22 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
   .map__point text {
     fill: var(--ink);
   }
+  /* Role line: shown for the place under the pointer or picked in the legend (150 ms, opacity). */
+  .map__svg .map__role {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--accent);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .map__point.is-active .map__role {
+    opacity: 1;
+  }
 
-  /* Draw once when scrolled into view (UX section 3): outline 900 ms, then the points one by one
-     (120 ms each) with a single 600 ms pulse. Armed only with JS and without reduced motion;
-     Hoang Sa, Truong Sa and their labels are never hidden. */
+  /* Draw once when scrolled into view (UX section 3; UX-v2 caps each effect at 600 ms): outline
+     600 ms, then the points one by one (120 ms each) with a single 600 ms pulse. Armed only with
+     JS and without reduced motion; Hoang Sa, Truong Sa and their labels are never hidden. */
   @media not print {
     :global(:root[data-js]) .map.is-armed .map__vn {
       stroke-dasharray: 1;
@@ -170,13 +387,13 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     }
   }
   .map.is-revealed .map__vn {
-    animation: map-draw 900ms ease-in-out forwards;
+    animation: map-draw 600ms ease-in-out forwards;
   }
   .map.is-revealed .map__point {
-    animation: point-in 120ms ease-out calc(900ms + var(--i) * 120ms) forwards;
+    animation: point-in 120ms ease-out calc(650ms + var(--i) * 120ms) forwards;
   }
   .map.is-revealed .map__halo {
-    animation: point-pulse 600ms ease-out calc(900ms + var(--i) * 120ms) both;
+    animation: point-pulse 600ms ease-out calc(650ms + var(--i) * 120ms) both;
   }
   @keyframes map-draw {
     to {

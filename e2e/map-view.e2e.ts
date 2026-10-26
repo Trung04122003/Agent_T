@@ -1,0 +1,92 @@
+import { expect, test, type Page } from "@playwright/test";
+
+// P12 (owner request 2026-10-26): the map has its own frame, a legend that explains it, and can be
+// zoomed and dragged. Text sits on solid sheets so the page grid never runs through it.
+const viewBox = (page: Page) => page.locator("[data-map-svg]").evaluate((el) => el.getAttribute("viewBox")!.split(" ").map(Number));
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/vi/");
+  await page.locator("[data-map]").scrollIntoViewIfNeeded();
+});
+
+test("zoom buttons change the view; labels keep their screen size; reset returns", async ({ page }) => {
+  const [, , w0] = await viewBox(page);
+  await expect(page.locator('[data-zoom="out"]')).toBeDisabled();
+  const label = page.locator('[data-place="da-nang"] text').first();
+  const size0 = (await label.boundingBox())!.height;
+
+  await page.locator('[data-zoom="in"]').click();
+  const [, , w1] = await viewBox(page);
+  expect(w1).toBeCloseTo(w0! / 1.5, 3);
+  expect(Math.abs((await label.boundingBox())!.height - size0)).toBeLessThanOrEqual(1);
+
+  for (let i = 0; i < 6; i++) await page.locator('[data-zoom="in"]').click({ force: true });
+  expect((await viewBox(page))[2]).toBeCloseTo(w0! / 4, 3); // capped at 4x
+  await expect(page.locator('[data-zoom="in"]')).toBeDisabled();
+
+  await page.locator('[data-zoom="reset"]').click();
+  expect(await viewBox(page)).toEqual([0, 0, w0, (await viewBox(page))[3]]);
+});
+
+test("dragging pans only while zoomed", async ({ page }) => {
+  const svg = page.locator("[data-map-svg]");
+  const box = (await svg.boundingBox())!;
+  const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  const drag = async () => {
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x + 80, at.y + 60, { steps: 4 });
+    await page.mouse.up();
+  };
+  const before = await viewBox(page);
+  await drag();
+  expect(await viewBox(page)).toEqual(before);
+
+  await page.locator('[data-zoom="in"]').click();
+  await page.locator('[data-zoom="in"]').click();
+  const zoomed = await viewBox(page);
+  await drag();
+  const panned = await viewBox(page);
+  expect(panned[0]).toBeLessThan(zoomed[0]!);
+  expect(panned[1]).toBeLessThan(zoomed[1]!);
+});
+
+test("legend: picking a place zooms to it and shows its role on the map; keyboard works", async ({ page }) => {
+  const item = page.locator('[data-place-btn="thuong-tin"]');
+  await item.focus();
+  await expect(page.locator('[data-place="thuong-tin"]')).toHaveClass(/is-active/);
+  await page.keyboard.press("Enter");
+  await expect(item).toHaveAttribute("aria-pressed", "true");
+  const [x, y, w, h] = await viewBox(page);
+  const point = await page.locator('[data-place="thuong-tin"]').evaluate((el) => {
+    const m = (el as SVGGElement).transform.baseVal.consolidate()!.matrix;
+    return [m.e, m.f];
+  });
+  // Centred on the place unless the view hits the edge of the drawing.
+  expect(point[0]).toBeGreaterThan(x!);
+  expect(point[0]).toBeLessThan(x! + w!);
+  expect(point[1]).toBeGreaterThan(y!);
+  expect(point[1]).toBeLessThan(y! + h!);
+  await expect(page.locator('[data-place="thuong-tin"] .map__role')).toHaveCSS("opacity", "1");
+  await expect(page.locator('[data-place="da-nang"] .map__role')).toHaveCSS("opacity", "0");
+});
+
+test("text never sits on the grid: every text block has a solid sheet", async ({ page }) => {
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  for (const sel of [".gate__id", ".gate__hint", "[data-lens-nav]", "[data-ledger]", "[data-map]", ".footer"]) {
+    const el = page.locator(sel);
+    expect(await el.evaluate((e) => getComputedStyle(e).backgroundColor), sel).toBe(bg);
+    expect(await el.evaluate((e) => getComputedStyle(e).backgroundImage), sel).toBe("none");
+  }
+});
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+  test("no zoom controls; the legend still lists every place", async ({ page }) => {
+    await page.goto("/vi/");
+    await expect(page.locator("[data-map-zoom]")).toBeHidden();
+    await expect(page.locator("[data-place-btn]")).toHaveCount(4);
+  });
+});

@@ -27,12 +27,8 @@ const picture = {
 };
 ---
 
-<div class="portrait" data-portrait>
+<div class="portrait brackets" data-portrait>
   <p class="portrait__label">{label}</p>
-  <span class="mark mark--tl" aria-hidden="true"></span>
-  <span class="mark mark--tr" aria-hidden="true"></span>
-  <span class="mark mark--bl" aria-hidden="true"></span>
-  <span class="mark mark--br" aria-hidden="true"></span>
   {
     hasPhotos && mat && giaiMat && alt ? (
       <>
@@ -65,7 +61,7 @@ const picture = {
     aspect-ratio: 4 / 5;
     background: var(--surface);
   }
-  /* Frame label (monospace) and four registration marks: a plus sign drawn in CSS at each corner. */
+  /* Frame label (monospace); the corners are the shared .brackets (UX-v2 section 3). */
   .portrait__label {
     position: absolute;
     z-index: 1;
@@ -81,24 +77,6 @@ const picture = {
     color: var(--ink);
     background: var(--surface);
   }
-  .mark {
-    --size: 17px;
-    position: absolute;
-    z-index: 1;
-    width: var(--size);
-    height: var(--size);
-    background:
-      linear-gradient(var(--accent), var(--accent)) center / 1px 100% no-repeat,
-      linear-gradient(var(--accent), var(--accent)) center / 100% 1px no-repeat;
-  }
-  .mark--tl { top: calc(var(--size) / -2); left: calc(var(--size) / -2); }
-  .mark--tr { top: calc(var(--size) / -2); right: calc(var(--size) / -2); }
-  .mark--bl { bottom: calc(var(--size) / -2); left: calc(var(--size) / -2); }
-  .mark--br { bottom: calc(var(--size) / -2); right: calc(var(--size) / -2); }
-  @media (forced-colors: active) {
-    .mark { background: none; border: 1px solid CanvasText; }
-  }
-  /* No photo yet: the neutral placeholder recedes into the frame in both modes. */
   .portrait :global(img[data-placeholder]) {
     opacity: 0.25;
   }

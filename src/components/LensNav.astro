@@ -18,12 +18,12 @@ const weights = config.lenses.map((l) => publicWeights(l, publicIds));
 const question = await t("lensQuestion", locale);
 ---
 
-<section class="lens" aria-labelledby="lens-question" data-lens-nav data-weights={JSON.stringify(weights)} hidden>
+<section class="lens sheet sheet--block" aria-labelledby="lens-question" data-lens-nav data-weights={JSON.stringify(weights)} hidden>
   <h2 id="lens-question" class="lens__question">{question}</h2>
   <div class="lens__options" role="group" aria-labelledby="lens-question">
     {
       config.lenses.map((l) => (
-        <button type="button" class="lens__card" data-lens={l.id} aria-pressed="false">
+        <button type="button" class="lens__card brackets" data-lens={l.id} aria-pressed="false">
           {l.label[locale]}
         </button>
       ))
@@ -37,11 +37,6 @@ const question = await t("lensQuestion", locale);
 </script>
 
 <style>
-  .lens {
-    max-width: var(--wide);
-    margin-inline: auto;
-    padding: calc(var(--space) * 4) var(--gutter) 0;
-  }
   .lens__question {
     margin: 0 0 calc(var(--space) * 2);
     font-size: 1.125rem;
@@ -76,6 +71,10 @@ const question = await t("lensQuestion", locale);
   }
   .lens__card[aria-pressed="true"]::after {
     opacity: 1;
+  }
+  /* Corner brackets mark the chosen direction only. */
+  .lens__card:not([aria-pressed="true"])::before {
+    display: none;
   }
   .lens__card[aria-pressed="true"] {
     font-weight: 700;

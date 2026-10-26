@@ -38,6 +38,9 @@ const PAIRS = [
   // Redaction bars are graphics that must stay visible (WCAG 1.4.11 non-text contrast).
   ["redact", "bg", 3, true],
   ["redact", "surface", 3, true],
+  // Text must stay readable where it crosses a grid line (UX-v2 section 3).
+  ["ink", "grid", 4.5, true],
+  ["ink-muted", "grid", 4.5, true],
 ];
 
 let failed = 0;

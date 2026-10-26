@@ -1,25 +1,21 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
-// ROADMAP 2.3: registration marks at the frame corners, monospace label, build-date stamp.
+// ROADMAP 2.3 / 12.4: corner brackets on the frame, monospace label, build-date stamp.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
 
-test("portrait frame has four corner marks and a monospace label", async ({ page }) => {
+test("portrait frame has accent corner brackets just outside it, and a monospace label", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/vi/");
-  const frame = (await page.locator("[data-portrait]").boundingBox())!;
-  const corners = {
-    tl: [frame.x, frame.y],
-    tr: [frame.x + frame.width, frame.y],
-    bl: [frame.x, frame.y + frame.height],
-    br: [frame.x + frame.width, frame.y + frame.height],
-  };
-  for (const [name, [x, y]] of Object.entries(corners)) {
-    const mark = (await page.locator(`.mark--${name}`).boundingBox())!;
-    // Each mark is centred on its corner.
-    expect(Math.abs(mark.x + mark.width / 2 - x!), name).toBeLessThanOrEqual(1);
-    expect(Math.abs(mark.y + mark.height / 2 - y!), name).toBeLessThanOrEqual(1);
-  }
+  const portrait = page.locator("[data-portrait]");
+  await expect(portrait).toHaveClass(/brackets/);
+  // Drawn by ::before: 8 gradient strokes (2 per corner), 6 px outside the frame, in the accent.
+  const before = await portrait.evaluate((el) => {
+    const cs = getComputedStyle(el, "::before");
+    return { content: cs.content, inset: cs.top, layers: cs.backgroundImage.split("linear-gradient").length - 1, image: cs.backgroundImage };
+  });
+  expect(before).toMatchObject({ content: '""', inset: "-6px", layers: 8 });
+  expect(before.image).toContain("rgb(184, 151, 90)"); // Mat accent #b8975a
   const label = page.locator(".portrait__label");
   await expect(label).toHaveText(ui.portraitLabel.vi);
   expect(await label.evaluate((el) => getComputedStyle(el).fontFamily)).toContain("IBM Plex Mono");

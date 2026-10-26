@@ -59,17 +59,19 @@
 :root[data-scene="declassify"] .gate__legal .redact {
   transform: scaleX(0);
 }
+/* Bars wait for the reveal and portrait (--bars-at, set by declassify.ts), then shrink in turn;
+   the text underneath fades in at the same moment (2 effects). */
 :root[data-scene="declassify"] .bar-anim {
-  animation: bar-out 260ms cubic-bezier(0.4, 0, 0.2, 1) var(--bar-delay, 0ms) both;
+  animation: bar-out 260ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms)) both;
 }
 :root[data-scene="declassify"] .only-giai-mat,
 :root[data-scene="declassify"] .gate__legal-name {
-  animation: text-in 300ms ease 150ms both;
+  animation: text-in 300ms ease var(--bars-at, 0ms) both;
 }
 
 /* Classify (closing the file): bars cover again from left to right, faster. */
 :root[data-scene="classify"] .bar-anim {
-  animation: bar-in 200ms cubic-bezier(0.2, 0, 0, 1) var(--bar-delay, 0ms) both;
+  animation: bar-in 200ms cubic-bezier(0.2, 0, 0, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms)) both;
 }
 
 @keyframes bar-out {
@@ -97,14 +99,14 @@
   }
 }
 
-/* Portrait: the previous mode's photo stays on top and fades out (300 ms). */
+/* Portrait: the previous mode's photo stays on top and fades out (300 ms), after the stamp. */
 :root[data-mode="giai-mat"][data-scene="declassify"] .portrait .portrait__pic--mat,
 :root[data-mode="mat"][data-scene="classify"] .portrait .portrait__pic--giai-mat {
   display: block;
   position: absolute;
   inset: 0;
   z-index: 0;
-  animation: fade-out 300ms ease both;
+  animation: fade-out 300ms ease var(--portrait-at, 0ms) both;
 }
 @keyframes fade-out {
   from {
@@ -113,4 +115,10 @@
   to {
     opacity: 0;
   }
+}
+
+/* Motion budget (UX-v2 section 1): at most 2 effects at once, so a row opened by "View
+   declassified" opens instantly inside the scene instead of adding its own transition. */
+:root[data-scene] .row__panel {
+  transition: none;
 }

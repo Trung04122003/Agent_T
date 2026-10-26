@@ -121,12 +121,12 @@ test("4.1-4.2 Declassify: circle reveal 500 ms, at most 8 bars, 30 ms stagger, a
 
   const bars = anims.filter((a) => a.cls.includes("bar-anim"));
   expect(bars.length).toBe(8);
-  expect(bars.map((b) => b.delay).sort((a, b) => a - b)).toEqual([0, 30, 60, 90, 120, 150, 180, 210]);
+  // Sequenced after the reveal and the portrait (UX-v2 budget: never 3 effects at once).
+  expect(bars.map((b) => Math.round(b.delay)).sort((a, b) => a - b)).toEqual([540, 570, 600, 630, 660, 690, 720, 750]);
   for (const b of bars) {
     expect(b.duration).toBe(260);
-    expect(b.delay + b.duration).toBeLessThanOrEqual(500);
+    expect(b.delay).toBeGreaterThanOrEqual(500); // the reveal is over
   }
-
   const stamp = anims.find((a) => a.cls.includes("mode-toggle"));
   expect(stamp?.duration).toBe(220);
 
@@ -145,10 +145,11 @@ test("4.2 closing the file: 350 ms reveal, bars cover again faster (20 ms stagge
   expect(anims.find((a) => a.pseudo === "::view-transition-new(root)")?.duration).toBe(350);
   const bars = anims.filter((a) => a.cls.includes("bar-anim"));
   expect(bars.length).toBe(8);
-  expect(Math.max(...bars.map((b) => b.delay))).toBe(140);
+  expect(Math.round(Math.min(...bars.map((b) => b.delay)))).toBe(370);
+  expect(Math.round(Math.max(...bars.map((b) => b.delay)))).toBe(510);
   for (const b of bars) {
     expect(b.duration).toBe(200);
-    expect(b.delay + b.duration).toBeLessThanOrEqual(350);
+    expect(b.delay).toBeGreaterThanOrEqual(350); // the reveal is over
   }
   await expect(page.locator("html")).toHaveAttribute("data-mode", "mat");
 });
@@ -161,26 +162,14 @@ test("4.1 focus stays put and the change is announced", async ({ page }) => {
   await expect(page.locator("[data-mode-toggle]")).toBeFocused();
 });
 
-test("4.3 portrait crossfades in 300 ms (screenshots before and after)", async ({ page }) => {
+test("12.3 restored effects run in sequence: stamp first, then the portrait crossfade", async ({ page }) => {
   await instrument(page);
   await gotoStable(page, `${DEV}/dev/portrait`);
-  await page.screenshot({ path: "test-results/screenshots/motion-portrait-before.png" });
-  const anims = await clickAndCapture(page, "[data-mode-toggle]");
-  const fade = anims.find((a) => a.cls.includes("portrait__pic--mat"));
-  expect(fade?.duration).toBe(300);
-  expect(fade?.props).toEqual(["opacity"]);
-  await expect(page.locator("html")).not.toHaveAttribute("data-scene", /.+/);
-  await page.screenshot({ path: "test-results/screenshots/motion-portrait-after.png" });
-});
-
-test("4.3 toggle stamp flips around X (screenshots before and after)", async ({ page }) => {
-  await page.goto(`${FIXTURE}/vi/`);
-  const toggle = page.locator("[data-mode-toggle]");
-  await toggle.screenshot({ path: "test-results/screenshots/motion-stamp-before.png" });
   const anims = await clickAndCapture(page, "[data-mode-toggle]");
   const stamp = anims.find((a) => a.cls.includes("mode-toggle"));
-  expect(stamp?.props).toEqual(["transform"]);
-  expect(stamp?.duration).toBe(220);
-  await page.waitForTimeout(600);
-  await toggle.screenshot({ path: "test-results/screenshots/motion-stamp-after.png" });
+  expect(stamp).toMatchObject({ duration: 220, delay: 0, props: ["transform"] });
+  const portrait = anims.find((a) => a.cls.includes("portrait__pic--mat"));
+  expect(portrait).toMatchObject({ duration: 300, delay: 220, props: ["opacity"] });
+  await expect(page.locator("html")).not.toHaveAttribute("data-scene", /.+/);
+  await expect(page.locator(".portrait__pic--giai-mat")).toBeVisible();
 });

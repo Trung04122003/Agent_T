@@ -11,15 +11,18 @@ function reducedMotion(): boolean {
   return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Put rows in `ids` order. FLIP: measure, move, then play each moved row back from its old spot. */
-function reorder(list: HTMLElement, ids: string[], animate: boolean): void {
+/**
+ * Put rows in `ids` order. FLIP: measure, move, then play each moved row back from its old spot.
+ * Returns when the last row lands (ms), so the title fade can follow instead of overlapping.
+ */
+function reorder(list: HTMLElement, ids: string[], animate: boolean): number {
   const rows = new Map([...list.querySelectorAll<HTMLElement>(":scope > [data-claim]")].map((li) => [li.dataset["claim"]!, li]));
   const before = new Map([...rows].map(([id, li]) => [id, li.getBoundingClientRect().top]));
   for (const id of ids) {
     const li = rows.get(id);
     if (li) list.append(li);
   }
-  if (!animate || reducedMotion()) return;
+  if (!animate || reducedMotion()) return 0;
   let moved = 0;
   for (const id of ids) {
     const li = rows.get(id);
@@ -34,6 +37,7 @@ function reorder(list: HTMLElement, ids: string[], animate: boolean): void {
     });
     moved++;
   }
+  return moved ? FLIP.duration + (moved - 1) * FLIP.stagger : 0;
 }
 
 let popstateReady = false;
@@ -51,11 +55,14 @@ export function initLens(): void {
     const lens = lenses.find((l) => l.id === id);
     const current = document.querySelector<HTMLElement>(".ledger__list");
     if (!current) return;
-    reorder(current, orderByLens(defaultIds, lens), animate);
+    const landed = reorder(current, orderByLens(defaultIds, lens), animate);
     for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset["lens"] === lens?.id));
     if (title) {
       title.textContent = lens ? (buttons.find((b) => b.dataset["lens"] === lens.id)?.textContent?.trim() ?? "") : "";
-      if (animate && !reducedMotion()) title.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FLIP.titleFade });
+      // Fades in after the rows have landed: FLIP + card outline, then the title (UX-v2 budget).
+      if (animate && !reducedMotion()) {
+        title.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FLIP.titleFade, delay: landed, fill: "backwards" });
+      }
     }
   };
 

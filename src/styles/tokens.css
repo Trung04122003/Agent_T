@@ -1,4 +1,4 @@
-/* Design tokens (DESIGN.md). Two modes share one structure.
+/* Design tokens (DESIGN.md, UX-v2 section 3). Two modes share one structure and one accent.
    Giai-mat is the base so print always gets it (UX section 4); Mat applies on screen only.
    scripts/check-contrast.mjs parses the two mode blocks below: keep one declaration per line. */
 
@@ -11,6 +11,7 @@
   --line: #d9d6cc;
   --accent: #7a5f2a;
   --redact: #111111;
+  --grid: #d9d5c8; /* thin ledger rules (Giai mat: horizontal only) */
   color-scheme: light;
 }
 
@@ -23,6 +24,7 @@
     --line: #26262b;
     --accent: #b8975a;
     --redact: #7a735f; /* khaki grey, owner choice 2026-10-24 */
+    --grid: #222228; /* hairline grid of the console (Mat: both directions) */
     color-scheme: dark;
   }
 }
@@ -38,4 +40,19 @@
   --wide: 1200px;
   --bar-height: 56px;
   --target: 44px;
+
+  /* v2 surface (UX-v2 section 3): a static hairline grid behind the page, and corner brackets
+     ("scope" frame corners) for framed items. The accent stays the only decorative colour. */
+  --grid-size: 64px;
+  --grid-image: linear-gradient(var(--grid) 1px, transparent 1px);
+  --bracket-size: 16px;
+  --bracket-weight: 2px;
+  --bracket-offset: 6px;
+  --bracket-color: var(--accent);
+}
+
+@media not print {
+  :root[data-mode="mat"] {
+    --grid-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  }
 }
