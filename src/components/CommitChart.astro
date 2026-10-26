@@ -1,0 +1,306 @@
+---
+// Commitment chart (ROADMAP P15, UX-v2 section 4): how many entries ran at the same time, month by
+// month, from the `period` of open entries only (hold and classified never reach this file).
+// One dataset, two drawings: Giai mat a brass step line with year labels and names on hover;
+// Mat the same months as a signal of bars, its labels covered. No money axis, no "growth".
+// Static SVG built here; labels are HTML on top so they stay readable at any width.
+import { t, type Locale } from "../lib/i18n";
+import { BUILT } from "../lib/dossier";
+import { concurrency } from "../lib/commitments";
+import { publicClaims } from "../lib/ledger";
+import type { Claim } from "../lib/schema";
+
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+}
+const { claims, locale } = Astro.props;
+const open = publicClaims(claims).flatMap((c) => (c.kind !== "classified" && c.period ? [c] : []));
+const data = concurrency(
+  open.map((c) => ({ id: c.id, ...c.period! })),
+  BUILT,
+);
+const names = Object.fromEntries(open.map((c) => [c.id, (c.org ?? c.title)?.[locale] ?? c.id]));
+const keys = ["chartKicker", "chartTitle", "chartHint", "chartUnit", "chartFrom", "chartTo", "chartCount", "chartEntries"];
+const [kicker, title, hint, unit, from, to, count, entries] = await Promise.all(keys.map((k) => t(k, locale)));
+
+const n = data.months.length;
+const H = data.max + 0.5; // headroom above the highest step
+const y = (c: number) => H - c;
+const mmYYYY = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`;
+// Step line and the area under it, one unit per month.
+const step = data.counts.map((c, i) => (i === 0 ? `M0 ${y(c)}H1` : `V${y(c)}H${i + 1}`)).join("");
+const area = `${step}V${H}H0Z`;
+// Year marks: January of each year, plus the first month when it is not a January.
+const years = data.months.flatMap((m, i) => (m.endsWith("-01") || i === 0 ? [{ i, year: m.slice(0, 4) }] : []));
+const segments = data.segments.map((s) => ({
+  ...s,
+  a: data.months.indexOf(s.from),
+  b: data.months.indexOf(s.to) + 1,
+  label: `${mmYYYY(s.from)} – ${mmYYYY(s.to)}`,
+  names: s.ids.map((id) => names[id]!),
+}));
+const current = segments.at(-1);
+const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
+---
+
+{
+  n > 0 && current && (
+    <section class="chart sheet sheet--block" aria-labelledby="chart-title" data-chart>
+      <p class="chart__kicker">{kicker}</p>
+      <h2 id="chart-title" class="chart__title">{title}</h2>
+      <div class="chart__frame">
+        <div class="chart__axis-y" aria-hidden="true">
+          {Array.from({ length: data.max + 1 }, (_, k) => (
+            <span style={`top:${pct(y(k), H)}`}>{k}</span>
+          ))}
+        </div>
+        <div
+          class="chart__plot"
+          tabindex="0"
+          role="group"
+          aria-labelledby="chart-title"
+          aria-describedby="chart-hint"
+          data-chart-plot
+          data-segments={JSON.stringify(segments.map(({ a, b, label, count: c, names: ns }) => ({ a, b, label, count: c, names: ns })))}
+          data-months={n}
+        >
+          <svg viewBox={`0 0 ${n} ${H}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <g class="chart__grid">
+              {Array.from({ length: data.max }, (_, k) => (
+                <line x1="0" x2={n} y1={y(k + 1)} y2={y(k + 1)} />
+              ))}
+              {years.map(({ i }) => (
+                <line x1={i} x2={i} y1="0" y2={H} />
+              ))}
+            </g>
+            {/* Giai mat: the step line over a hatched area. */}
+            <g class="only-giai-mat chart__ledger">
+              <path class="chart__area" d={area} />
+              <path class="chart__line" d={step} />
+            </g>
+            {/* Mat: the same months as a signal, one bar per month. */}
+            <g class="only-mat chart__signal">
+              {data.counts.map((c, i) => c > 0 && <rect x={i + 0.18} width="0.64" y={y(c)} height={c} />)}
+              <line class="chart__baseline" x1="0" x2={n} y1={H} y2={H} />
+            </g>
+          </svg>
+          <span
+            class="chart__band"
+            style={`left:${pct(current.a, n)};width:${pct(current.b - current.a, n)}`}
+            data-chart-band
+          />
+        </div>
+        <div class="chart__axis-x" aria-hidden="true">
+          {years.map(({ i, year }) => (
+            <span class={i === 0 && !data.months[0]!.endsWith("-01") ? "is-start" : undefined} style={`left:${pct(i, n)}`}>
+              <span class="only-giai-mat">{year}</span>
+              <span class="only-mat chart__redact" />
+            </span>
+          ))}
+        </div>
+      </div>
+      <p class="chart__readout" aria-live="polite" data-chart-readout>
+        <span class="chart__when" data-chart-when>{current.label}</span>
+        <span>
+          <b data-chart-count>{current.count}</b> {unit}
+        </span>
+        <span class="only-giai-mat chart__names" data-chart-names>
+          {current.names.join(" · ")}
+        </span>
+        <span class="only-mat chart__names-redacted" aria-hidden="true" data-chart-bars>
+          {current.names.map(() => <i />)}
+        </span>
+      </p>
+      <p id="chart-hint" class="chart__hint">{hint}</p>
+      {/* Hidden on a wrapper: a table ignores width and overflow, so it would widen the page. */}
+      <div class="visually-hidden">
+        <table>
+          <caption>{title}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{from}</th>
+              <th scope="col">{to}</th>
+              <th scope="col">{count}</th>
+              <th scope="col">{entries}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {segments.map((s) => (
+              <tr>
+                <td>{mmYYYY(s.from)}</td>
+                <td>{mmYYYY(s.to)}</td>
+                <td>{s.count}</td>
+                <td>{s.names.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import { initChart } from "../scripts/chart";
+  initChart();
+</script>
+
+<style>
+  .chart__kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .chart__title {
+    margin: var(--space) 0 calc(var(--space) * 3);
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .chart__frame {
+    display: grid;
+    grid-template-columns: 2ch minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: var(--space);
+  }
+  .chart__axis-y {
+    position: relative;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-muted);
+  }
+  .chart__axis-y span {
+    position: absolute;
+    right: 0;
+    transform: translateY(-50%);
+  }
+  .chart__plot {
+    position: relative;
+    height: 200px;
+    border-block-end: 1px solid var(--line);
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+  @media (min-width: 720px) {
+    .chart__plot {
+      height: 260px;
+    }
+  }
+  .chart__plot svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .chart__plot :is(line, path, rect) {
+    vector-effect: non-scaling-stroke;
+  }
+  .chart__grid line {
+    stroke: var(--line);
+    stroke-width: 1;
+    stroke-dasharray: 2 4;
+  }
+  .chart__area {
+    fill: var(--accent);
+    opacity: 0.12;
+  }
+  .chart__line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: miter;
+  }
+  .chart__signal rect {
+    fill: var(--accent);
+    opacity: 0.85;
+  }
+  .chart__baseline {
+    stroke: var(--accent);
+    stroke-width: 1;
+  }
+  /* The period under the pointer / keyboard cursor. */
+  .chart__band {
+    position: absolute;
+    inset-block: 0;
+    pointer-events: none;
+    background: var(--ink);
+    opacity: 0.06;
+    border-inline: 1px solid var(--accent);
+  }
+  .chart__axis-x {
+    grid-column: 2;
+    position: relative;
+    height: 1.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-muted);
+  }
+  .chart__axis-x > span {
+    position: absolute;
+    top: 6px;
+    padding-inline-start: 4px;
+    border-inline-start: 1px solid var(--line);
+  }
+  /* The first year sits close to the next January: on phones it would overlap it. */
+  @media (max-width: 719px) {
+    .chart__axis-x > span.is-start {
+      display: none;
+    }
+  }
+  .chart__redact {
+    display: inline-block;
+    width: 4ch;
+    height: 0.9em;
+    vertical-align: middle;
+    background: var(--redact);
+  }
+  .chart__readout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: calc(var(--space) * 0.5) calc(var(--space) * 2);
+    min-height: 3em;
+    margin: calc(var(--space) * 2) 0 0;
+    padding: var(--space) calc(var(--space) * 1.5);
+    border-inline-start: 2px solid var(--accent);
+    background: var(--surface);
+  }
+  .chart__when {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .chart__readout b {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+  }
+  .chart__names {
+    color: var(--ink-muted);
+  }
+  .chart__names-redacted {
+    display: inline-flex;
+    gap: var(--space);
+  }
+  /* :global: the readout bars are re-created by chart.ts, without Astro's scope attribute. */
+  .chart__names-redacted :global(i) {
+    display: inline-block;
+    width: 9ch;
+    height: 0.9em;
+    background: var(--redact);
+  }
+  .chart__hint {
+    margin: var(--space) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-muted);
+  }
+  @media (forced-colors: active) {
+    .chart__redact,
+    .chart__names-redacted :global(i) {
+      background: CanvasText;
+    }
+  }
+</style>

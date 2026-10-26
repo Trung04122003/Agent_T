@@ -112,6 +112,17 @@ test("text never sits on the grid: every text block has a solid sheet", async ({
   }
 });
 
+test("after an in-place language switch the map still zooms (controls re-armed)", async ({ page }) => {
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.locator("[data-map]").scrollIntoViewIfNeeded();
+  await expect(page.locator("[data-map-zoom]")).toBeVisible();
+  const [, , w0] = await viewBox(page);
+  await page.locator('[data-zoom="in"]').click();
+  expect((await viewBox(page))[2]).toBeCloseTo(w0! / 1.5, 3);
+  await expect(page.locator("[data-map] [data-place]").first()).toHaveCSS("opacity", "1");
+});
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
   test("no zoom controls; the legend still lists every place", async ({ page }) => {

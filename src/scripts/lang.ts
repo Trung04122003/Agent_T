@@ -1,9 +1,13 @@
 // Language switch, option (b) chosen at ROADMAP 5.0: fetch the other locale's page and swap the
-// classification strips, control bar, main and footer in place. <html> keeps the reader's mode; history and Back work.
+// classification strips, control bar, main and footer in place. <html> keeps the reader's mode;
+// history and Back work.
 import { initModeToggle } from "./declassify";
 import { revealGate } from "./decode";
 import { initLedger } from "./ledger";
 import { initLens } from "./lens";
+import { initChart } from "./chart";
+import { initMap } from "./map-reveal";
+import { initMapView } from "./map-view";
 
 const REGIONS = ["[data-banner=\"top\"]", "header.controls", "main", "footer", "[data-banner=\"bottom\"]"];
 const FADE_MS = 200;
@@ -34,6 +38,10 @@ async function show(url: string, push: boolean): Promise<void> {
   initModeToggle();
   initLedger();
   initLens();
+  // Everything inside the swapped regions needs its listeners again (the map was missed in P12).
+  initMap();
+  initMapView();
+  initChart();
   // Focus the language just chosen (now the current one) so keyboard users stay in place.
   document.querySelector<HTMLElement>("[data-lang-switch][aria-current=\"page\"]")?.focus({ preventScroll: true });
 

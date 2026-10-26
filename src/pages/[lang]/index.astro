@@ -1,6 +1,7 @@
 ---
 import { readFileSync } from "node:fs";
 import { getCollection } from "astro:content";
+import CommitChart from "../../components/CommitChart.astro";
 import Gate from "../../components/Gate.astro";
 import Ledger, { type LedgerLabels } from "../../components/Ledger.astro";
 import LensNav from "../../components/LensNav.astro";
@@ -42,5 +43,6 @@ const labels: LedgerLabels = {
   <StatsBoard claims={claims} locale={locale} />
   <LensNav locale={locale} publicIds={publicClaims(claims).map((c) => c.id)} />
   <Ledger claims={claims} locale={locale} labels={labels} showUnverified={import.meta.env.DEV} />
+  <CommitChart claims={claims} locale={locale} />
   <Map locale={locale} />
 </Base>
