@@ -14,6 +14,41 @@ export const localized = z.strictObject({
   ja: text.optional(),
 });
 
+/** Praise the owner asked to keep out of BLUF lines (ROADMAP 11.1). Lower case, matched as substrings. */
+const PRAISE = [
+  "xuất sắc",
+  "tuyệt vời",
+  "vượt trội",
+  "hàng đầu",
+  "đột phá",
+  "ấn tượng",
+  "excellent",
+  "outstanding",
+  "exceptional",
+  "amazing",
+  "world-class",
+  "innovative",
+  "best-in-class",
+];
+
+/** One line of a BLUF: at most 90 characters, a single sentence, no praise. */
+const blufLine = text
+  .max(90, "BLUF: at most 90 characters")
+  .refine((s) => !/[.!?…]\s/.test(s.trim().replace(/[.!?…]+$/, "")), "BLUF: one sentence only")
+  .refine((s) => !PRAISE.some((w) => s.toLowerCase().includes(w)), "BLUF: no praising adjectives");
+
+/**
+ * Bottom line up front (ROADMAP 11.1): one optional sentence per row, written by the owner.
+ * "Has a verb" cannot be checked reliably by a machine; the owner checks it when writing.
+ */
+export const bluf = z.strictObject({
+  vi: blufLine,
+  en: blufLine,
+  es: blufLine.optional(),
+  ar: blufLine.optional(),
+  ja: blufLine.optional(),
+});
+
 const yearMonth = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, "Expected YYYY or YYYY-MM");
 
 /** True when a YYYY or YYYY-MM end lies after the month (or year) of `now`. */
@@ -85,6 +120,7 @@ const openClaim = z
     period: period.nullable(),
     teaser: localized.nullable(),
     summary: localized.nullable(),
+    bluf: bluf.nullable().optional(),
     evidence: z.array(evidence),
     /** Internal record that the organisation agreed to publication (ROADMAP 9.6). Never rendered. */
     approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).optional(),

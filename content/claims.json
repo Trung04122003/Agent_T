@@ -4,6 +4,7 @@
     "kind": "education",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": { "vi": "Tốt nghiệp ngành Công nghệ phần mềm, Đại học Duy Tân, tháng 6/2026.", "en": "Graduated in Software Engineering from Duy Tan University in June 2026." },
     "org": {
       "vi": "Đại học Duy Tân - Trường Công nghệ thông tin",
       "en": "Duy Tan University - School of Information Technology"
@@ -34,6 +35,7 @@
     "kind": "role",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": { "vi": "Mở một Chapter mới trong BBE.", "en": "Launched a new Chapter within BBE." },
     "org": {
       "vi": "DNA BBE — Be Better Every Day",
       "en": "DNA BBE — Be Better Every Day"
@@ -64,6 +66,7 @@
     "kind": "role",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": { "vi": "Hỗ trợ giảng dạy PHP, Laravel, VueJS và Git cho sinh viên CNTT tại Đà Nẵng.", "en": "Helped teach PHP, Laravel, VueJS and Git to IT students in Da Nang." },
     "org": {
       "vi": "DZ Fullstack",
       "en": "DZ Fullstack"
@@ -94,6 +97,7 @@
     "kind": "project",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": { "vi": "Xây dựng hệ thống giám sát chất lượng không khí; bảo vệ bằng tiếng Anh, điểm 9.1/10.", "en": "Built an air quality monitoring system; defended in English, graded 9.1/10." },
     "org": {
       "vi": "Khóa luận tốt nghiệp",
       "en": "Graduation thesis"
@@ -125,6 +129,7 @@
     "kind": "role",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": null,
     "org": {
       "vi": "JCI Đà Nẵng Junior Club",
       "en": "JCI Da Nang Junior Club"
@@ -155,6 +160,7 @@
     "kind": "role",
     "visibility": "hold",
     "status": "needs-approval",
+    "bluf": null,
     "org": {
       "vi": "DFL24 (Danang Fintech Lab) — VIFC Đà Nẵng",
       "en": "DFL24 (Danang Fintech Lab) — VIFC Da Nang"
@@ -174,6 +180,7 @@
     "kind": "role",
     "visibility": "hold",
     "status": "confirmed",
+    "bluf": null,
     "org": {
       "vi": "Prudential Việt Nam",
       "en": "Prudential Vietnam"
@@ -205,6 +212,7 @@
     "kind": "role",
     "visibility": "open",
     "status": "confirmed",
+    "bluf": { "vi": "Làm kinh doanh cho công ty phân phối thực phẩm của gia đình; vai trò đang tạm dừng.", "en": "Worked in sales for the family food distributor; the role is now paused." },
     "org": {
       "vi": "Công ty trách nhiệm hữu hạn Bluesea Food",
       "en": "Bluesea Food Co., Ltd."

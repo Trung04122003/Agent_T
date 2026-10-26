@@ -153,3 +153,16 @@ test("9.3 redaction and link only where a summary exists", async ({ page }) => {
   await expect(row(page, "fx-plain").locator(".redaction, [data-declassify]")).toHaveCount(0);
   await page.screenshot({ path: "test-results/screenshots/p9-ledger-mat.png", fullPage: true });
 });
+
+test("11.2 BLUF shows under the title in both modes, only where it exists", async ({ page }) => {
+  await page.goto(`${FIXTURE}/vi/`);
+  const bluf = row(page, "fx-verified").locator(".row__bluf");
+  await expect(bluf).toBeVisible(); // row still closed
+  await expect(bluf).toHaveText("Câu BLUF thử nghiệm.");
+  await expect(row(page, "fx-pending").locator(".row__bluf")).toHaveCount(0);
+  await page.locator("[data-mode-toggle]").click();
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+  await expect(bluf).toBeVisible();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
+  await expect(row(page, "fx-verified").locator(".row__bluf")).toHaveText("Test bottom line.");
+});

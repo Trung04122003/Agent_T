@@ -3,7 +3,7 @@ import claimsJson from "../../content/claims.json";
 import identityJson from "../../content/identity.json";
 import placesJson from "../../content/places.json";
 import uiJson from "../../content/ui.json";
-import { claim, claims, endsInFuture, identity, period, place, publishedClaim, ui, withoutNotes } from "./schema";
+import { bluf, claim, claims, endsInFuture, identity, period, place, publishedClaim, ui, withoutNotes } from "./schema";
 
 // Neutral fixtures: placeholder text only, never real content.
 const open = {
@@ -182,5 +182,34 @@ describe("dates (ROADMAP 9.5)", () => {
 
   it("accepts a past end", () => {
     expect(period.safeParse({ start: "2021-09", end: "2026-06" }).success).toBe(true);
+  });
+});
+
+describe("BLUF (ROADMAP 11.1)", () => {
+  const line = (vi: string, en = "Built a monitoring dashboard.") => ({ vi, en });
+
+  it("accepts one plain sentence of up to 90 characters, or null", () => {
+    expect(bluf.safeParse(line("Xây dựng bảng điều khiển giám sát chất lượng không khí.")).success).toBe(true);
+    expect(bluf.safeParse(line("x".repeat(90))).success).toBe(true);
+    expect(claim.safeParse({ ...open, bluf: null }).success).toBe(true);
+  });
+
+  it("rejects more than 90 characters, in either language", () => {
+    expect(bluf.safeParse(line("x".repeat(91))).success).toBe(false);
+    expect(bluf.safeParse(line("Ngắn.", "y".repeat(91))).success).toBe(false);
+  });
+
+  it("rejects two sentences, but allows numbers like 9.1/10", () => {
+    expect(bluf.safeParse(line("Lập một Chapter. Dẫn 26 người.")).success).toBe(false);
+    expect(bluf.safeParse(line("Bảo vệ khóa luận bằng tiếng Anh, điểm 9.1/10.")).success).toBe(true);
+  });
+
+  it("rejects praise", () => {
+    expect(bluf.safeParse(line("Đạt kết quả xuất sắc.")).success).toBe(false);
+    expect(bluf.safeParse(line("Ngắn.", "Delivered outstanding results.")).success).toBe(false);
+  });
+
+  it("is not allowed on a classified entry", () => {
+    expect(claim.safeParse({ id: "c", kind: "classified", status: "needs-decision", label: line("Nhãn"), bluf: line("x") }).success).toBe(false);
   });
 });

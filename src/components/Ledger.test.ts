@@ -80,3 +80,19 @@ describe("Ledger v2 (ROADMAP 9.2-9.3)", () => {
     expect(row).not.toContain("data-declassify");
   });
 });
+
+describe("BLUF row line (ROADMAP 11.2)", () => {
+  it("shows the BLUF under the title, outside the mode-specific panel", async () => {
+    const html = await render(false);
+    const head = html.match(/<li[^>]*id="claim-fx-verified"[\s\S]*?<\/h3>/)?.[0] ?? "";
+    expect(head).toMatch(/row__title[^>]*>Vai trò thử<\/span>[\s\S]*?<span class="row__bluf"[^>]*>Câu BLUF thử nghiệm\.<\/span>/);
+    expect(head).not.toMatch(/only-(mat|giai-mat)[^"]*row__bluf|row__bluf[^"]*only-/);
+  });
+
+  it("renders nothing when BLUF is null or missing", async () => {
+    const html = await render(false);
+    expect(html.match(/class="row__bluf"/g)?.length).toBe(1);
+    const pending = html.match(/<li[^>]*id="claim-fx-pending"[\s\S]*?<\/h3>/)?.[0] ?? "";
+    expect(pending).not.toContain("row__bluf");
+  });
+});

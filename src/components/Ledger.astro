@@ -65,6 +65,7 @@ const rows = publicClaims(claims);
 
         const teaser = c.teaser?.[locale];
         const summary = c.summary?.[locale];
+        const bluf = c.bluf?.[locale];
         const hasPanel = Boolean(teaser || summary || c.evidence.length);
         const cells = (
           <>
@@ -73,6 +74,8 @@ const rows = publicClaims(claims);
             <span class="row__main">
               {c.org && <span class="row__org">{c.org[locale]}</span>}
               {c.title && <span class="row__title">{c.title[locale]}</span>}
+              {/* Bottom line up front (ROADMAP 11.2): both modes, only when the owner wrote one. */}
+              {bluf && <span class="row__bluf">{bluf}</span>}
             </span>
             <span class="row__tier" data-tier={tierOf(c.evidence)}>
               {labels.evidence} {tierOf(c.evidence)}
@@ -215,6 +218,11 @@ const rows = publicClaims(claims);
   }
   .row__title {
     color: var(--ink-muted);
+  }
+  .row__bluf {
+    margin-top: calc(var(--space) * 0.5);
+    max-width: var(--measure);
+    color: var(--ink);
   }
   .row__tier,
   .row__badge {
