@@ -3,7 +3,7 @@ import claimsJson from "../../content/claims.json";
 import identityJson from "../../content/identity.json";
 import placesJson from "../../content/places.json";
 import uiJson from "../../content/ui.json";
-import { claim, claims, identity, place, publishedClaim, ui, withoutNotes } from "./schema";
+import { claim, claims, endsInFuture, identity, period, place, publishedClaim, ui, withoutNotes } from "./schema";
 
 // Neutral fixtures: placeholder text only, never real content.
 const open = {
@@ -13,7 +13,7 @@ const open = {
   status: "needs-evidence",
   org: { vi: "Tổ chức X", en: "Org X" },
   title: { vi: "Vai trò X", en: "Role X" },
-  period: { start: "2024-02", end: "present" },
+  period: { start: "2024-02", end: null, ongoing: true },
   teaser: null,
   summary: null,
   evidence: [],
@@ -48,10 +48,11 @@ describe("claim schema", () => {
     }
   });
 
-  it("verified không bằng chứng thì bị từ chối", () => {
+  it("confirmed không cần bằng chứng (bậc T1); trạng thái verified cũ bị từ chối", () => {
+    expect(claim.safeParse({ ...open, status: "confirmed", evidence: [] }).success).toBe(true);
     expect(claim.safeParse({ ...open, status: "verified", evidence: [] }).success).toBe(false);
     expect(
-      claim.safeParse({ ...open, status: "verified", evidence: [{ type: "document-on-request", note: { vi: "n", en: "n" } }] }).success,
+      claim.safeParse({ ...open, status: "confirmed", evidence: [{ type: "document-on-request", note: { vi: "n", en: "n" } }] }).success,
     ).toBe(true);
   });
 
@@ -76,7 +77,7 @@ describe("claim schema", () => {
   });
 
   it("rejects an evidence note without en (it is displayed)", () => {
-    const ev = (note: unknown) => ({ ...open, status: "verified", evidence: [{ type: "reference", note }] });
+    const ev = (note: unknown) => ({ ...open, status: "confirmed", evidence: [{ type: "reference", note }] });
     expect(claim.safeParse(ev({ vi: "Giấy chứng nhận" })).success).toBe(false);
     expect(claim.safeParse(ev("Giấy chứng nhận")).success).toBe(false);
     expect(claim.safeParse(ev({ vi: "Giấy chứng nhận", en: "Certificate" })).success).toBe(true);
@@ -129,5 +130,55 @@ describe("content files", () => {
     const r = ui.safeParse(uiJson);
     expect(r.error?.issues ?? []).toEqual([]);
     expect(ui.safeParse({ modeMat: { vi: "Mật" } }).success).toBe(false);
+  });
+});
+
+describe("org vs title (ROADMAP 9.4)", () => {
+  const row = {
+    id: "p",
+    kind: "project",
+    visibility: "open",
+    status: "needs-evidence",
+    org: { vi: "Hệ thống giám sát", en: "Monitoring System" },
+    title: { vi: "Khác", en: "Other" },
+    period: { start: "2025", end: null },
+    teaser: null,
+    summary: null,
+    evidence: [],
+  };
+
+  it("rejects a title that repeats the org once normalised (case, punctuation, spacing)", () => {
+    expect(claim.safeParse({ ...row, title: { vi: "hệ  thống giám sát.", en: "Other" } }).success).toBe(false);
+    expect(claim.safeParse({ ...row, title: { vi: "Khác", en: "MONITORING — system" } }).success).toBe(false);
+  });
+
+  it("accepts distinct org and title, or a missing org", () => {
+    expect(claim.safeParse(row).success).toBe(true);
+    expect(claim.safeParse({ ...row, org: null }).success).toBe(true);
+  });
+});
+
+describe("dates (ROADMAP 9.5)", () => {
+  const at = new Date("2026-10-25T00:00:00Z");
+
+  it("knows when an end lies after the build month or year", () => {
+    expect(endsInFuture("2026-11", at)).toBe(true);
+    expect(endsInFuture("2027", at)).toBe(true);
+    expect(endsInFuture("2026-10", at)).toBe(false);
+    expect(endsInFuture("2026", at)).toBe(false);
+    expect(endsInFuture("2025-12", at)).toBe(false);
+  });
+
+  it("rejects a future end date stated as fact", () => {
+    expect(period.safeParse({ start: "2026-06", end: "2999-06" }).success).toBe(false);
+  });
+
+  it("accepts ongoing without an end, and rejects ongoing with one", () => {
+    expect(period.safeParse({ start: "2026-06", end: null, ongoing: true }).success).toBe(true);
+    expect(period.safeParse({ start: "2026-06", end: "2026-07", ongoing: true }).success).toBe(false);
+  });
+
+  it("accepts a past end", () => {
+    expect(period.safeParse({ start: "2021-09", end: "2026-06" }).success).toBe(true);
   });
 });

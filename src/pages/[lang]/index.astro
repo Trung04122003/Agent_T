@@ -23,7 +23,11 @@ const claims = inFileOrder(
 );
 const labels: LedgerLabels = {
   heading: await t("ledgerHeading", locale),
-  verified: await t("statusVerified", locale),
+  tiers: {
+    T1: await t("tierT1", locale),
+    T2: await t("tierT2", locale),
+    T3: await t("tierT3", locale),
+  },
   viewDeclassified: await t("viewDeclassified", locale),
   classifiedClosed: await t("classifiedClosed", locale),
   redacted: await t("redactedLabel", locale),

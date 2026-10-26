@@ -3,13 +3,15 @@
 // title and period of open entries; Mat adds teaser + redaction, Giai mat adds summary + evidence.
 // Classified entries only ever carry their category label.
 import type { Locale } from "../lib/i18n";
+import { tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import type { Claim } from "../lib/schema";
 import Redaction from "./Redaction.astro";
 
 export interface LedgerLabels {
   heading: string;
-  verified: string;
+  /** Legend lines for the evidence tiers (ROADMAP 9.7). */
+  tiers: Record<Tier, string>;
   viewDeclassified: string;
   classifiedClosed: string;
   redacted: string;
@@ -20,7 +22,7 @@ interface Props {
   claims: Claim[];
   locale: Locale;
   labels: LedgerLabels;
-  /** Dev only: badge entries that are not verified yet (SPEC section 6). */
+  /** Dev only: badge entries the owner has not confirmed yet (SPEC section 6). */
   showUnverified: boolean;
   seed?: string;
 }
@@ -30,6 +32,9 @@ const rows = publicClaims(claims);
 
 <section class="ledger" aria-labelledby="ledger-heading" data-ledger>
   <h2 id="ledger-heading" class="ledger__heading">{labels.heading}<span class="ledger__lens" data-lens-title></span></h2>
+  <ul class="ledger__legend" data-tier-legend>
+    {(["T1", "T2", "T3"] as const).map((t) => <li>{labels.tiers[t]}</li>)}
+  </ul>
   <ol class="ledger__list">
     {
       rows.map((c, i) => {
@@ -69,8 +74,10 @@ const rows = publicClaims(claims);
               {c.org && <span class="row__org">{c.org[locale]}</span>}
               {c.title && <span class="row__title">{c.title[locale]}</span>}
             </span>
-            {c.status === "verified" && <span class="row__stamp">{labels.verified}</span>}
-            {showUnverified && c.status !== "verified" && <span class="row__badge">UNVERIFIED</span>}
+            <span class="row__tier" data-tier={tierOf(c.evidence)}>
+              {labels.evidence} {tierOf(c.evidence)}
+            </span>
+            {showUnverified && c.status !== "confirmed" && <span class="row__badge">UNCONFIRMED</span>}
           </>
         );
 
@@ -88,7 +95,8 @@ const rows = publicClaims(claims);
             {hasPanel && (
               <div class="row__panel" id={panelId}>
                 <div class="row__inner">
-                  {teaser && <p class="row__teaser">{teaser}</p>}
+                  {/* Never both at once (ROADMAP 9.2): teaser is Mat only, summary is Giai mat only. */}
+                  {teaser && <p class="only-mat row__teaser">{teaser}</p>}
                   {summary && (
                     <div class="only-mat row__redacted">
                       <Redaction barKey={c.id} label={labels.redacted} seed={seed} />
@@ -132,8 +140,9 @@ const rows = publicClaims(claims);
   .ledger__heading,
   .row__code,
   .row__period,
-  .row__stamp,
+  .row__tier,
   .row__badge,
+  .ledger__legend,
   .row__evidence-heading {
     font-family: var(--font-mono);
     font-size: 0.75rem;
@@ -207,14 +216,26 @@ const rows = publicClaims(claims);
   .row__title {
     color: var(--ink-muted);
   }
-  .row__stamp,
+  .row__tier,
   .row__badge {
     justify-self: start;
     padding: 2px 6px;
     border: 1px solid currentColor;
   }
-  .row__stamp {
+  .row__tier {
     color: var(--accent);
+    white-space: nowrap;
+  }
+  .ledger__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space) calc(var(--space) * 3);
+    margin: 0 0 calc(var(--space) * 2);
+    padding: 0;
+    list-style: none;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: var(--ink-muted);
   }
   .row__badge {
     color: var(--ink-muted);

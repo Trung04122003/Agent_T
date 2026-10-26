@@ -3,10 +3,10 @@
     "id": "fx-verified",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": { "vi": "Tổ chức Thử Một", "en": "Test Org One" },
     "title": { "vi": "Vai trò thử", "en": "Test role" },
-    "period": { "start": "2023-01", "end": "present" },
+    "period": { "start": "2023-01", "end": null, "ongoing": true },
     "teaser": null,
     "summary": null,
     "evidence": [{ "type": "reference", "note": { "vi": "Tham chiếu thử", "en": "Test reference" } }]

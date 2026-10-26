@@ -6,7 +6,7 @@ import Ledger, { type LedgerLabels } from "./Ledger.astro";
 
 const labels: LedgerLabels = {
   heading: "Sổ cái",
-  verified: "Đã kiểm chứng",
+  tiers: { T1: "T1 — tự khai", T2: "T2 — tài liệu", T3: "T3 — liên kết" },
   viewDeclassified: "Xem bản giải mật",
   classifiedClosed: "Hồ sơ này không mở theo yêu cầu.",
   redacted: "Nội dung đã che",
@@ -45,11 +45,38 @@ describe("Ledger (ROADMAP 3.1)", () => {
     expect(html).toMatch(/row__code[^>]*>04</);
   });
 
-  it("stamps only verified entries; UNVERIFIED badge only when asked (dev)", async () => {
+  it("shows a computed evidence tier on every open row; UNCONFIRMED badge only when asked (dev)", async () => {
     const prod = await render(false);
-    expect(prod.match(/row__stamp/g)?.length).toBe(1);
-    expect(prod).not.toContain("UNVERIFIED");
+    expect(prod.match(/data-tier="T3"/g)?.length).toBe(1); // fx-verified has a public link
+    expect(prod.match(/data-tier="T1"/g)?.length).toBe(5);
+    expect(prod).not.toContain("UNCONFIRMED");
+    expect(prod).not.toMatch(/kiểm chứng/i);
     const dev = await render(true);
-    expect(dev.match(/UNVERIFIED/g)?.length).toBe(5);
+    expect(dev.match(/UNCONFIRMED/g)?.length).toBe(5);
+  });
+});
+
+describe("Ledger v2 (ROADMAP 9.2-9.3)", () => {
+  const rowHtml = (html: string, id: string) => html.match(new RegExp(`<li[^>]*id="claim-${id}"[\\s\\S]*?</h3>[\\s\\S]*?(?=<li class="row|</ol>)`))?.[0] ?? "";
+
+  it("9.2 teaser is Mat-only and summary is Giai-mat-only, never shared", async () => {
+    const html = await render(false);
+    const row = rowHtml(html, "fx-verified");
+    expect(row).toMatch(/class="only-mat row__teaser"[^>]*>Câu mở đầu thử nghiệm\./);
+    expect(row).toMatch(/class="only-giai-mat row__summary"[^>]*>Tóm tắt thử nghiệm số một/);
+    expect(row).not.toMatch(/class="row__teaser"/); // no mode-less teaser left
+  });
+
+  it("9.3 a row with a summary gets the redaction and the declassify link", async () => {
+    const row = rowHtml(await render(false), "fx-pending");
+    expect(row).toContain("only-mat row__redacted");
+    expect(row).toContain('data-declassify="fx-pending"');
+  });
+
+  it("9.3 a row without a summary gets neither redaction nor link", async () => {
+    const row = rowHtml(await render(false), "fx-plain");
+    expect(row).toContain("row__teaser");
+    expect(row).not.toContain("row__redacted");
+    expect(row).not.toContain("data-declassify");
   });
 });

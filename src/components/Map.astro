@@ -143,6 +143,10 @@ const label = (id: string) => places.find((p) => p.id === id)!.label[locale];
     font-family: var(--font-mono);
     font-size: 11px;
     fill: var(--ink-muted);
+    paint-order: stroke;
+    stroke: var(--bg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
   .map__svg .map__sea-label {
     font-size: 10px;

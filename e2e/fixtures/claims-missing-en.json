@@ -3,7 +3,7 @@
     "id": "fx-verified",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "Tổ chức Thử Một",
       "en": "Test Org One"
@@ -13,7 +13,7 @@
     },
     "period": {
       "start": "2023-01",
-      "end": "present"
+      "end": null, "ongoing": true
     },
     "teaser": null,
     "summary": null,

@@ -112,7 +112,7 @@ test("Giai mat shows summary and evidence links", async ({ page }) => {
   await expect(r.locator(".row__summary")).toBeVisible();
   await expect(r.locator(".row__evidence a")).toHaveAttribute("href", "https://example.com/evidence");
   await expect(r.locator(".redaction")).toBeHidden();
-  await expect(r.locator(".row__stamp")).toHaveText("Đã kiểm chứng");
+  await expect(r.locator(".row__tier")).toHaveText("Bằng chứng T3");
 });
 
 test("print opens every row in its Giai mat version", async ({ page }) => {
@@ -131,4 +131,25 @@ test.describe("without JavaScript", () => {
     await expect(row(page, "fx-pending").locator(".row__summary")).toBeVisible();
     await expect(row(page, "fx-pending").locator(".redaction")).toBeHidden();
   });
+});
+
+test("9.2 teaser in Mat only, summary in Giai mat only (never both)", async ({ page }) => {
+  await page.goto(`${FIXTURE}/vi/`);
+  await toggle(page, "fx-verified").click();
+  const r = row(page, "fx-verified");
+  await expect(r.locator(".row__teaser")).toBeVisible();
+  await expect(r.locator(".row__summary")).toBeHidden();
+  await page.locator("[data-mode-toggle]").click();
+  await expect(r.locator(".row__summary")).toBeVisible();
+  await expect(r.locator(".row__teaser")).toBeHidden();
+});
+
+test("9.3 redaction and link only where a summary exists", async ({ page }) => {
+  await page.goto(`${FIXTURE}/vi/`);
+  for (const id of ["fx-pending", "fx-plain"]) await toggle(page, id).click();
+  await expect(row(page, "fx-pending").locator(".redaction")).toBeVisible();
+  await expect(row(page, "fx-pending").locator("[data-declassify]")).toBeVisible();
+  await expect(row(page, "fx-plain").locator(".row__teaser")).toBeVisible();
+  await expect(row(page, "fx-plain").locator(".redaction, [data-declassify]")).toHaveCount(0);
+  await page.screenshot({ path: "test-results/screenshots/p9-ledger-mat.png", fullPage: true });
 });

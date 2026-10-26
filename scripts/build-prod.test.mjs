@@ -31,7 +31,7 @@ describe("pnpm build:prod", () => {
     const html = readFileSync("test-results/dist-fixture/vi/index.html", "utf8");
     expect(html).toContain('data-claim="fx-verified"');
     expect(html).not.toContain("fx-hold");
-    expect(html).not.toContain("UNVERIFIED");
+    expect(html).not.toContain("UNCONFIRMED");
   }, 120_000);
 });
 

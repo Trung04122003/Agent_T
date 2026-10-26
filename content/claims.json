@@ -3,7 +3,7 @@
     "id": "edu-duy-tan",
     "kind": "education",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "Đại học Duy Tân - Trường Công nghệ thông tin",
       "en": "Duy Tan University - School of Information Technology"
@@ -16,10 +16,7 @@
       "start": "2021-09",
       "end": "2026-06"
     },
-    "teaser": {
-      "vi": "Dự kiến tốt nghiệp vào tháng 6/2026",
-      "en": "Expected graduation in June 2026"
-    },
+    "teaser": null,
     "summary": {
       "vi": "Đã tốt nghiệp vào tháng 06/2026",
       "en": "Graduated in June 2026"
@@ -30,13 +27,13 @@
         "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" }
       }
     ],
-    "notes": "Chủ dự án cho biết tốt nghiệp cuối tháng 6/2026 (tin nhắn 24/10/2026); hai bản CV ghi 2021–2025. Tên ngành lệch giữa hai bản CV (EN: Software Engineering, VI: Công nghệ thông tin). Cần xác nhận mốc tốt nghiệp và tên ngành đúng theo bằng trước khi điền title."
+    "notes": "Theo tin nhắn của chủ dự án (24/10/2026): tốt nghiệp cuối tháng 6/2026; hai bản CV ghi 2021–2025. Tên ngành lệch giữa hai bản CV (EN: Software Engineering, VI: Công nghệ thông tin). Cần xác nhận mốc tốt nghiệp và tên ngành đúng theo bằng trước khi điền title."
   },
   {
     "id": "role-bbe-ldc",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "DNA BBE — Be Better Every Day",
       "en": "DNA BBE — Be Better Every Day"
@@ -50,8 +47,8 @@
       "end": "2024-02"
     },
     "teaser": {
-      "vi": "Chủ dự án cho biết quy mô 26 người, thời gian 5 tháng, chưa có mốc ngày.",
-      "en": "Project owner stated a team size of 26 people, duration of 5 months, no specific dates."
+      "vi": "Lập một Chapter mới trong BBE.",
+      "en": "Launched a new Chapter within BBE."
     },
     "summary": {
       "vi": "Một Chapter đã ra đời mang tên BBE Gryffindor Chapter, với tổng cộng 26 thành viên, trong đó có 2 Giám đốc và 1 đại sứ.",
@@ -60,13 +57,13 @@
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
     ],
-    "notes": "Chức danh chuẩn do chủ dự án cung cấp ngày 24/10/2026. Hai bản CV cũ lệch nhau (EN: tham gia vận hành; VI: Giám đốc và đại sứ). Dữ kiện từ CV: quy mô 26 người, thời gian 5 tháng, chưa có mốc ngày. summary để null, chủ dự án viết."
+    "notes": "Chức danh chuẩn do chủ dự án cung cấp ngày 24/10/2026. Hai bản CV cũ lệch nhau (EN: tham gia vận hành; VI: Giám đốc và đại sứ). Dữ kiện từ CV (cũ): quy mô 26 người, thời gian 5 tháng. Chủ dự án xác nhận 26/10/2026: giai đoạn 8 tháng (06/2023–02/2024) mới đúng; teaser chỉ nêu việc lập một Chapter, không nêu tên."
   },
   {
     "id": "role-dz-ta",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "DZ Fullstack",
       "en": "DZ Fullstack"
@@ -84,8 +81,8 @@
       "en": "Assisting instructors in programming courses for IT students in Da Nang; guiding PHP, Laravel, VueJS, Git."
     },
     "summary": {
-      "vi": "Hỗ trợ Tiến sĩ Nguyễn Quốc Long trong việc đào tạo những kiến thức nền về lập trình cho sinh viên CNTT tại Đà Nẵng, hướng dẫn sử dụng và lập trình các hệ ngôn ngữ PHP, Laravel, VueJS, Git.",
-      "en": "Assisting Dr. Nguyen Quoc Long in training IT students in Da Nang on programming fundamentals, guiding the use and development of PHP, Laravel, VueJS, Git."
+      "vi": "Hỗ trợ giảng viên trong việc đào tạo những kiến thức nền về lập trình cho sinh viên CNTT tại Đà Nẵng, hướng dẫn sử dụng và lập trình các hệ ngôn ngữ PHP, Laravel, VueJS, Git.",
+      "en": "Assisting the lecturer in training IT students in Da Nang on programming fundamentals, guiding the use and development of PHP, Laravel, VueJS, Git."
     },
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
@@ -96,10 +93,10 @@
     "id": "project-air-quality",
     "kind": "project",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
-      "vi": "Hệ thống giám sát chất lượng không khí",
-      "en": "Air Quality Monitoring System (AQI Index)"
+      "vi": "Khóa luận tốt nghiệp",
+      "en": "Graduation thesis"
     },
     "title": {
       "vi": "Hệ thống giám sát chất lượng không khí",
@@ -114,8 +111,8 @@
       "en": "Air quality monitoring system in Vietnam."
     },
     "summary": {
-      "vi": "Hệ thống giám sát chất lượng không khí tại Việt Nam, cho phép theo dõi và phân tích dữ liệu chất lượng không khí theo thời gian thực.",
-      "en": "Air quality monitoring system in Vietnam, allowing real-time tracking and analysis of air quality data."
+      "vi": "Hệ thống giám sát chất lượng không khí tại Việt Nam, cho phép theo dõi và phân tích dữ liệu chất lượng không khí theo thời gian thực. Khóa luận tốt nghiệp, đề tài cá nhân, thực hiện và bảo vệ hoàn toàn bằng tiếng Anh; điểm 9.1/10.",
+      "en": "Air quality monitoring system in Vietnam, allowing real-time tracking and analysis of air quality data. Graduation thesis, an individual project, written and defended entirely in English; graded 9.1/10."
     },
     "evidence": [
       { "type": "link", "url": "https://github.com/Trung04122003/aqm_front_end.git", "note": { "vi": "Mã nguồn dự án FE trên GitHub", "en": "Front-end source code on GitHub" } },
@@ -127,7 +124,7 @@
     "id": "role-jci",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "JCI Đà Nẵng Junior Club",
       "en": "JCI Da Nang Junior Club"
@@ -141,12 +138,12 @@
       "end": "2026-06"
     },
     "teaser": {
-      "vi": "Chủ dự án cho biết đã tham gia JCI Đà Nẵng Junior Club từ tháng 11/2025.",
-      "en": "Project owner stated that they joined JCI Da Nang Junior Club in November 2025."
+      "vi": "Tham gia JCI Đà Nẵng Junior Club từ tháng 11/2025.",
+      "en": "Joined JCI Da Nang Junior Club in November 2025."
     },
     "summary": {
-      "vi": "Chủ dự án cho biết đã tham gia JCI Đà Nẵng Junior Club từ tháng 11/2025, giữ chức danh Phó Chủ tịch phụ trách Đào tạo và Phát triển hội viên.",
-      "en": "Project owner stated that they joined JCI Da Nang Junior Club in November 2025, holding the position of Vice President in charge of Training and Member Development."
+      "vi": "Phụ trách mảng đào tạo và phát triển hội viên của câu lạc bộ.",
+      "en": "Responsible for the club's training and member development."
     },
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
@@ -175,51 +172,59 @@
   {
     "id": "role-prudential",
     "kind": "role",
-    "visibility": "open",
-    "status": "verified",
+    "visibility": "hold",
+    "status": "confirmed",
     "org": {
-      "vi": "Prudential - Prudential Ngũ Hành Sơn",
-      "en": "Prudential - Prudential Ngu Hanh Son"
+      "vi": "Prudential Việt Nam",
+      "en": "Prudential Vietnam"
     },
     "title": {
       "vi": "Tư vấn viên bảo hiểm",
-      "en": "Insurance Consultant"
+      "en": "Insurance advisor"
     },
     "period": {
       "start": "2026-06",
-      "end": "2027-06"
+      "end": null,
+      "ongoing": true
     },
-    "teaser": null,
-    "summary": null,
+    "teaser": {
+      "vi": "Tư vấn bảo hiểm nhân thọ tại văn phòng Ngũ Hành Sơn, Đà Nẵng.",
+      "en": "Life insurance advisor at the Ngu Hanh Son office, Da Nang."
+    },
+    "summary": {
+      "vi": "Tư vấn viên bảo hiểm nhân thọ, có chứng chỉ hành nghề sau kỳ thi của Bộ Tài chính. Làm việc tại văn phòng Ngũ Hành Sơn, Đà Nẵng.",
+      "en": "Licensed life insurance advisor, certified after the Ministry of Finance examination. Based at the Ngu Hanh Son office, Da Nang."
+    },
     "evidence": [
-      { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
+      { "type": "document-on-request", "note": { "vi": "Chứng chỉ tư vấn viên bảo hiểm nhân thọ (kỳ thi của Bộ Tài chính), cung cấp khi có yêu cầu", "en": "Life insurance advisor certificate (Ministry of Finance examination), available on request" } }
     ],
-    "notes": "Cần bộ phận tuân thủ của Prudential duyệt cách trình bày chức danh và liên kết trước khi công khai. Hồ sơ khách hàng không bao giờ đưa vào."
+    "notes": "Chứng chỉ do Bộ Tài chính và Hiệp hội bảo hiểm nhân thọ cấp đầu tháng 7/2026 (chủ dự án, 26/10/2026); đó là chứng chỉ hành nghề, không phải sự cho phép đăng của Prudential. Cần bộ phận tuân thủ của Prudential duyệt cách trình bày chức danh và liên kết trước khi công khai. Hồ sơ khách hàng không bao giờ đưa vào."
   },
   {
     "id": "role-bluesea",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": {
       "vi": "Công ty trách nhiệm hữu hạn Bluesea Food",
       "en": "Bluesea Food Co., Ltd."
     },
     "title": {
-      "vi": "Nhân viên kinh doanh part-time",
-      "en": "Part-time Sales Staff"
+      "vi": "Kinh doanh (tạm dừng vai trò)",
+      "en": "Sales (role on pause)"
     },
     "period": {
       "start": "2025-06",
-      "end": "2026-12"
+      "end": null,
+      "ongoing": true
     },
     "teaser": {
-      "vi": "Chủ dự án cho biết gia đình sở hữu công ty.",
-      "en": "Project owner stated that the family owns the company."
+      "vi": "Công ty gia đình. Vai trò kinh doanh đang tạm dừng.",
+      "en": "Family company. Sales role currently paused."
     },
     "summary": {
-      "vi": "Chủ dự án cho biết gia đình sở hữu công ty, dự kiến quay lại năm 2027.",
-      "en": "Project owner stated that the family owns the company, expected to return in 2027."
+      "vi": "Công ty phân phối thực phẩm của gia đình, phục vụ khách sạn, nhà hàng và quán cà phê tại Đà Nẵng – Hội An. Vai trò kinh doanh tạm dừng; việc chăm sóc khách hàng hiện có vẫn được duy trì.",
+      "en": "Family-owned food distributor serving hotels, restaurants and cafés in Da Nang and Hoi An. The sales role is paused; care for existing customers continues."
     },
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }

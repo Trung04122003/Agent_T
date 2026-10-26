@@ -80,3 +80,13 @@ describe("check-leaks noindex rule", () => {
     expect(r.out).toContain("page.html: page without noindex");
   });
 });
+
+describe("check-leaks shared text", () => {
+  it("does not flag text a hold entry shares with a public entry", () => {
+    const pub = claims.find((c) => c.visibility === "open" && c.evidence?.length);
+    const shared = pub.evidence[0].note.vi;
+    const r = run("shared-note", { "index.html": page(shared) });
+    expect(r.out).toContain("check-leaks: OK");
+    expect(r.code).toBe(0);
+  });
+});

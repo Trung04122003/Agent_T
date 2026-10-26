@@ -15,8 +15,9 @@ function formatPoint(point: string): string {
 
 export function formatPeriod(period: Period, presentLabel: string): string {
   const start = formatPoint(period.start);
+  if (period.ongoing) return `${start} – ${presentLabel}`;
   if (period.end === null) return start;
-  return `${start} – ${period.end === "present" ? presentLabel : formatPoint(period.end)}`;
+  return `${start} – ${formatPoint(period.end)}`;
 }
 
 /** Entries that may be rendered: `hold` never is (SPEC section 6), even if one slips past the loader. */

@@ -20,7 +20,7 @@ test("7.2 entry shows the question and three directions; choosing one sets ?lens
   await expect(page.locator("[data-lens-title]")).toHaveText("Khách hàng");
   const client = await rowIds(page);
   expect(client).not.toEqual(initial);
-  expect(client[0]).toBe("role-prudential");
+  expect(client[0]).toBe("role-bluesea"); // role-prudential is on hold (ROADMAP 9.6)
 
   await card(page, "curious").click();
   await expect(page).toHaveURL(/\?lens=curious$/);
@@ -92,7 +92,7 @@ test("7.3 reduced motion: reorders at once", async ({ page }) => {
       running: document.getAnimations().length,
     };
   });
-  expect(result).toEqual({ first: "role-prudential", running: 0 });
+  expect(result).toEqual({ first: "role-bluesea", running: 0 });
 });
 
 test("7.4 the three directions give three different orders of the same ids", async ({ page }) => {

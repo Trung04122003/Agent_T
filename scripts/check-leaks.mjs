@@ -32,9 +32,21 @@ function collectStrings(value, out, key = "") {
   return out;
 }
 
+// A hold entry's string is only secret if no public entry uses the same text (e.g. a shared
+// evidence note like "available on request"); otherwise matching it would be a false alarm.
+const publicStrings = new Set(
+  claims
+    .filter((c) => c.kind === "classified" || c.visibility !== "hold")
+    .flatMap((c) => collectStrings({ ...c, notes: undefined }, []))
+    .map(norm),
+);
 const secrets = [];
 for (const c of claims) {
-  if (c.visibility === "hold") for (const s of collectStrings(c, [])) secrets.push({ rule: `hold text (${c.id})`, s });
+  if (c.visibility === "hold") {
+    for (const s of collectStrings({ ...c, notes: undefined }, [])) {
+      if (!publicStrings.has(norm(s))) secrets.push({ rule: `hold text (${c.id})`, s });
+    }
+  }
   if (typeof c.notes === "string") secrets.push({ rule: `notes (${c.id})`, s: c.notes });
 }
 for (const p of places) if (typeof p.notes === "string") secrets.push({ rule: `notes (place ${p.id})`, s: p.notes });

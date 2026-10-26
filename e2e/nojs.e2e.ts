@@ -27,7 +27,8 @@ for (const locale of ["vi", "en"] as const) {
     for (const c of claims) {
       if (c.kind === "classified") expected.push(c.label![locale]);
       else if (c.visibility === "open") {
-        for (const k of ["org", "title", "teaser", "summary"] as const) if (c[k]) expected.push(c[k]![locale]);
+        // Without JS the page reads as Giai mat: summary, not teaser (ROADMAP 9.2).
+        for (const k of ["org", "title", "summary"] as const) if (c[k]) expected.push(c[k]![locale]);
         for (const e of c.evidence ?? []) expected.push(e.note[locale]);
       }
     }

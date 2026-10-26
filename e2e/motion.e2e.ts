@@ -27,7 +27,13 @@ async function instrument(page: Page, removeViewTransitions = false) {
 async function clickAndCapture(page: Page, selector: string): Promise<Anim[]> {
   await page.locator(selector).evaluate((el: HTMLElement) => el.click());
   await page.waitForFunction(() => document.getAnimations().some((a) => a.playState === "running"));
-  await page.waitForFunction(() => document.documentElement.dataset["scene"] !== undefined || !document.startViewTransition);
+  // The scene attribute is set inside the transition callback, but the pseudo-element animations
+  // only start a frame later: wait for the reveal itself (or for the fallback, which has none).
+  await page.waitForFunction(
+    () =>
+      !document.startViewTransition ||
+      document.getAnimations().some((a) => (a.effect as KeyframeEffect).pseudoElement === "::view-transition-new(root)"),
+  );
   return page.evaluate(() =>
     // Mode-change layer only: the map's own draw-in (UX section 3, map row) is tested in map-motion.
     document

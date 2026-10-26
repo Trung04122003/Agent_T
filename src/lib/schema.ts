@@ -9,20 +9,63 @@ export const localized = z.strictObject({ vi: text, en: text });
 
 const yearMonth = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, "Expected YYYY or YYYY-MM");
 
-export const period = z.strictObject({
-  start: yearMonth,
-  end: z.union([yearMonth, z.literal("present")]).nullable(),
-});
+/** True when a YYYY or YYYY-MM end lies after the month (or year) of `now`. */
+export function endsInFuture(end: string, now: Date = new Date()): boolean {
+  const [y, m] = end.split("-").map(Number) as [number, number | undefined];
+  const ny = now.getFullYear();
+  const nm = now.getMonth() + 1;
+  return m === undefined ? y > ny : y > ny || (y === ny && m > nm);
+}
 
-export const status = z.enum(["verified", "needs-evidence", "needs-decision", "needs-approval"]);
+/**
+ * A period never states a future end as fact (ROADMAP 9.5): something still going on uses
+ * `ongoing: true` (shown as "present") and has no end; otherwise the end must not be after the build.
+ */
+export const period = z
+  .strictObject({
+    start: yearMonth,
+    end: yearMonth.nullable(),
+    ongoing: z.literal(true).optional(),
+  })
+  .superRefine((p, ctx) => {
+    if (p.ongoing && p.end !== null) {
+      ctx.addIssue({ code: "custom", path: ["end"], message: "an ongoing period has no end" });
+    }
+    if (p.end !== null && endsInFuture(p.end)) {
+      ctx.addIssue({ code: "custom", path: ["end"], message: "end is in the future: use ongoing: true" });
+    }
+  });
 
-export const evidence = z.strictObject({
-  type: z.enum(["link", "document-on-request", "reference"]),
-  url: z.url().optional(),
-  // Shown on the page, so vi and en like every displayed string (SPEC section 7; section 6 lists
-  // it as a plain string, which contradicts section 7).
-  note: localized,
-});
+/** `confirmed`: the owner confirms the content (ROADMAP 9.7). How strong the proof is shows as a tier. */
+export const status = z.enum(["confirmed", "needs-evidence", "needs-decision", "needs-approval"]);
+
+export const evidence = z
+  .strictObject({
+    type: z.enum(["link", "document-on-request", "reference"]),
+    url: z.url().optional(),
+    // Shown on the page, so vi and en like every displayed string (SPEC section 7; section 6 lists
+    // it as a plain string, which contradicts section 7).
+    note: localized,
+    /** reference only: the referee agreed to be named (makes the entry T3). */
+    consent: z.boolean().optional(),
+  })
+  .superRefine((e, ctx) => {
+    if (e.consent !== undefined && e.type !== "reference") {
+      ctx.addIssue({ code: "custom", path: ["consent"], message: "consent applies to a reference only" });
+    }
+  });
+
+/** Compare labels loosely: Unicode NFC, case, punctuation and spacing do not count. */
+export function sameLabel(a: string, b: string): boolean {
+  const norm = (s: string) =>
+    s
+      .normalize("NFC")
+      .toLowerCase()
+      .replace(/[\p{P}\p{S}]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  return norm(a) === norm(b);
+}
 
 const openClaim = z
   .strictObject({
@@ -36,11 +79,16 @@ const openClaim = z
     teaser: localized.nullable(),
     summary: localized.nullable(),
     evidence: z.array(evidence),
+    /** Internal record that the organisation agreed to publication (ROADMAP 9.6). Never rendered. */
+    approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).optional(),
     notes: z.string().optional(),
   })
   .superRefine((c, ctx) => {
-    if (c.status === "verified" && c.evidence.length === 0) {
-      ctx.addIssue({ code: "custom", path: ["evidence"], message: "verified requires evidence" });
+    // A row must not repeat itself (ROADMAP 9.4).
+    for (const l of ["vi", "en"] as const) {
+      if (c.org && c.title && sameLabel(c.org[l], c.title[l])) {
+        ctx.addIssue({ code: "custom", path: ["title", l], message: "title repeats org" });
+      }
     }
   });
 
@@ -83,6 +131,12 @@ export function withoutNotes<T extends { notes?: unknown }>(entry: T): Omit<T, "
   return rest;
 }
 
+/** Internal fields (notes, approval) never reach the build. */
+export function withoutInternal<T extends { notes?: unknown; approval?: unknown }>(entry: T): Omit<T, "notes" | "approval"> {
+  const { notes: _notes, approval: _approval, ...rest } = entry;
+  return rest;
+}
+
 export const identity = z.strictObject({
   legalName: text,
   codenames: z.array(
@@ -114,7 +168,7 @@ export const lenses = z.strictObject({
 });
 
 /** content/ui.json: interface microcopy (UX section 6), one localized string per key. */
-export const ui = z.record(z.string().regex(/^[a-z][A-Za-z]*$/), localized);
+export const ui = z.record(z.string().regex(/^[a-z][A-Za-z0-9]*$/), localized);
 
 export const place = z.strictObject({
   id: text,

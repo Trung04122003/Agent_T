@@ -9,7 +9,7 @@ describe("ledger formatting", () => {
 
   it("formats periods as MM/YYYY or YYYY, never a full date", () => {
     expect(formatPeriod({ start: "2024-02", end: "2024-06" }, "nay")).toBe("02/2024 – 06/2024");
-    expect(formatPeriod({ start: "2021", end: "present" }, "nay")).toBe("2021 – nay");
+    expect(formatPeriod({ start: "2021", end: null, ongoing: true }, "nay")).toBe("2021 – nay");
     expect(formatPeriod({ start: "2019", end: null }, "nay")).toBe("2019");
   });
 });

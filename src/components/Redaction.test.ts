@@ -7,7 +7,7 @@ import Redaction from "./Redaction.astro";
 
 const labels = {
   heading: "H",
-  verified: "V",
+  tiers: { T1: "T1", T2: "T2", T3: "T3" },
   viewDeclassified: "Xem bản giải mật",
   classifiedClosed: "Hồ sơ này không mở theo yêu cầu.",
   redacted: "Nội dung đã che",

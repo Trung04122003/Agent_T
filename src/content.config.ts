@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { file } from "astro/loaders";
 import { CLAIMS_FILE } from "./lib/paths";
-import { claim, identity as identitySchema, localized, place, withoutNotes } from "./lib/schema";
+import { claim, identity as identitySchema, localized, place, withoutInternal, withoutNotes } from "./lib/schema";
 
 const claims = defineCollection({
   loader: file(CLAIMS_FILE, {
@@ -9,7 +9,7 @@ const claims = defineCollection({
     // parser errors, so validation is left to `schema` (which fails the build).
     parser: (text) => (JSON.parse(text) as { visibility?: string }[]).filter((c) => c.visibility !== "hold"),
   }),
-  schema: claim.transform((c) => (c.kind === "classified" ? c : withoutNotes(c))),
+  schema: claim.transform((c) => (c.kind === "classified" ? c : withoutInternal(c))),
 });
 
 const identity = defineCollection({

@@ -3,10 +3,10 @@
     "id": "fx-verified",
     "kind": "role",
     "visibility": "open",
-    "status": "verified",
+    "status": "confirmed",
     "org": { "vi": "Tổ chức Thử Một", "en": "Test Org One" },
     "title": { "vi": "Vai trò thử", "en": "Test role" },
-    "period": { "start": "2023-01", "end": "present" },
+    "period": { "start": "2023-01", "end": null, "ongoing": true },
     "teaser": { "vi": "Câu mở đầu thử nghiệm.", "en": "A test teaser." },
     "summary": { "vi": "Tóm tắt thử nghiệm số một, chỉ hiện ở Giải mật.", "en": "Test summary one, Declassified only." },
     "evidence": [
@@ -36,7 +36,7 @@
     "org": { "vi": "Trường thử", "en": "Test School" },
     "title": null,
     "period": { "start": "2019", "end": null },
-    "teaser": null,
+    "teaser": { "vi": "Câu mở đầu thử, không có tóm tắt.", "en": "Test teaser without a summary." },
     "summary": null,
     "evidence": []
   },
