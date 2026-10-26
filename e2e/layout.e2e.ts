@@ -42,8 +42,11 @@ test("phone: control bar sits at the bottom, 56px tall, with a 44px target", asy
 test("desktop: control bar at the top, mode switch at the end", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/vi/");
+  // Right under the classification strip (ROADMAP 13.1), which opens the page.
+  const strip = (await page.locator('[data-banner="top"]').boundingBox())!;
+  expect(strip.y).toBe(0);
   const bar = (await page.locator("header.controls").boundingBox())!;
-  expect(bar.y).toBe(0);
+  expect(Math.abs(bar.y - (strip.y + strip.height))).toBeLessThanOrEqual(1);
   const button = (await page.locator("[data-mode-toggle]").boundingBox())!;
   expect(button.x + button.width).toBeGreaterThan(1280 - 40);
 });

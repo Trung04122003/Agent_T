@@ -2,10 +2,11 @@
 // Ledger (SPEC sections 5-6, UX section 2): one row per public claim. Both modes always show org,
 // title and period of open entries; Mat adds teaser + redaction, Giai mat adds summary + evidence.
 // Classified entries only ever carry their category label.
-import type { Locale } from "../lib/i18n";
+import { t, type Locale } from "../lib/i18n";
 import { tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import type { Claim } from "../lib/schema";
+import PageMark from "./PageMark.astro";
 import Redaction from "./Redaction.astro";
 
 export interface LedgerLabels {
@@ -28,9 +29,11 @@ interface Props {
 }
 const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
+const stamp = await t("stampOpened", locale);
 ---
 
 <section class="ledger sheet sheet--block" aria-labelledby="ledger-heading" data-ledger>
+  <PageMark locale={locale} page="ledger" />
   <h2 id="ledger-heading" class="ledger__heading">{labels.heading}<span class="ledger__lens" data-lens-title></span></h2>
   <ul class="ledger__legend" data-tier-legend>
     {(["T1", "T2", "T3"] as const).map((t) => <li>{labels.tiers[t]}</li>)}
@@ -98,6 +101,11 @@ const rows = publicClaims(claims);
             {hasPanel && (
               <div class="row__panel" id={panelId}>
                 <div class="row__inner">
+                  {/* Stamp on opening (ROADMAP 13.3), Mat only; decorative. */}
+                  <p class="only-mat row__stamp" aria-hidden="true" data-stamp>
+                    <span>{stamp}</span>
+                    <span>{code}</span>
+                  </p>
                   {/* Never both at once (ROADMAP 9.2): teaser is Mat only, summary is Giai mat only. */}
                   {teaser && <p class="only-mat row__teaser">{teaser}</p>}
                   {summary && (
@@ -287,6 +295,42 @@ const rows = publicClaims(claims);
   @media (min-width: 720px) {
     .row__inner {
       padding-inline-start: calc(5ch + 22ch + var(--space) * 4);
+    }
+  }
+  /* Stamp (ROADMAP 13.3): a double-ruled brass box set at an angle. In the flow on phones, in the
+     free space right of the text on wide screens. Animated by ledger.ts on opening. */
+  .row__stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space);
+    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 3px double var(--accent);
+    rotate: -6deg;
+  }
+  .row__stamp span + span {
+    padding-inline-start: var(--space);
+    border-inline-start: 1px solid var(--accent);
+  }
+  .row__inner > .row__stamp {
+    margin-block-start: var(--space);
+  }
+  @media (min-width: 1100px) {
+    /* A column kept free for the stamp: text and redaction bars never run under it. */
+    .row__inner {
+      position: relative;
+      padding-inline-end: 168px;
+    }
+    .row__inner > .row__stamp {
+      position: absolute;
+      top: var(--space);
+      inset-inline-end: calc(var(--space) * 3);
+      margin: 0;
     }
   }
   .row__redacted {

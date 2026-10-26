@@ -80,6 +80,15 @@ test("View declassified link", async ({ page }) => {
   check("declassify link", await stopSampling(page));
 });
 
+test("opening a ledger row in Mat (panel + stamp)", async ({ page }) => {
+  await page.goto("/vi/");
+  const toggle = page.locator("[data-row-toggle]").first();
+  await toggle.scrollIntoViewIfNeeded();
+  await startSampling(page);
+  await toggle.click();
+  check("row open", await stopSampling(page, 800));
+});
+
 test("lens change", async ({ page }) => {
   await page.goto("/vi/");
   await page.locator("[data-lens-nav]").scrollIntoViewIfNeeded();

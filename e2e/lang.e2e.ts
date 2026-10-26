@@ -84,6 +84,44 @@ test("reduced motion: the codename changes at once, no scrambled frame, no fade"
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 });
 
+test("P12: the identity card and mode button decode, then the positioning appears word by word", async ({ page }) => {
+  await page.goto("/vi/");
+  await page.evaluate(() => {
+    const w = window as unknown as { __frames: Record<string, string[]> };
+    w.__frames = { label: [], button: [] };
+    new MutationObserver(() => {
+      const label = document.querySelector(".gate__label")?.textContent ?? "";
+      const button = document.querySelector("[data-mode-toggle]")?.textContent?.trim() ?? "";
+      if (w.__frames.label!.at(-1) !== label) w.__frames.label!.push(label);
+      if (w.__frames.button!.at(-1) !== button) w.__frames.button!.push(button);
+    }).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+  });
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+  // Word by word: one opacity animation per word, starting after the decode (420 ms), 70 ms apart.
+  await page.waitForFunction(() => document.querySelectorAll(".gate__positioning span").length > 0);
+  const words = await page.evaluate(() =>
+    [...document.querySelectorAll(".gate__positioning span")].map((s) => {
+      const a = s.getAnimations()[0]!;
+      const t = (a.effect as KeyframeEffect).getComputedTiming();
+      return { delay: Math.round(Number(t.delay)), duration: Number(t.duration) };
+    }),
+  );
+  expect(words.length).toBe(identity.positioning.en.split(/\s+/).length);
+  words.forEach((w, i) => expect(w).toEqual({ delay: 420 + i * 70, duration: 240 }));
+
+  // Ends as plain text with the right strings, nothing left over.
+  await expect(page.locator(".gate__positioning span")).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator(".gate__positioning")).toHaveText(identity.positioning.en);
+  await expect(page.locator(".gate__label")).toHaveText(ui.codenameLabel.en);
+  await expect(page.locator("[data-mode-toggle]")).toHaveText(ui.modeGiaiMat.en);
+  await expect(page.locator(".gate__label")).not.toHaveAttribute("aria-label", /.+/);
+  const frames = await page.evaluate(() => (window as unknown as { __frames: Record<string, string[]> }).__frames);
+  expect(frames.label!.filter((f) => f !== ui.codenameLabel.en).length).toBeGreaterThan(3); // scrambled
+  expect(frames.button!.filter((f) => f !== ui.modeGiaiMat.en).length).toBeGreaterThan(3);
+});
+
 test("ctrl+click keeps the browser's default (new tab), no in-place swap", async ({ page, context }) => {
   await page.goto("/vi/");
   const [popup] = await Promise.all([context.waitForEvent("page"), page.locator("[data-lang-switch]:not([aria-current])").click({ modifiers: ["Control"] })]);

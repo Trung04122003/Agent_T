@@ -88,5 +88,9 @@ test("Gate contains no text that is missing from content/", async ({ page }) => 
   });
   expect(texts.length).toBeGreaterThan(0);
   const allowed = allowedStrings();
-  expect(texts.filter((s) => !allowed.has(s))).toEqual([]);
+  // Built surface only (ROADMAP 13.2): the file number (codename + build yymm) and the page mark.
+  const codename = (await page.locator("#gate-codename").textContent())!.trim();
+  const fileNo = new RegExp(`^${codename.toUpperCase()}-\\d{4}$`);
+  allowed.add(`${ui.pageLabel.vi} 1/3`);
+  expect(texts.filter((s) => !allowed.has(s) && !fileNo.test(s))).toEqual([]);
 });

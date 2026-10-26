@@ -1,0 +1,43 @@
+---
+// Page mark on a sheet's top edge (ROADMAP 13.2): file number and "Page 2/3". Surface only.
+import { t, type Locale } from "../lib/i18n";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { BUILT, fileNumber, pageOf, type PageId } from "../lib/dossier";
+
+interface Props {
+  locale: Locale;
+  page: PageId;
+}
+const { locale, page } = Astro.props;
+const { n, of } = pageOf(page);
+const file = fileNumber(codenameFor(await getIdentity(), locale).name, BUILT);
+const label = await t("pageLabel", locale);
+---
+
+<p class="page-mark" aria-hidden="true" data-page-mark={page}>
+  <span>{file}</span>
+  <span>{label} {n}/{of}</span>
+</p>
+
+<style>
+  /* Sits on the sheet's top border, like a tab on a file folder. */
+  .page-mark {
+    position: absolute;
+    top: 0;
+    inset-inline-end: calc(var(--space) * 2);
+    display: flex;
+    gap: 0.8em;
+    margin: 0;
+    padding: 0 var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--bg);
+    transform: translateY(-50%);
+  }
+  .page-mark span + span {
+    color: var(--accent);
+  }
+</style>

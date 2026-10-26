@@ -1,11 +1,11 @@
 // Language switch, option (b) chosen at ROADMAP 5.0: fetch the other locale's page and swap the
-// control bar, main and footer in place. <html> keeps the reader's mode; history and Back work.
+// classification strips, control bar, main and footer in place. <html> keeps the reader's mode; history and Back work.
 import { initModeToggle } from "./declassify";
-import { revealName } from "./decode";
+import { revealGate } from "./decode";
 import { initLedger } from "./ledger";
 import { initLens } from "./lens";
 
-const REGIONS = ["header.controls", "main", "footer"];
+const REGIONS = ["[data-banner=\"top\"]", "header.controls", "main", "footer", "[data-banner=\"bottom\"]"];
 const FADE_MS = 200;
 
 async function show(url: string, push: boolean): Promise<void> {
@@ -45,11 +45,8 @@ async function show(url: string, push: boolean): Promise<void> {
   }
   const codename = document.querySelector<HTMLElement>("#gate-codename");
   const live = document.querySelector<HTMLElement>("[data-lang-live]");
-  if (codename) {
-    const name = codename.textContent ?? "";
-    if (live) live.textContent = name; // announce only the new name, not the page
-    await revealName(codename, name, root.dir);
-  }
+  if (codename && live) live.textContent = codename.textContent ?? ""; // announce only the new name
+  await revealGate(root.dir);
 }
 
 let ready = false;

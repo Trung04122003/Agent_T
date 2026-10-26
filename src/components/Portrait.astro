@@ -19,6 +19,11 @@ const { locale, mat, giaiMat, alt } = Astro.props;
 const hasPhotos = usePhotos(mat, giaiMat, alt);
 const label = await t("portraitLabel", locale);
 
+// Viewfinder (ROADMAP 13.4), Mat only: vector lines over the frame, in a 400 x 500 box (4:5).
+const W = 400;
+const H = 500;
+const ticks = (len: number, step: number) => Array.from({ length: Math.floor(len / step) - 1 }, (_, i) => (i + 1) * step);
+
 const picture = {
   formats: ["avif", "webp"] as ("avif" | "webp")[],
   fallbackFormat: "webp" as const,
@@ -53,6 +58,29 @@ const picture = {
       <Picture {...picture} src={placeholder} alt="" class="portrait__img" loading="eager" data-placeholder />
     )
   }
+  <svg class="portrait__finder only-mat" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false" data-finder>
+    <!-- Edge rulers: short ticks every 20, long every 100. -->
+    <g class="finder__ticks">
+      {ticks(H, 20).map((y) => <line x1="0" y1={y} x2={y % 100 ? 6 : 14} y2={y} />)}
+      {ticks(H, 20).map((y) => <line x1={W} y1={y} x2={W - (y % 100 ? 6 : 14)} y2={y} />)}
+      {ticks(W, 20).map((x) => <line x1={x} y1={H} x2={x} y2={H - (x % 100 ? 6 : 14)} />)}
+    </g>
+    <!-- Thirds: small crosses where the lines would meet. -->
+    <g class="finder__thirds">
+      {
+        [W / 3, (2 * W) / 3].flatMap((x) =>
+          [H / 3, (2 * H) / 3].map((y) => <path d={`M${x - 6} ${y}h12M${x} ${y - 6}v12`} />),
+        )
+      }
+    </g>
+    <!-- Centre reticle: ring, broken crosshair, four inner ticks. -->
+    <g class="finder__reticle" transform={`translate(${W / 2} ${H / 2})`}>
+      <circle r="34" />
+      <circle r="2" class="finder__dot" />
+      <path d="M-90 0h46M44 0h46M0 -90v46M0 44v46" />
+      <path d="M-34 0h8M26 0h8M0 -34v8M0 26v8" />
+    </g>
+  </svg>
 </div>
 
 <style>
@@ -76,6 +104,26 @@ const picture = {
     text-transform: uppercase;
     color: var(--ink);
     background: var(--surface);
+  }
+  .portrait__finder {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+  }
+  .portrait__finder :is(line, path, circle) {
+    vector-effect: non-scaling-stroke;
+  }
+  .finder__ticks,
+  .finder__thirds {
+    opacity: 0.55;
+  }
+  .finder__dot {
+    fill: var(--accent);
   }
   .portrait :global(img[data-placeholder]) {
     opacity: 0.25;

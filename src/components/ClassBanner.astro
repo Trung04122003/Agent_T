@@ -1,0 +1,83 @@
+---
+// Classification strip (ROADMAP 13.1-13.2), top and bottom of the page like a real file, in our
+// own words only: "Personal file · Level: Classified", the file number and the build DTG.
+// Mat: a solid brass band. Giai mat: the same band opened up, the old level struck through.
+// Decorative for screen readers (the mode switch already announces the level).
+import { t, type Locale } from "../lib/i18n";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { BUILT, dtg, fileNumber } from "../lib/dossier";
+
+interface Props {
+  locale: Locale;
+  position: "top" | "bottom";
+}
+const { locale, position } = Astro.props;
+const codename = codenameFor(await getIdentity(), locale);
+const [file, level, mat, giaiMat, fileNo] = await Promise.all(
+  ["portraitLabel", "classLevelLabel", "modeMat", "modeGiaiMat", "fileNoLabel"].map((k) => t(k, locale)),
+);
+---
+
+<div class={`banner banner--${position}`} aria-hidden="true" data-banner={position}>
+  <p class="banner__level">
+    <span>{file}</span>
+    <span class="banner__sep">·</span>
+    <span>
+      {level}:{" "}
+      <span class="only-mat">{mat}</span>
+      <span class="only-giai-mat"><s>{mat}</s> {giaiMat}</span>
+    </span>
+  </p>
+  <p class="banner__meta" lang="en">
+    <span lang={locale}>{fileNo}</span>
+    <span data-file-no>{fileNumber(codename.name, BUILT)}</span>
+    <span class="banner__sep">·</span>
+    <span>DTG</span>
+    <span data-dtg>{dtg(BUILT)}</span>
+  </p>
+</div>
+
+<style>
+  .banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 2px calc(var(--space) * 3);
+    padding: 6px var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--bg);
+    border-block: 1px solid var(--accent);
+  }
+  .banner p {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 0.6em;
+    margin: 0;
+  }
+  .banner__meta {
+    font-weight: 400;
+    letter-spacing: 0.08em;
+  }
+  @media (min-width: 720px) {
+    .banner {
+      justify-content: space-between;
+    }
+  }
+  /* Mat: solid band, the level reads first. Text on the accent is --bg (as the pressed toggle). */
+  @media not print {
+    :global(:root[data-js][data-mode="mat"]) .banner {
+      color: var(--bg);
+      background: var(--accent);
+    }
+  }
+  .banner s {
+    text-decoration-thickness: 2px;
+  }
+</style>

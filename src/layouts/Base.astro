@@ -5,6 +5,7 @@ import "../styles/base.css";
 import "../styles/motion.css";
 import LangSwitch from "../components/LangSwitch.astro";
 import ModeToggle from "../components/ModeToggle.astro";
+import ClassBanner from "../components/ClassBanner.astro";
 import { t, type Locale } from "../lib/i18n";
 import { getIdentity } from "../lib/identity";
 import { dirFor, localeReport, LOCALES } from "../lib/locales";
@@ -56,6 +57,7 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
     {path !== undefined && published.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
   </head>
   <body>
+    <ClassBanner locale={locale} position="top" />
     <header class="controls">
       <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} locales={published} />}<slot name="controls-start" /></div>
       <div class="controls__end">
@@ -69,5 +71,6 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
     <footer class="footer sheet sheet--block">
       <p class="footer__updated">{updatedLabel}: <time datetime={updated.iso}>{updated.text}</time></p>
     </footer>
+    <ClassBanner locale={locale} position="bottom" />
   </body>
 </html>

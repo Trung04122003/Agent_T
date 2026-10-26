@@ -9,6 +9,7 @@ import topo from "../assets/map/region.topo.json";
 import { t, type Locale } from "../lib/i18n";
 import { inFileOrder } from "../lib/ledger";
 import { buildMap, VIEW } from "../lib/map";
+import PageMark from "./PageMark.astro";
 import type { Topology } from "topojson-specification";
 
 interface Props {
@@ -45,6 +46,7 @@ const seas = [
 ---
 
 <section class="map sheet sheet--block" aria-labelledby="map-title" data-map>
+  <PageMark locale={locale} page="map" />
   <p class="map__kicker">{heading}</p>
   <h2 id="map-title" class="map__title">{title}</h2>
   <div class="map__body">
@@ -97,6 +99,12 @@ const seas = [
                 <g class={`map__point map__point--${role}`} style={`--i:${i}`} transform={`translate(${p.x} ${p.y})`} data-place={p.id}>
                   {/* Counter-scaled while zoomed: marks and labels keep their size on screen. */}
                   <g class="map__fixed">
+                    {/* Viewfinder on the active place (ROADMAP 13.4), Mat only: ring and crosshair. */}
+                    <g class="map__reticle">
+                      <path class="map__cross" d="M-2000 0H-22M22 0H2000M0 -2000V-22M0 22V2000" />
+                      <circle r="15" />
+                      <path d="M-15 0h6M9 0h6M0 -15v6M0 9v6" />
+                    </g>
                     <circle class="map__halo" r="4" />
                     {role === "origin" && <circle class="map__ring" r="7" />}
                     <circle class="map__dot" r={role === "current" ? 5.5 : 4} />
@@ -323,6 +331,23 @@ const seas = [
   .map__islands circle,
   .map__dot {
     fill: var(--accent);
+  }
+  .map__reticle {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .map__cross {
+    stroke-dasharray: 2 4;
+    opacity: 0.6;
+  }
+  @media not print {
+    :global(:root[data-mode="mat"]) .map__point.is-active .map__reticle {
+      opacity: 1;
+    }
   }
   .map__ring {
     fill: none;
