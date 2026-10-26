@@ -1,0 +1,40 @@
+---
+// Evidence tier as a small bar (ROADMAP 14.2): three cells, as many filled as the tier number.
+// The count of filled cells carries the meaning, so it survives colour blindness and forced
+// colours; the "T1/T2/T3" text always sits next to it. Decorative for screen readers.
+import type { Tier } from "../lib/evidence";
+
+interface Props {
+  tier: Tier;
+}
+const { tier } = Astro.props;
+const level = Number(tier.slice(1));
+---
+
+<span class="tier-meter only-giai-mat" data-level={level} aria-hidden="true">
+  {[1, 2, 3].map((n) => <i class={n <= level ? "is-on" : undefined}></i>)}
+</span>
+
+<style>
+  .tier-meter {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: -1px;
+  }
+  .tier-meter i {
+    width: 5px;
+    height: 11px;
+    border: 1px solid var(--accent);
+  }
+  .tier-meter i.is-on {
+    background: var(--accent);
+  }
+  @media (forced-colors: active) {
+    .tier-meter i {
+      border-color: CanvasText;
+    }
+    .tier-meter i.is-on {
+      background: CanvasText;
+    }
+  }
+</style>

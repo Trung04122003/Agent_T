@@ -5,6 +5,7 @@ import Gate from "../../components/Gate.astro";
 import Ledger, { type LedgerLabels } from "../../components/Ledger.astro";
 import LensNav from "../../components/LensNav.astro";
 import Map from "../../components/Map.astro";
+import StatsBoard from "../../components/StatsBoard.astro";
 import Base from "../../layouts/Base.astro";
 import { t } from "../../lib/i18n";
 import { inFileOrder, publicClaims } from "../../lib/ledger";
@@ -38,6 +39,7 @@ const labels: LedgerLabels = {
 
 <Base locale={locale} title="Cupid Dossier" path="/">
   <Gate locale={locale} />
+  <StatsBoard claims={claims} locale={locale} />
   <LensNav locale={locale} publicIds={publicClaims(claims).map((c) => c.id)} />
   <Ledger claims={claims} locale={locale} labels={labels} showUnverified={import.meta.env.DEV} />
   <Map locale={locale} />

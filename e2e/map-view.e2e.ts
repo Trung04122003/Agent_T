@@ -30,6 +30,36 @@ test("zoom buttons change the view; labels keep their screen size; reset returns
   expect(await viewBox(page)).toEqual([0, 0, w0, (await viewBox(page))[3]]);
 });
 
+test("mouse wheel zooms around the pointer; at full view, scrolling down still scrolls the page", async ({ page }) => {
+  const svg = page.locator("[data-map-svg]");
+  const box = (await svg.boundingBox())!;
+  // Point the wheel at Da Nang: it must stay under the pointer while zooming.
+  const dot = (await page.locator('[data-place="da-nang"] .map__dot').boundingBox())!;
+  const at = { x: dot.x + dot.width / 2, y: dot.y + dot.height / 2 };
+  const [, , w0] = await viewBox(page);
+
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.wheel(0, -300);
+  await expect.poll(async () => (await viewBox(page))[2]).toBeLessThan(w0!);
+  const after = (await page.locator('[data-place="da-nang"] .map__dot').boundingBox())!;
+  expect(Math.abs(after.x + after.width / 2 - at.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(after.y + after.height / 2 - at.y)).toBeLessThanOrEqual(2);
+  await expect(page.locator('[data-zoom="out"]')).toBeEnabled();
+
+  // Back out to the full view; a further scroll down is left to the page (not cancelled).
+  for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 400);
+  await expect.poll(async () => (await viewBox(page))[2]).toBeCloseTo(w0!, 3);
+  await page.evaluate(() => {
+    const w = window as unknown as { __wheel: boolean[] };
+    w.__wheel = [];
+    addEventListener("wheel", (e) => w.__wheel.push(e.defaultPrevented));
+  });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __wheel: boolean[] }).__wheel)).toEqual([false]);
+  expect((await viewBox(page))[2]).toBeCloseTo(w0!, 3);
+});
+
 test("dragging pans only while zoomed", async ({ page }) => {
   const svg = page.locator("[data-map-svg]");
   const box = (await svg.boundingBox())!;

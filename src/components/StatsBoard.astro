@@ -1,0 +1,196 @@
+---
+// Header figures of the Giai mat "data floor" (ROADMAP 14.3): 3-5 numbers, every one computed
+// from content/ by lib/stats.ts (hold entries never count). A figure that cannot be computed is
+// left out, never guessed. Mat does not show this block: it stays low on text.
+import { t, type Locale } from "../lib/i18n";
+import { BUILT } from "../lib/dossier";
+import type { Claim } from "../lib/schema";
+import { ledgerStats } from "../lib/stats";
+
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+}
+const { claims, locale } = Astro.props;
+const s = ledgerStats(claims, BUILT);
+const keys = ["statsHeading", "statsEntries", "statsOpen", "statsClassified", "statsYears", "statsSince", "statsOngoing", "statsT3"];
+const [heading, entries, open, classified, years, since, ongoing, t3] = await Promise.all(keys.map((k) => t(k, locale)));
+const sinceText = s.since ? `${s.since.slice(5)}/${s.since.slice(0, 4)}` : null;
+// Year ruler under "years on file": one tick per calendar year from the first start to the build.
+const firstYear = s.since ? Number(s.since.slice(0, 4)) : null;
+const lastYear = BUILT.getUTCFullYear();
+const yearTicks = firstYear === null ? [] : Array.from({ length: lastYear - firstYear + 1 }, (_, i) => firstYear + i);
+const tierTotal = s.tiers.T1 + s.tiers.T2 + s.tiers.T3;
+---
+
+<section class="stats sheet sheet--block only-giai-mat" aria-labelledby="stats-heading" data-stats>
+  <h2 id="stats-heading" class="stats__heading">{heading}</h2>
+  <dl class="stats__grid">
+    <div class="stats__cell" data-stat="entries">
+      <dt>{entries}</dt>
+      <dd>
+        <span class="stats__num">{s.entries}</span>
+        <span class="stats__note">{s.open} {open} · {s.classified} {classified}</span>
+      </dd>
+    </div>
+    {
+      s.years !== null && (
+        <div class="stats__cell" data-stat="years">
+          <dt>{years}</dt>
+          <dd>
+            <span class="stats__num">{s.years}</span>
+            <span class="stats__note">
+              {since} {sinceText}
+            </span>
+            <span class="stats__ruler" aria-hidden="true">
+              {yearTicks.map((y, i) => (
+                <span class={i === 0 || i === yearTicks.length - 1 ? "is-end" : undefined}>{i === 0 || i === yearTicks.length - 1 ? y : ""}</span>
+              ))}
+            </span>
+          </dd>
+        </div>
+      )
+    }
+    <div class="stats__cell" data-stat="ongoing">
+      <dt>{ongoing}</dt>
+      <dd>
+        <span class="stats__num">{s.ongoing}</span>
+      </dd>
+    </div>
+    <div class="stats__cell" data-stat="t3">
+      <dt>{t3}</dt>
+      <dd>
+        <span class="stats__num">{s.tiers.T3}</span>
+        {/* Spread over the tiers: width by count, and each tier has its own fill (not colour alone). */}
+        {
+          tierTotal > 0 && (
+            <span class="stats__spread" aria-hidden="true">
+              {(["T1", "T2", "T3"] as const)
+                .filter((k) => s.tiers[k] > 0)
+                .map((k) => (
+                  <span class={`stats__seg stats__seg--${k}`} style={`flex-grow:${s.tiers[k]}`} />
+                ))}
+            </span>
+          )
+        }
+        <span class="stats__note">
+          T1 {s.tiers.T1} · T2 {s.tiers.T2} · T3 {s.tiers.T3}
+        </span>
+      </dd>
+    </div>
+  </dl>
+</section>
+
+<style>
+  .stats__heading {
+    margin: 0 0 calc(var(--space) * 2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .stats__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--accent);
+  }
+  @media (min-width: 720px) {
+    .stats__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .stats__cell {
+    display: grid;
+    align-content: start;
+    gap: var(--space);
+    padding: calc(var(--space) * 2) calc(var(--space) * 2) calc(var(--space) * 2) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stats__cell + .stats__cell {
+    padding-inline-start: calc(var(--space) * 2);
+    border-inline-start: 1px solid var(--line);
+  }
+  @media (max-width: 719px) {
+    .stats__cell:nth-child(odd) {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
+  }
+  .stats__cell dt {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .stats__cell dd {
+    display: grid;
+    gap: calc(var(--space) * 0.75);
+    margin: 0;
+  }
+  .stats__num {
+    font-family: var(--font-heading);
+    font-size: clamp(2.25rem, 6vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stats__note {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  /* Year ruler: a tick per year, the first and last year written under their tick. */
+  .stats__ruler {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    color: var(--ink-muted);
+  }
+  .stats__ruler span {
+    position: relative;
+    min-width: 1px;
+  }
+  .stats__ruler span::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 0;
+    width: 1px;
+    height: 5px;
+    background: var(--ink-muted);
+  }
+  .stats__ruler span.is-end:last-child::before {
+    left: auto;
+    right: 0;
+  }
+  /* Tier spread: outline (T1), hatched (T2), solid (T3). */
+  .stats__spread {
+    display: flex;
+    gap: 2px;
+    height: 10px;
+  }
+  .stats__seg {
+    border: 1px solid var(--accent);
+  }
+  .stats__seg--T2 {
+    background: repeating-linear-gradient(135deg, var(--accent) 0 2px, transparent 2px 5px);
+  }
+  .stats__seg--T3 {
+    background: var(--accent);
+  }
+  @media (forced-colors: active) {
+    .stats__seg {
+      border-color: CanvasText;
+    }
+    .stats__seg--T3 {
+      background: CanvasText;
+    }
+  }
+</style>

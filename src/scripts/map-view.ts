@@ -1,7 +1,7 @@
-// Map interaction: zoom (buttons), pan (drag while zoomed), and the link between the legend and
+// Map interaction: zoom (buttons, mouse wheel), pan (drag while zoomed), and the link between the legend and
 // the points. Zoom works on the SVG viewBox, so the drawing stays sharp; --k lets the CSS keep
 // marks and labels at their screen size. Steps are instant: no animation to budget or reduce.
-export const ZOOM = { step: 1.5, max: 4, place: 2.25 } as const;
+export const ZOOM = { step: 1.5, max: 4, place: 2.25, wheel: 0.002 } as const;
 
 export function initMapView(): void {
   const map = document.querySelector<HTMLElement>("[data-map]");
@@ -80,6 +80,29 @@ export function initMapView(): void {
     p.addEventListener("pointerenter", () => hover(p.dataset["place"]!));
     p.addEventListener("pointerleave", () => hover(null));
   }
+
+  // Wheel (and trackpad pinch): zoom around the pointer. At a limit (full view and scrolling down,
+  // or 4x and scrolling up) the event is left alone, so the page keeps scrolling past the map.
+  svg.addEventListener(
+    "wheel",
+    (e) => {
+      const lines = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+      const next = Math.min(ZOOM.max, Math.max(1, view.k * Math.exp(-e.deltaY * lines * ZOOM.wheel)));
+      if (next === view.k) return;
+      e.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const fx = (e.clientX - rect.left) / rect.width;
+      const fy = (e.clientY - rect.top) / rect.height;
+      // The map point under the pointer stays under the pointer.
+      const px = view.cx + (fx - 0.5) * (W / view.k);
+      const py = view.cy + (fy - 0.5) * (H / view.k);
+      view.k = next;
+      view.cx = px - (fx - 0.5) * (W / next);
+      view.cy = py - (fy - 0.5) * (H / next);
+      render();
+    },
+    { passive: false },
+  );
 
   // Pan: drag while zoomed (at full view the page keeps its normal scroll and touch behaviour).
   let drag: { x: number; y: number; cx: number; cy: number } | null = null;

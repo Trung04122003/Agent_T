@@ -6,6 +6,9 @@ import { t, type Locale } from "../lib/i18n";
 import { tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import type { Claim } from "../lib/schema";
+import { BUILT } from "../lib/dossier";
+import { durationMonths } from "../lib/stats";
+import TierMeter from "./TierMeter.astro";
 import PageMark from "./PageMark.astro";
 import Redaction from "./Redaction.astro";
 
@@ -30,14 +33,29 @@ interface Props {
 const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
 const stamp = await t("stampOpened", locale);
+// Giai mat "data floor" (ROADMAP 14.1): column heads and each entry's length in months.
+const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colPeriod", "colEntry", "durationUnit"].map((k) => t(k, locale)));
 ---
 
 <section class="ledger sheet sheet--block" aria-labelledby="ledger-heading" data-ledger>
   <PageMark locale={locale} page="ledger" />
   <h2 id="ledger-heading" class="ledger__heading">{labels.heading}<span class="ledger__lens" data-lens-title></span></h2>
   <ul class="ledger__legend" data-tier-legend>
-    {(["T1", "T2", "T3"] as const).map((t) => <li>{labels.tiers[t]}</li>)}
+    {
+      (["T1", "T2", "T3"] as const).map((t) => (
+        <li>
+          <TierMeter tier={t} />
+          {labels.tiers[t]}
+        </li>
+      ))
+    }
   </ul>
+  <div class="ledger__cols only-giai-mat" aria-hidden="true">
+    <span>{colCode}</span>
+    <span>{colPeriod}</span>
+    <span>{colEntry}</span>
+    <span>{labels.evidence}</span>
+  </div>
   <ol class="ledger__list brackets">
     {
       rows.map((c, i) => {
@@ -70,18 +88,25 @@ const stamp = await t("stampOpened", locale);
         const summary = c.summary?.[locale];
         const bluf = c.bluf?.[locale];
         const hasPanel = Boolean(teaser || summary || c.evidence.length);
+        const months = c.period ? durationMonths(c.period, BUILT) : null;
+        const tier = tierOf(c.evidence);
         const cells = (
           <>
             <span class="row__code">{code}</span>
-            <span class="row__period" dir="ltr">{period}</span>
+            <span class="row__period" dir="ltr">
+              {period}
+              {months !== null && <span class="row__dur only-giai-mat">{months} {unit}</span>}
+            </span>
             <span class="row__main">
               {c.org && <span class="row__org">{c.org[locale]}</span>}
               {c.title && <span class="row__title">{c.title[locale]}</span>}
               {/* Bottom line up front (ROADMAP 11.2): both modes, only when the owner wrote one. */}
               {bluf && <span class="row__bluf">{bluf}</span>}
             </span>
-            <span class="row__tier" data-tier={tierOf(c.evidence)}>
-              {labels.evidence} {tierOf(c.evidence)}
+            <span class="row__tier" data-tier={tier}>
+              <span class="row__tier-word">{labels.evidence}</span>{" "}
+              <TierMeter tier={tier} />
+              {tier}
             </span>
             {showUnverified && c.status !== "confirmed" && <span class="row__badge">UNCONFIRMED</span>}
           </>
@@ -262,6 +287,73 @@ const stamp = await t("stampOpened", locale);
   .row__badge {
     color: var(--ink-muted);
     border-style: dashed;
+  }
+  .ledger__legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space);
+  }
+
+  /* Giai mat, "data floor" (ROADMAP 14.1): a table head over the columns, each entry's length in
+     months under its dates, tighter rows than Mat, the tier as a bar (14.2). */
+  .ledger__cols {
+    display: none;
+  }
+  @media (min-width: 720px) {
+    .ledger__cols {
+      display: grid;
+      grid-template-columns: 5ch 22ch minmax(0, 1fr) auto;
+      gap: 0 calc(var(--space) * 2);
+      padding-block-end: var(--space);
+      /* Same font size as the rows, so the ch-based columns line up; the labels are smaller. */
+      font-size: 1rem;
+    }
+    .ledger__cols span {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+    .ledger__cols span:nth-child(-n + 2) {
+      padding-inline-end: calc(var(--space) * 2);
+    }
+    .ledger__cols span:last-child {
+      text-align: end;
+    }
+    :global(:root[data-js][data-mode="mat"]) .ledger__cols {
+      display: none;
+    }
+  }
+  .row__dur {
+    display: block;
+    margin-block-start: 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  @media not print {
+    :global(:root[data-mode="giai-mat"]) .row__toggle,
+    :global(:root[data-mode="giai-mat"]) .row__static {
+      padding-block: calc(var(--space) * 1.25);
+    }
+    :global(:root[data-mode="giai-mat"]) .row__head:hover {
+      background: var(--surface);
+    }
+    /* The bar and "T2" say it all here; the word stays for screen readers. */
+    :global(:root[data-mode="giai-mat"]) .row__tier-word {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    :global(:root[data-mode="giai-mat"]) .row__tier {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
   }
 
   /* Open / close: grid-template-rows 0fr <-> 1fr (UX section 3). Without JS every row is open. */
