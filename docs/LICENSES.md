@@ -20,3 +20,12 @@ Checked on 2026-10-25 (ROADMAP 6.1).
 | `@fontsource/ibm-plex-mono` | 5.3.0 | SIL Open Font License 1.1 |
 
 Self-hosted under the OFL, which allows embedding in websites. The fonts may not be sold on their own.
+
+## Flags (ROADMAP 10.1)
+
+| File | Flag | Source |
+|---|---|---|
+| `src/assets/flags/vn.svg` | Viet Nam | Drawn for this project: 3:2 red field (#da251d), five-point yellow star centred, outer radius 1/5 of the length. |
+| `src/assets/flags/gb.svg` | United Kingdom (for English) | Drawn for this project from the standard 1:2 Union Flag construction (blue #012169, white, red #c8102e, counterchanged saltire). |
+
+No third-party flag set or icon package is used, so no licence applies beyond the flags themselves. National flags are state symbols, not copyrighted works; they are used here only to label a language. Emoji flags are not used (Windows does not render them). Which flag stands for English (UK or US) is the owner's decision (DECISIONS.md: UK).

@@ -37,8 +37,11 @@ test("saved mode is applied before first paint", async ({ page }) => {
 
 test("Tab then Enter/Space switch mode, announce it, keep focus, and persist", async ({ page }) => {
   await page.goto("/vi/");
-  await page.keyboard.press("Tab"); // language switch comes first (start of the control bar)
-  await expect(page.locator("[data-lang-switch]")).toBeFocused();
+  // The language switch (VI, EN) comes first, at the start of the control bar.
+  await page.keyboard.press("Tab");
+  await expect(page.locator("[data-lang-switch=\"vi\"]")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator("[data-lang-switch=\"en\"]")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(toggle(page)).toBeFocused();
 
@@ -51,6 +54,7 @@ test("Tab then Enter/Space switch mode, announce it, keep focus, and persist", a
   await page.reload();
   await expect(html(page)).toHaveAttribute("data-mode", "giai-mat");
 
+  await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Space");

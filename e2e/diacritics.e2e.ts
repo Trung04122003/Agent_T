@@ -21,9 +21,9 @@ test("the SPEC test string reaches the screen unchanged, before and after a lang
   expect([...shown].length).toBe([...SAMPLE].length);
   expect(shown.normalize("NFC")).toBe(shown);
 
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
   expect(await page.locator("#claim-fx-extra-3 .row__title").evaluate((el) => (el as HTMLElement).innerText)).toBe(SAMPLE);
 });

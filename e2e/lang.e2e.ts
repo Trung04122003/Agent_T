@@ -37,7 +37,7 @@ test("switches vi -> en in place: decodes the codename, keeps mode and focus, Ba
   await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
   await watch(page);
 
-  await page.locator("[data-lang-switch]").focus();
+  await page.locator("[data-lang-switch]:not([aria-current])").focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/en\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -52,8 +52,10 @@ test("switches vi -> en in place: decodes the codename, keeps mode and focus, Ba
   expect(names.filter((n) => n !== codenameEn).length).toBeGreaterThan(3); // scrambled frames
   expect(live).toEqual([codenameEn]); // the live region reads the new name only
   await expect(page.locator("#gate-codename")).not.toHaveAttribute("aria-label", /.+/);
-  await expect(page.locator("[data-lang-switch]")).toBeFocused();
-  await expect(page.locator("[data-lang-switch]")).toHaveText(ui.languageName.vi);
+  // Focus stays on the language just chosen, which is now the current one.
+  const current = page.locator("[data-lang-switch][aria-current=\"page\"]");
+  await expect(current).toBeFocused();
+  await expect(current).toHaveAccessibleName(`EN ${ui.languageName.en}`);
 
   // Controls in the swapped regions still work.
   await page.locator("[data-mode-toggle]").click();
@@ -74,7 +76,7 @@ test("reduced motion: the codename changes at once, no scrambled frame, no fade"
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/vi/");
   await watch(page);
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("#gate-codename")).toHaveText(codenameEn);
   const { names } = await seen(page);
@@ -84,7 +86,7 @@ test("reduced motion: the codename changes at once, no scrambled frame, no fade"
 
 test("ctrl+click keeps the browser's default (new tab), no in-place swap", async ({ page, context }) => {
   await page.goto("/vi/");
-  const [popup] = await Promise.all([context.waitForEvent("page"), page.locator("[data-lang-switch]").click({ modifiers: ["Control"] })]);
+  const [popup] = await Promise.all([context.waitForEvent("page"), page.locator("[data-lang-switch]:not([aria-current])").click({ modifiers: ["Control"] })]);
   await popup.waitForLoadState();
   expect(popup.url()).toMatch(/\/en\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
@@ -126,7 +128,7 @@ test("RTL or non-Latin names use a 300 ms mask sweep instead of scrambling; Lati
 
 test("after an in-place switch to en, evidence notes are in English", async ({ page }) => {
   await page.goto("/vi/");
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const claims = JSON.parse(readFileSync("content/claims.json", "utf8")) as Array<{ evidence?: { note: { vi: string } }[] }>;
   const vi = claims.flatMap((c) => c.evidence ?? []).map((e) => e.note.vi);

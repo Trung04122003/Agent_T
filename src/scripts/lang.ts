@@ -34,7 +34,8 @@ async function show(url: string, push: boolean): Promise<void> {
   initModeToggle();
   initLedger();
   initLens();
-  document.querySelector<HTMLElement>("[data-lang-switch]")?.focus({ preventScroll: true });
+  // Focus the language just chosen (now the current one) so keyboard users stay in place.
+  document.querySelector<HTMLElement>("[data-lang-switch][aria-current=\"page\"]")?.focus({ preventScroll: true });
 
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!reduce) {
@@ -60,6 +61,7 @@ export function initLangSwitch(): void {
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("[data-lang-switch]");
     if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
+    if (link.getAttribute("aria-current") === "page") return; // already in this language
     // Keep the query (?lens=) when switching language.
     void show(link.href.split("?")[0] + location.search, true);
   });

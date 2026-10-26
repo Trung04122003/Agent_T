@@ -73,7 +73,9 @@ describe("claim schema", () => {
   it("requires both vi and en, non-empty, and rejects unknown locales", () => {
     expect(claim.safeParse({ ...open, org: { vi: "X" } }).success).toBe(false);
     expect(claim.safeParse({ ...open, org: { vi: "X", en: "  " } }).success).toBe(false);
-    expect(claim.safeParse({ ...open, org: { vi: "X", en: "X", es: "X" } }).success).toBe(false);
+    // Candidate languages (es, ar, ja) are optional keys since ROADMAP 10.3; unknown ones are not.
+    expect(claim.safeParse({ ...open, org: { vi: "X", en: "X", es: "X" } }).success).toBe(true);
+    expect(claim.safeParse({ ...open, org: { vi: "X", en: "X", xx: "X" } }).success).toBe(false);
   });
 
   it("rejects an evidence note without en (it is displayed)", () => {

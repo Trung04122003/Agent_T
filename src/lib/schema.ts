@@ -5,7 +5,14 @@ import { z } from "astro/zod";
 const text = z.string().trim().min(1);
 
 /** Every displayed string needs both vi and en. Other locales are not accepted yet. */
-export const localized = z.strictObject({ vi: text, en: text });
+/** vi and en are required; other candidate languages are optional until complete (ROADMAP 10.3). */
+export const localized = z.strictObject({
+  vi: text,
+  en: text,
+  es: text.optional(),
+  ar: text.optional(),
+  ja: text.optional(),
+});
 
 const yearMonth = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, "Expected YYYY or YYYY-MM");
 

@@ -23,11 +23,11 @@ for (const locale of ["vi", "en"] as const) {
 
 test("language links point to the same page in the other locale, named in that language", async ({ page }) => {
   await page.goto("/vi/");
-  const link = page.locator("[data-lang-switch]");
+  const link = page.locator("[data-lang-switch]:not([aria-current])");
   await expect(link).toHaveAttribute("href", "/en/");
   await expect(link).toHaveAttribute("hreflang", "en");
   await expect(link).toHaveAttribute("lang", "en");
-  await expect(link).toHaveText(ui.languageName.en);
+  await expect(link).toHaveAccessibleName(`EN ${ui.languageName.en}`);
 });
 
 test('"/" redirects to /vi/', async ({ page }) => {
@@ -41,7 +41,7 @@ test.describe("without JavaScript", () => {
   test('"/" still redirects, and the language link is a plain link', async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/vi\/$/);
-    await page.locator("[data-lang-switch]").click();
+    await page.locator("[data-lang-switch]:not([aria-current])").click();
     await expect(page).toHaveURL(/\/en\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });

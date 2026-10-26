@@ -8,7 +8,7 @@ test("no request leaves the site: load, scroll to the map, switch language", asy
   await page.goto("/vi/");
   await page.locator("[data-map]").scrollIntoViewIfNeeded();
   await page.waitForTimeout(2200); // let the map reveal and any lazy work run
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.locator("[data-map]").scrollIntoViewIfNeeded();
   await page.waitForLoadState("networkidle");

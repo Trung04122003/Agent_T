@@ -1,25 +1,41 @@
 ---
-// Language switch (UX section 4: start of the control bar). Plain links, so it works without JS;
-// src/scripts/lang.ts upgrades them to an in-place swap with the Decode effect.
+// Language switch (UX-v2 section 2): a group of real links, flag + language code, one per complete
+// language. Works without JS; src/scripts/lang.ts upgrades it to an in-place swap with Decode.
+// Flags are self-hosted SVG (no emoji flags: Windows shows letters instead). The accessible name is
+// the visible code followed by the full name ("VI Tiếng Việt"), so it starts with what is on screen
+// for voice control (WCAG 2.5.3) and still names the language for screen readers.
+import gbFlag from "../assets/flags/gb.svg?url";
+import vnFlag from "../assets/flags/vn.svg?url";
 import { t } from "../lib/i18n";
-import { LOCALES, type Locale } from "../lib/locales";
+import type { Locale } from "../lib/locales";
 
 interface Props {
   locale: Locale;
   /** Path of the current page without the locale prefix, e.g. "/". */
   path: string;
+  /** Languages to offer, already filtered to complete ones (ROADMAP 10.3). */
+  locales: readonly Locale[];
 }
-const { locale, path } = Astro.props;
-const others = await Promise.all(
-  LOCALES.filter((l) => l !== locale).map(async (l) => ({ l, name: await t("languageName", l) })),
-);
+const { locale, path, locales } = Astro.props;
+/** English uses the UK flag (DECISIONS.md). A language without a flag shows its code only. */
+const FLAGS: Partial<Record<string, string>> = { vi: vnFlag, en: gbFlag };
+const links = await Promise.all(locales.map(async (l) => ({ l, name: await t("languageName", l) })));
 ---
 
 <nav class="lang-switch" data-lang-nav>
   {
-    others.map(({ l, name }) => (
-      <a href={`/${l}${path}`} hreflang={l} lang={l} data-lang-switch>
-        {name}
+    links.map(({ l, name }) => (
+      <a
+        class="lang-switch__link"
+        href={`/${l}${path}`}
+        hreflang={l}
+        lang={l}
+        aria-current={l === locale ? "page" : undefined}
+        data-lang-switch={l}
+      >
+        {FLAGS[l] && <img class="lang-switch__flag" src={FLAGS[l]} alt="" width="20" height="14" />}
+        <span class="lang-switch__code">{l.toUpperCase()}</span>
+        <span class="visually-hidden">{name}</span>
       </a>
     ))
   }
@@ -31,22 +47,42 @@ const others = await Promise.all(
 </script>
 
 <style>
-  .lang-switch a {
+  .lang-switch {
+    display: flex;
+    gap: calc(var(--space) * 0.75);
+  }
+  .lang-switch__link {
     display: inline-flex;
     align-items: center;
+    gap: var(--space);
     min-height: var(--target);
-    padding: 0 calc(var(--space) * 2);
+    min-width: var(--target);
+    padding: 0 calc(var(--space) * 1.5);
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     font-weight: 500;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
     text-decoration: none;
-    color: var(--ink);
+    color: var(--ink-muted);
     border: 1px solid var(--line);
     border-radius: 2px;
   }
-  .lang-switch a:hover {
+  .lang-switch__link[aria-current="page"] {
+    color: var(--ink);
     border-color: var(--accent);
+  }
+  .lang-switch__flag {
+    display: block;
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    border-radius: 2px;
+    /* Keeps light flag edges (white bands) visible on the light background. */
+    outline: 1px solid var(--line);
+  }
+  /* Hover/focus: the flag lifts 1 px, nothing else (UX-v2 section 2). */
+  .lang-switch__link:hover .lang-switch__flag,
+  .lang-switch__link:focus-visible .lang-switch__flag {
+    transform: translateY(-1px);
   }
 </style>

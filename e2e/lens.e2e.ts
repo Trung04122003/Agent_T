@@ -49,7 +49,7 @@ test("7.2 a shared ?lens= link opens in that order, keyboard works, the language
   await card(page, "partner").focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\?lens=partner$/);
-  await page.locator("[data-lang-switch]").click();
+  await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page).toHaveURL(/\/en\/\?lens=partner$/);
   await expect(card(page, "partner")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-lens-title]")).toHaveText(lenses[0]!.label.en);

@@ -43,13 +43,13 @@ test("keyboard: Tab reaches every control in reading order, each with a visible 
   }
   const keys = seen.map((s) => s.key);
   const rowToggles = await page.locator("[data-row-toggle]").count();
-  expect(keys.some((k) => k.startsWith("A:") && k.includes("English"))).toBe(true); // language switch
+  expect(keys.slice(0, 2).map((k) => k.slice(0, 4))).toEqual(["A:VI", "A:EN"]); // language switch, flags + codes
   expect(keys).toContain("BUTTON:mode");
   expect(keys.filter((k) => k.startsWith("BUTTON:partner") || k.startsWith("BUTTON:client") || k.startsWith("BUTTON:curious"))).toHaveLength(3);
   expect(keys.filter((k) => /^BUTTON:(edu|role|project|classified)/.test(k))).toHaveLength(rowToggles);
   expect(keys.some((k) => k.includes("Made with Natural Earth"))).toBe(true);
   // Reading order: positions never jump back up the page (the control bar comes first).
-  const tops = seen.slice(2).map((s) => s.top);
+  const tops = seen.slice(3).map((s) => s.top);
   for (let i = 1; i < tops.length; i++) expect(tops[i]!).toBeGreaterThanOrEqual(tops[i - 1]! - 1);
   for (const s of seen) expect(s.outline, s.key).toMatch(/^solid [1-9]/);
 });

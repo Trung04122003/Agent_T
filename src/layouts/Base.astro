@@ -7,7 +7,8 @@ import LangSwitch from "../components/LangSwitch.astro";
 import ModeToggle from "../components/ModeToggle.astro";
 import { t, type Locale } from "../lib/i18n";
 import { getIdentity } from "../lib/identity";
-import { dirFor, LOCALES } from "../lib/locales";
+import { dirFor, localeReport, LOCALES } from "../lib/locales";
+import { contentStrings } from "../lib/translations";
 import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
 import { MODE_KEY } from "../scripts/mode";
@@ -26,6 +27,10 @@ const updated = updatedStamp(new Date());
 // Neutral SEO (ROADMAP 8.4): the positioning line from content/, nothing more.
 const description = (await getIdentity()).positioning[locale];
 const ogLocale = { vi: "vi_VN", en: "en_US" }[locale];
+// Only complete languages are offered (ROADMAP 10.3; scripts/check-locales.mjs reports the rest).
+const { strings, reviewed } = contentStrings();
+const complete = new Set(localeReport(strings, reviewed).filter((r) => r.available).map((r) => r.locale));
+const published = LOCALES.filter((l) => complete.has(l));
 
 // Runs before first paint: mark JS as available (mode-dependent hiding only applies then, so the
 // no-JS page shows all public content), then apply the saved mode. Default stays "mat".
@@ -48,11 +53,11 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
     <meta property="og:image" content="/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    {path !== undefined && LOCALES.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
+    {path !== undefined && published.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
   </head>
   <body>
     <header class="controls">
-      <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} />}<slot name="controls-start" /></div>
+      <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} locales={published} />}<slot name="controls-start" /></div>
       <div class="controls__end">
         <ModeToggle locale={locale} />
       </div>
