@@ -12,9 +12,11 @@ type Raw = {
   org?: { vi: string; en: string } | null;
   title?: { vi: string; en: string } | null;
   period?: { start: string; end: string | null; ongoing?: boolean } | null;
+  paused?: boolean;
 };
 const raw = JSON.parse(readFileSync("content/claims.json", "utf8")) as Raw[];
-const open = raw.filter((c) => c.kind !== "classified" && c.visibility !== "hold" && c.period);
+// The chart counts open entries with a period, paused ones left out (ROADMAP 20.2).
+const open = raw.filter((c) => c.kind !== "classified" && c.visibility !== "hold" && c.period && !c.paused);
 const hidden = raw.filter((c) => c.kind === "classified" || c.visibility === "hold");
 const setMode = (page: Page, mode: string) => page.addInitScript((m) => localStorage.setItem("mode", m), mode);
 

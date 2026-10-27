@@ -58,7 +58,8 @@ const picture = {
       <Picture {...picture} src={placeholder} alt="" class="portrait__img" loading="eager" data-placeholder />
     )
   }
-  <svg class="portrait__finder only-mat" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false" data-finder>
+  {/* Mat only over a real photo; until there is one it is the placeholder in both modes (ROADMAP 20.5). */}
+  <svg class:list={["portrait__finder", hasPhotos && "only-mat"]} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false" data-finder>
     <!-- Edge rulers: short ticks every 20, long every 100. -->
     <g class="finder__ticks">
       {ticks(H, 20).map((y) => <line x1="0" y1={y} x2={y % 100 ? 6 : 14} y2={y} />)}

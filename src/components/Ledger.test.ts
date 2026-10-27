@@ -62,10 +62,17 @@ describe("Ledger v2 (ROADMAP 9.2-9.3)", () => {
 
   it("9.2 teaser is Mat-only and summary is Giai-mat-only, never shared", async () => {
     const html = await render(false);
-    const row = rowHtml(html, "fx-verified");
-    expect(row).toMatch(/class="only-mat row__teaser"[^>]*>Câu mở đầu thử nghiệm\./);
-    expect(row).toMatch(/class="only-giai-mat row__summary"[^>]*>Tóm tắt thử nghiệm số một/);
-    expect(row).not.toMatch(/class="row__teaser"/); // no mode-less teaser left
+    const plain = rowHtml(html, "fx-plain"); // a teaser, no BLUF
+    expect(plain).toMatch(/class="only-mat row__teaser"/);
+    expect(plain).not.toMatch(/class="row__teaser"/); // no mode-less teaser left
+    expect(rowHtml(html, "fx-verified")).toMatch(/class="only-giai-mat row__summary"[^>]*>Tóm tắt thử nghiệm số một/);
+  });
+
+  it("20.1 with a BLUF, Mat shows the BLUF and not the teaser (no near-duplicate lines)", async () => {
+    const row = rowHtml(await render(false), "fx-verified"); // has both in content
+    expect(row).toContain("row__bluf");
+    expect(row).not.toContain("row__teaser");
+    expect(row).not.toContain("Câu mở đầu thử nghiệm.");
   });
 
   it("9.3 a row with a summary gets the redaction and the declassify link", async () => {

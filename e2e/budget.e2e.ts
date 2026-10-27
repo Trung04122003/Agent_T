@@ -74,7 +74,9 @@ test("View declassified link", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${FIXTURE}/vi/`);
   await page.locator("#claim-fx-pending [data-row-toggle]").click();
-  await page.waitForTimeout(400);
+  // Opening the row has its own effects (panel, stamp): let them finish so they are not counted
+  // as part of the declassify scene. A fixed wait was not enough on a busy machine.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   await startSampling(page);
   await page.locator("#claim-fx-pending [data-declassify]").click();
   check("declassify link", await stopSampling(page));

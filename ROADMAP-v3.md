@@ -111,14 +111,24 @@ Triết lý: "bí ẩn hơn" là *lộ ít hơn*, không phải *nhiều hiệu 
 | 28.7 | **Giải mật, tài liệu xem trước (tùy chọn):** `evidence.preview` là ảnh do chủ dự án tự che thông tin cá nhân **trước khi** đưa vào repo. Claude Code chỉ dựng khung hiển thị, không xử lý ảnh nhạy cảm; không có ảnh thì ẩn khung. Không dùng chữ ký tay. | Test hiển thị/ẩn |
 | 28.8 | DTG cập nhật mỗi phút (tùy chọn, bỏ nếu thấy thừa). Không dùng `requestAnimationFrame` cho việc này. | Review |
 
-## P29 — Chân dung hai độ sáng (sau buổi chụp)
+## P29 — Chân dung từ buổi chụp 27/10 (một buổi chụp, hai bản xử lý)
+Quyết định của chủ dự án: **không chụp lại**, dùng hai ảnh đã chụp (ảnh "nghiêm" và ảnh "cười", cùng tư thế, cùng đồ, 1920×2560). Bản Mật và bản Giải mật đều tạo từ ảnh có sẵn bằng cắt và chỉnh tông.
+
+**Giới hạn chỉnh ảnh (bắt buộc):** chỉ cắt, xoay nhẹ, phơi sáng, tương phản, nhiệt độ màu/độ bão hòa, vầng tối ở viền, làm mờ nền nhẹ, làm nét. **Không** làm mịn da, đổi khuôn mặt hay thân hình, chỉnh mắt/răng, thay hoặc dựng nền bằng AI, xóa vật thể khỏi người. Lý do: site là bằng chứng năng lực có thể mang theo, ảnh phải là người thật.
+
 | # | Step | Verify |
 |---|---|---|
-| 29.1 | Ảnh gốc đặt ở `private/portrait-raw/` (git-ignored, **không commit**). Script xóa EXIF/GPS và xuất AVIF + WebP + JPEG dự phòng cho hai biến thể cùng khung: `low` (Mật) và `high` (Giải mật). | Kiểm tra metadata đầu ra không có EXIF/GPS (dùng `sharp`) |
-| 29.2 | Declassify: ảnh `high` hiện bằng `clip-path`/`opacity` (≤ 500 ms) cùng chuyển cảnh chế độ; reduced-motion thì đổi tức thì. Chỉ `low` được `fetchpriority="high"`; `high` nạp sau khi rảnh. | Trace; LCP không xấu đi |
-| 29.3 | `alt` do chủ dự án duyệt (mô tả thật); không ghi địa điểm chụp. | Review |
-| 29.4 | Mỗi biến thể ≤ 120 KB; `check:leaks` quét `dist/` không còn EXIF. | Size report; `check:leaks` |
-| 29.5 | Chưa có ảnh thật thì giữ ống ngắm giữ chỗ. Có ảnh thật hay không trước khi phát hành là quyết định của chủ dự án. | Báo cáo |
+| 29.0 | **Việc của chủ dự án:** chép hai file gốc vào `private/portrait-raw/` với tên `calm.jpg` (ảnh nghiêm) và `smile.jpg` (ảnh cười). `private/` nằm trong `.gitignore` (thêm nếu chưa có). Claude Code **không** lấy ảnh từ chỗ khác. | `git status` không thấy `private/` |
+| 29.1 | Đọc tỉ lệ thật của khung chân dung trong code (`Portrait.astro`, `src/lib/portrait.ts`) và độ rộng hiển thị ở 1280 px. **Không đoán tỉ lệ.** Chiều rộng ảnh sau khi cắt phải ≥ 2× độ rộng hiển thị nếu ảnh gốc cho phép. | Báo cáo tỉ lệ và kích thước đích |
+| 29.2 | Cắt từ vai/ngực lên, tâm theo khuôn mặt, mặt nằm ở khoảng một phần ba phía trên. Cắt đủ chặt để **loại người ngồi ở mép phải ảnh `calm`** và giảm tối đa phần chữ in trên áo thun và biển hiệu phía sau đầu. Tọa độ cắt lưu trong `tools/portrait/crops.json` (mỗi file: left, top, width, height) để chủ dự án chỉnh được. | Ảnh xem trước; không còn người lạ, không đọc được tên quán |
+| 29.3 | **Bản Mật (`low`)** từ `calm.jpg`: giảm phơi sáng, tăng tương phản, giảm bão hòa 20–30%, giữ tông ấm để hợp màu đồng thau, thêm vầng tối ở viền. Mặt vẫn phải đọc rõ: vùng mặt có độ sáng trung bình không dưới ngưỡng đề xuất 40/255 (điều chỉnh sau khi chủ dự án xem). | Ảnh xem trước; kiểm tra số đo vùng mặt |
+| 29.4 | **Bản Giải mật (`high`)** làm theo **hai phương án**, tạo cả hai để chủ dự án chọn ở Checkpoint: **A)** cùng ảnh `calm`, phơi sáng gần nguyên bản, cân bằng trắng trung tính; **B)** ảnh `smile`, căn sao cho mắt nằm đúng vị trí và cùng tỉ lệ khuôn mặt tương đối với bản Mật, để Declassify là lúc nét mặt đổi từ nghiêm sang cười. Căn bằng cắt và tỉ lệ, **không** biến dạng ảnh. | Hai ảnh xem trước cạnh nhau; chủ dự án chọn A hoặc B |
+| 29.5 | Làm mờ nền nhẹ bằng mặt nạ elip mềm bao đầu và thân trên (tọa độ trong `crops.json`). Đây là bước **thử**: nếu mép vai/tóc trông giả hoặc nhòe thì **bỏ làm mờ** và chỉ dùng cắt chặt + vầng tối. | Chủ dự án duyệt bằng mắt ở 375 px và 1280 px |
+| 29.6 | Script `tools/portrait/build.mjs` (dùng `sharp`; nếu chưa có trong dependencies thì hỏi chủ dự án trước): xuất AVIF + WebP + JPEG dự phòng, sRGB, **không giữ metadata** (kiểm tra bằng `sharp.metadata()`). Mỗi biến thể ≤ 120 KB. Ảnh xem trước ghi vào `private/portrait-preview/` (git-ignored). | Metadata đầu ra không có EXIF/GPS; size report |
+| 29.7 | Declassify: ảnh `high` hiện bằng `clip-path`/`opacity` (≤ 500 ms) cùng chuyển cảnh chế độ; reduced-motion thì đổi tức thì. Chỉ `low` được `fetchpriority="high"`; `high` nạp sau khi rảnh. | Trace; LCP không xấu đi |
+| 29.8 | `alt` do chủ dự án duyệt (mô tả thật); không ghi địa điểm chụp. `check:leaks` quét `dist/` không còn EXIF, không có file trong `private/`. Thay ống ngắm giữ chỗ bằng ảnh thật. | Review; `check:leaks` |
+
+**Checkpoint P29:** chủ dự án xem ảnh xem trước (bản Mật, hai phương án Giải mật, có/không làm mờ nền) và chọn.
 
 ## P30 — Rà soát hiệu năng và phát hành (P20 cũ)
 | # | Step | Verify |

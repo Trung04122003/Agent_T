@@ -10,7 +10,8 @@ import { codenameFor, getIdentity } from "../lib/identity";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import { orderedRisks } from "../lib/risks";
 import type { Claim } from "../lib/schema";
-import { durationMonths, ledgerStats } from "../lib/stats";
+import { tracedMetrics } from "../lib/metrics";
+import { durationMonths, tierSpread } from "../lib/stats";
 import { updatedStamp } from "../lib/updated";
 import TierMeter from "./TierMeter.astro";
 
@@ -23,9 +24,9 @@ const identity = await getIdentity();
 const codename = codenameFor(identity, locale);
 const keys = [
   "portraitLabel", "classLevelLabel", "modeMat", "modeGiaiMat", "fileNoLabel", "codenameLabel",
-  "statsEntries", "statsYears", "statsSince", "statsOngoing", "statsT3", "ledgerHeading", "colCode",
-  "colPeriod", "colEntry", "evidenceHeading", "durationUnit", "periodPresent", "risksHeading",
-  "mitigationLabel", "updatedLabel", "pageLabel",
+  "statsT3", "metricSource", "pausedLabel", "ledgerHeading", "colCode", "colPeriod", "colEntry",
+  "evidenceHeading", "durationUnit", "periodPresent", "risksHeading", "mitigationLabel",
+  "updatedLabel", "pageLabel",
 ];
 const L = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const)));
 
@@ -33,10 +34,11 @@ const L = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t
 const rows = publicClaims(claims)
   .map((c, i) => ({ c, code: fileCode(i) }))
   .flatMap(({ c, code }) => (c.kind === "classified" ? [] : [{ c, code }]));
-const stats = ledgerStats(claims, BUILT);
+// Same figures as the page header (ROADMAP 20.3): the owner's metrics and the tier spread.
+const tiers = tierSpread(claims);
+const metrics = await tracedMetrics(claims);
 const risks = await orderedRisks();
 const updated = updatedStamp(BUILT);
-const since = stats.since ? `${stats.since.slice(5)}/${stats.since.slice(0, 4)}` : null;
 ---
 
 <article class="onepage" data-onepage lang={locale} aria-hidden="true">
@@ -60,10 +62,25 @@ const since = stats.since ? `${stats.since.slice(5)}/${stats.since.slice(0, 4)}`
   </section>
 
   <dl class="op__stats">
-    <div><dt>{L.statsEntries}</dt><dd>{stats.open}</dd></div>
-    {stats.years !== null && <div><dt>{L.statsYears}</dt><dd>{stats.years} <small>{L.statsSince} {since}</small></dd></div>}
-    <div><dt>{L.statsOngoing}</dt><dd>{stats.ongoing}</dd></div>
-    <div><dt>{L.statsT3}</dt><dd>{stats.tiers.T3}</dd></div>
+    {
+      metrics.map((m) => (
+        <div data-op-metric={m.id}>
+          <dt>{m.label[locale]}</dt>
+          <dd>
+            {m.value.toLocaleString(locale === "vi" ? "vi-VN" : "en-GB")} {m.unit && <small>{m.unit[locale]}</small>}
+            <small>
+              {L.metricSource}: {m.code}
+            </small>
+          </dd>
+        </div>
+      ))
+    }
+    <div>
+      <dt>{L.statsT3}</dt>
+      <dd>
+        {tiers.T3} <small>T1 {tiers.T1} · T2 {tiers.T2} · T3 {tiers.T3}</small>
+      </dd>
+    </div>
   </dl>
 
   <section class="op__ledger">
@@ -80,7 +97,7 @@ const since = stats.since ? `${stats.since.slice(5)}/${stats.since.slice(0, 4)}`
       <tbody>
         {
           rows.map(({ c, code }) => {
-            const months = c.period ? durationMonths(c.period, BUILT) : null;
+            const months = c.period && !c.paused ? durationMonths(c.period, BUILT) : null;
             const line = c.bluf?.[locale] ?? c.summary?.[locale] ?? null;
             const tier = tierOf(c.evidence);
             return (
@@ -89,6 +106,7 @@ const since = stats.since ? `${stats.since.slice(5)}/${stats.since.slice(0, 4)}`
                 <td class="op__mono">
                   {c.period && formatPeriod(c.period, L.periodPresent!)}
                   {months !== null && <small>{months} {L.durationUnit}</small>}
+                  {c.paused && <small>{L.pausedLabel}</small>}
                 </td>
                 <td>
                   {c.org && <b>{c.org[locale]}</b>}

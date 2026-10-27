@@ -39,19 +39,20 @@ for (const base of [FIXTURE, SITE]) {
 
 test("rows start closed and open/close with Enter and Space (aria-expanded)", async ({ page }) => {
   await page.goto("/vi/");
-  const t = toggle(page, "fx-verified");
+  // fx-plain: a teaser and no BLUF, so its Mat panel shows the teaser (ROADMAP 20.1).
+  const t = toggle(page, "fx-plain");
   await expect(t).toHaveAttribute("aria-expanded", "false");
-  await expect(row(page, "fx-verified").locator(".row__teaser")).toBeHidden();
+  await expect(row(page, "fx-plain").locator(".row__teaser")).toBeHidden();
 
   await t.focus();
   await page.keyboard.press("Enter");
   await expect(t).toHaveAttribute("aria-expanded", "true");
-  await expect(row(page, "fx-verified").locator(".row__teaser")).toBeVisible();
+  await expect(row(page, "fx-plain").locator(".row__teaser")).toBeVisible();
   await expect(t).toBeFocused();
 
   await page.keyboard.press("Space");
   await expect(t).toHaveAttribute("aria-expanded", "false");
-  await expect(row(page, "fx-verified").locator(".row__teaser")).toBeHidden();
+  await expect(row(page, "fx-plain").locator(".row__teaser")).toBeHidden();
 });
 
 test("Tab skips the content of closed rows and follows reading order", async ({ page }) => {
@@ -65,11 +66,12 @@ test("Tab skips the content of closed rows and follows reading order", async ({ 
   await expect(row(page, "fx-pending").locator("[data-declassify]")).toBeFocused();
 });
 
-test("Mat: open row shows teaser and redaction, not the summary or evidence", async ({ page }) => {
+test("Mat: open row shows the BLUF (no teaser beside it) and redaction, not the summary or evidence", async ({ page }) => {
   await page.goto("/vi/");
   await toggle(page, "fx-verified").click();
   const r = row(page, "fx-verified");
-  await expect(r.locator(".row__teaser")).toBeVisible();
+  await expect(r.locator(".row__bluf")).toBeVisible();
+  await expect(r.locator(".row__teaser")).toHaveCount(0); // ROADMAP 20.1
   await expect(r.locator(".redaction svg")).toBeVisible();
   await expect(r.locator(".row__summary")).toBeHidden();
   await expect(r.locator(".row__evidence")).toBeHidden();
@@ -136,13 +138,14 @@ test.describe("without JavaScript", () => {
 
 test("9.2 teaser in Mat only, summary in Giai mat only (never both)", async ({ page }) => {
   await page.goto(`${FIXTURE}/vi/`);
-  await toggle(page, "fx-verified").click();
-  const r = row(page, "fx-verified");
-  await expect(r.locator(".row__teaser")).toBeVisible();
-  await expect(r.locator(".row__summary")).toBeHidden();
+  for (const id of ["fx-verified", "fx-plain"]) await toggle(page, id).click();
+  const teaser = row(page, "fx-plain").locator(".row__teaser");
+  const summary = row(page, "fx-verified").locator(".row__summary");
+  await expect(teaser).toBeVisible();
+  await expect(summary).toBeHidden();
   await page.locator("[data-mode-toggle]").click();
-  await expect(r.locator(".row__summary")).toBeVisible();
-  await expect(r.locator(".row__teaser")).toBeHidden();
+  await expect(summary).toBeVisible();
+  await expect(teaser).toBeHidden();
 });
 
 test("9.3 redaction and link only where a summary exists", async ({ page }) => {

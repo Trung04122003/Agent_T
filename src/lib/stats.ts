@@ -27,35 +27,13 @@ export function durationMonths(period: Period, built: Date): number | null {
   return end - start;
 }
 
-export type LedgerStats = {
-  /** Rows shown in the ledger: open entries plus classified labels. */
-  entries: number;
-  open: number;
-  classified: number;
-  /** Whole years from the earliest start to the build month, and that start ("YYYY-MM"). */
-  years: number | null;
-  since: string | null;
-  ongoing: number;
-  tiers: Record<Tier, number>;
-};
-
-export function ledgerStats(claims: Claim[], built: Date): LedgerStats {
-  const rows = publicClaims(claims);
-  const open = rows.filter((c) => c.kind !== "classified");
-  const starts = open
-    .map((c) => c.period?.start ?? null)
-    .filter((s): s is string => s !== null && monthIndex(s) !== null)
-    .sort();
-  const since = starts[0] ?? null;
+/**
+ * Spread of the open entries over the evidence tiers: the one figure the header block keeps
+ * (ROADMAP 20.3 dropped "entries on file" and "years on file", which measured the book, not the
+ * work). Everything else there comes from the owner's content/metrics.json.
+ */
+export function tierSpread(claims: Claim[]): Record<Tier, number> {
   const tiers: Record<Tier, number> = { T1: 0, T2: 0, T3: 0 };
-  for (const c of open) tiers[tierOf(c.evidence)]++;
-  return {
-    entries: rows.length,
-    open: open.length,
-    classified: rows.length - open.length,
-    years: since === null ? null : Math.floor((builtIndex(built) - monthIndex(since)!) / 12),
-    since,
-    ongoing: open.filter((c) => c.period?.ongoing).length,
-    tiers,
-  };
+  for (const c of publicClaims(claims)) if (c.kind !== "classified") tiers[tierOf(c.evidence)]++;
+  return tiers;
 }

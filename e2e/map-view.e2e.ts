@@ -83,7 +83,7 @@ test("dragging pans only while zoomed", async ({ page }) => {
   expect(panned[1]).toBeLessThan(zoomed[1]!);
 });
 
-test("legend: picking a place zooms to it and shows its role on the map; keyboard works", async ({ page }) => {
+test("legend: picking a place zooms to it; keyboard works", async ({ page }) => {
   const item = page.locator('[data-place-btn="thuong-tin"]');
   await item.focus();
   await expect(page.locator('[data-place="thuong-tin"]')).toHaveClass(/is-active/);
@@ -99,8 +99,43 @@ test("legend: picking a place zooms to it and shows its role on the map; keyboar
   expect(point[0]).toBeLessThan(x! + w!);
   expect(point[1]).toBeGreaterThan(y!);
   expect(point[1]).toBeLessThan(y! + h!);
-  await expect(page.locator('[data-place="thuong-tin"] .map__role')).toHaveCSS("opacity", "1");
-  await expect(page.locator('[data-place="da-nang"] .map__role')).toHaveCSS("opacity", "0");
+  // ROADMAP 20.4: the role is written in the list only, never on the map.
+  await expect(page.locator("[data-map-svg] .map__role")).toHaveCount(0);
+  await expect(item).toContainText(/\S/);
+});
+
+for (const width of [375, 1280]) {
+  for (const mode of ["mat", "giai-mat"]) {
+    test(`20.4 no place label overlaps another label at ${width}px (${mode})`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((m) => localStorage.setItem("mode", m), mode);
+      await page.goto("/vi/");
+      await page.locator("[data-map]").scrollIntoViewIfNeeded();
+      const boxes = await page.locator("[data-map-svg] [data-place] text").evaluateAll((els) =>
+        els.map((e) => {
+          const r = e.getBoundingClientRect();
+          return { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom, text: e.textContent };
+        }),
+      );
+      expect(boxes.length).toBe(4);
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const [a, b] = [boxes[i]!, boxes[j]!];
+          const hit = a.x0 < b.x1 - 0.5 && b.x0 < a.x1 - 0.5 && a.y0 < b.y1 - 0.5 && b.y0 < a.y1 - 0.5;
+          expect(hit, `${a.text} / ${b.text}`).toBe(false);
+        }
+      }
+      // Labels keep a halo in the page background colour, so they read on land and sea alike.
+      expect(await page.locator("[data-map-svg] [data-place] text").first().evaluate((e) => getComputedStyle(e).paintOrder)).toContain("stroke");
+    });
+  }
+}
+
+test("20.4 Giai mat shades the neighbours apart from Viet Nam", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("mode", "giai-mat"));
+  await page.goto("/vi/");
+  const fill = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e).fill);
+  expect(await fill(".map__land path")).not.toBe(await fill(".map__vn"));
 });
 
 test("text never sits on the grid: every text block has a solid sheet", async ({ page }) => {

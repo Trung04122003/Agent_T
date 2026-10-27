@@ -20,6 +20,7 @@ const claims = readJson("claims.json");
 const identity = readJson("identity.json");
 const places = readJson("places.json");
 const risks = readJson("risks.json");
+const metrics = readJson("metrics.json");
 
 const SKIP_KEYS = new Set(["kind", "visibility", "status", "type"]);
 function collectStrings(value, out, key = "") {
@@ -49,6 +50,9 @@ for (const c of claims) {
     }
   }
   if (typeof c.notes === "string") secrets.push({ rule: `notes (${c.id})`, s: c.notes });
+}
+for (const m of metrics) {
+  if (typeof m.notes === "string") secrets.push({ rule: `notes (metric ${m.id})`, s: m.notes });
 }
 for (const r of risks) {
   if (typeof r.notes === "string") secrets.push({ rule: `notes (risk ${r.id})`, s: r.notes });

@@ -36,7 +36,9 @@ const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
 const stamp = await t("stampOpened", locale);
 // Giai mat "data floor" (ROADMAP 14.1): column heads and each entry's length in months.
-const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colPeriod", "colEntry", "durationUnit"].map((k) => t(k, locale)));
+const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
+  ["colCode", "colPeriod", "colEntry", "durationUnit", "pausedLabel"].map((k) => t(k, locale)),
+);
 ---
 
 <section class="ledger sheet sheet--block" aria-labelledby="ledger-heading" data-ledger>
@@ -46,7 +48,7 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
     {
       (["T1", "T2", "T3"] as const).map((t) => (
         <li>
-          <TierMeter tier={t} />
+          <TierMeter tier={t} always />
           {labels.tiers[t]}
         </li>
       ))
@@ -86,11 +88,13 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
           );
         }
 
-        const teaser = c.teaser?.[locale];
-        const summary = c.summary?.[locale];
         const bluf = c.bluf?.[locale];
+        // ROADMAP 20.1: the BLUF already says it, so Mat shows the teaser only when there is none.
+        const teaser = bluf ? undefined : c.teaser?.[locale];
+        const summary = c.summary?.[locale];
         const hasPanel = Boolean(teaser || summary || c.evidence.length || hasTearSheet(c.tearSheet) || c.aar);
-        const months = c.period ? durationMonths(c.period, BUILT) : null;
+        // ROADMAP 20.2: a paused entry shows "paused" instead of a running length.
+        const months = c.period && !c.paused ? durationMonths(c.period, BUILT) : null;
         const tier = tierOf(c.evidence);
         const cells = (
           <>
@@ -98,6 +102,7 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
             <span class="row__period" dir="ltr">
               {period}
               {months !== null && <span class="row__dur only-giai-mat">{months} {unit}</span>}
+              {c.paused && <span class="row__dur only-giai-mat" data-paused>{pausedLabel}</span>}
             </span>
             <span class="row__main">
               {c.org && <span class="row__org">{c.org[locale]}</span>}
@@ -278,9 +283,10 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
     color: var(--accent);
     white-space: nowrap;
   }
+  /* Tier legend (ROADMAP 20.6): the same bars in both modes, three columns, one on phones. */
   .ledger__legend {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space) calc(var(--space) * 3);
     margin: 0 0 calc(var(--space) * 2);
     padding: 0;
@@ -293,10 +299,19 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
     color: var(--ink-muted);
     border-style: dashed;
   }
+  @media (min-width: 720px) {
+    .ledger__legend {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
   .ledger__legend li {
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    align-items: flex-start;
     gap: var(--space);
+  }
+  .ledger__legend li :global(.tier-meter) {
+    flex: none;
+    margin-top: 2px;
   }
 
   /* Giai mat, "data floor" (ROADMAP 14.1): a table head over the columns, each entry's length in

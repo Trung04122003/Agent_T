@@ -1,13 +1,15 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import sharp from "sharp";
+import { FIXTURE } from "../playwright.config";
 
-// P14: the Giai mat "data floor" — density, evidence bars, header figures from content/.
+// P14 / P20: the Giai mat "data floor" — density, evidence bars, header figures from content/.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
 type Raw = {
   id: string;
   kind: string;
   visibility?: string;
+  paused?: boolean;
   period?: { start: string; end: string | null; ongoing?: boolean } | null;
   evidence?: { type: string; url?: string; consent?: boolean }[];
 };
@@ -90,31 +92,48 @@ for (const deficiency of ["achromatopsia", "deuteranopia", "protanopia", "tritan
   });
 }
 
-test("14.3 header figures: Giai mat only, every number recomputed from content/claims.json", async ({ page }) => {
+test("20.3 header figures: Giai mat only; with no owner metric, the tier spread alone", async ({ page }) => {
+  expect(JSON.parse(readFileSync("content/metrics.json", "utf8"))).toEqual([]);
   await setMode(page, "mat");
   await page.goto("/vi/");
   await expect(page.locator("[data-stats]")).toBeHidden();
   await page.locator("[data-mode-toggle]").click();
   const board = page.locator("[data-stats]");
   await expect(board).toBeVisible();
+  // "Entries on file" and "years on file" are gone: they measured the book, not the work.
+  await expect(board.locator(".stats__cell")).toHaveCount(1);
+  const t3 = open.filter((c) => tierOf(c) === 3).length;
+  await expect(board.locator('[data-stat="t3"] .stats__num')).toHaveText(String(t3));
+  const count = (n: number) => open.filter((c) => tierOf(c) === n).length;
+  await expect(board.locator('[data-stat="t3"] .stats__note')).toHaveText(`T1 ${count(1)} · T2 ${count(2)} · T3 ${count(3)}`);
+});
 
-  const num = (k: string) => board.locator(`[data-stat="${k}"] .stats__num`);
-  await expect(num("entries")).toHaveText(String(shown.length));
-  await expect(board.locator('[data-stat="entries"] .stats__note')).toHaveText(
-    `${open.length} ${ui.statsOpen.vi} · ${shown.length - open.length} ${ui.statsClassified.vi}`,
-  );
-  await expect(num("ongoing")).toHaveText(String(open.filter((c) => c.period?.ongoing).length));
-  await expect(num("t3")).toHaveText(String(open.filter((c) => tierOf(c) === 3).length));
+test.describe("owner metrics (fixture)", () => {
+  test.use({ baseURL: FIXTURE });
+  test("20.3 a metric shows its value, unit and source code, linked to its entry; notes never", async ({ page }) => {
+    await setMode(page, "giai-mat");
+    await page.goto("/vi/");
+    const cell = page.locator('[data-metric="fx-metric-1"]');
+    await expect(cell.locator("dt")).toHaveText("Chỉ số thử");
+    await expect(cell.locator(".stats__num")).toHaveText(/^12\s+đơn vị$/);
+    await expect(cell.locator(".stats__source")).toHaveText(`${ui.metricSource.vi}: 02`);
+    await expect(cell.locator(".stats__source")).toHaveAttribute("href", "#claim-fx-pending");
+    expect(await page.content()).not.toContain("METRIC-NOTES-SENTINEL");
+  });
+});
 
-  const first = open.map((c) => c.period?.start).filter((s): s is string => !!s && s.includes("-")).sort()[0]!;
-  const [y, m] = first.split("-").map(Number) as [number, number];
-  const now = new Date();
-  const years = Math.floor((now.getUTCFullYear() * 12 + now.getUTCMonth() - (y * 12 + m - 1)) / 12);
-  await expect(num("years")).toHaveText(String(years));
-  await expect(board.locator('[data-stat="years"] .stats__note')).toHaveText(`${ui.statsSince.vi} ${String(m).padStart(2, "0")}/${y}`);
-
-  // 3 to 5 figures (ROADMAP 14.3).
-  const cells = await board.locator(".stats__cell").count();
-  expect(cells).toBeGreaterThanOrEqual(3);
-  expect(cells).toBeLessThanOrEqual(5);
+test("20.2 a paused entry shows 'paused', not a running length (ledger and one-page file)", async ({ page }) => {
+  const paused = raw.filter((c) => c.paused && c.visibility !== "hold");
+  expect(paused.map((c) => c.id)).toContain("role-bluesea");
+  await setMode(page, "giai-mat");
+  await page.goto("/vi/");
+  for (const c of paused) {
+    await expect(page.locator(`#claim-${c.id} .row__dur`)).toHaveText(ui.pausedLabel.vi);
+  }
+  await page.emulateMedia({ media: "print" });
+  for (const c of paused) {
+    const row = page.locator(`[data-onepage] [data-op-row="${c.id}"]`);
+    await expect(row).toContainText(ui.pausedLabel.vi);
+    await expect(row).not.toContainText(ui.durationUnit.vi);
+  }
 });

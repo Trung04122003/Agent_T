@@ -6,12 +6,14 @@ import type { Tier } from "../lib/evidence";
 
 interface Props {
   tier: Tier;
+  /** Show in Mat too (the tier legend, ROADMAP 20.6); rows keep it to Giai mat. */
+  always?: boolean;
 }
-const { tier } = Astro.props;
+const { tier, always = false } = Astro.props;
 const level = Number(tier.slice(1));
 ---
 
-<span class="tier-meter only-giai-mat" data-level={level} aria-hidden="true">
+<span class:list={["tier-meter", !always && "only-giai-mat"]} data-level={level} aria-hidden="true">
   {[1, 2, 3].map((n) => <i class={n <= level ? "is-on" : undefined}></i>)}
 </span>
 

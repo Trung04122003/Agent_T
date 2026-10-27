@@ -65,22 +65,26 @@ test("13.2 the strips follow an in-place language switch", async ({ page }) => {
   await expect(page.locator('[data-page-mark="ledger"]')).toContainText(`${ui.pageLabel.en} 2/3`);
 });
 
-const stampAnims = (page: Page) =>
-  page.locator("[data-claim]").first().locator("[data-stamp]").evaluate((el) =>
-    el.getAnimations().map((a) => {
+/**
+ * Open the first row and read its stamp's animations in the same task: the click handler starts
+ * them synchronously, so a busy machine cannot let the 220 ms stamp finish before it is read.
+ */
+const openAndReadStamp = (page: Page) =>
+  page.locator("[data-claim]").first().evaluate((row) => {
+    (row.querySelector("[data-row-toggle]") as HTMLElement).click();
+    return row.querySelector("[data-stamp]")!.getAnimations().map((a) => {
       const e = a.effect as KeyframeEffect;
       const t = e.getComputedTiming();
       const props = new Set(e.getKeyframes().flatMap((k) => Object.keys(k)).filter((k) => !["offset", "computedOffset", "easing", "composite"].includes(k)));
       return { duration: Number(t.duration), delay: Number(t.delay), props: [...props].sort() };
-    }),
-  );
+    });
+  });
 
 test("13.3 Mat: opening a row lands a stamp (transform + opacity, 220 ms)", async ({ page }) => {
   await setMode(page, "mat");
   await page.goto("/vi/");
   const row = page.locator("[data-claim]").first();
-  await row.locator("[data-row-toggle]").click();
-  expect(await stampAnims(page)).toEqual([{ duration: 220, delay: 120, props: ["opacity", "transform"] }]);
+  expect(await openAndReadStamp(page)).toEqual([{ duration: 220, delay: 120, props: ["opacity", "transform"] }]);
   await expect(row.locator("[data-stamp]")).toBeVisible();
   await expect(row.locator("[data-stamp]")).toContainText(ui.stampOpened.vi);
   await expect(row.locator("[data-stamp]")).toHaveAttribute("aria-hidden", "true");
@@ -90,9 +94,8 @@ test("13.3 Giai mat: no stamp", async ({ page }) => {
   await setMode(page, "giai-mat");
   await page.goto("/vi/");
   const row = page.locator("[data-claim]").first();
-  await row.locator("[data-row-toggle]").click();
+  expect(await openAndReadStamp(page)).toEqual([]);
   await expect(row.locator("[data-stamp]")).toBeHidden();
-  expect(await stampAnims(page)).toEqual([]);
 });
 
 test("13.3 reduced motion: the stamp is there at once, no animation", async ({ page }) => {
@@ -100,12 +103,11 @@ test("13.3 reduced motion: the stamp is there at once, no animation", async ({ p
   await setMode(page, "mat");
   await page.goto("/vi/");
   const row = page.locator("[data-claim]").first();
-  await row.locator("[data-row-toggle]").click();
+  expect(await openAndReadStamp(page)).toEqual([]);
   await expect(row.locator("[data-stamp]")).toBeVisible();
-  expect(await stampAnims(page)).toEqual([]);
 });
 
-test("13.4 viewfinder: portrait lines and map reticle in Mat only, vector only", async ({ page }) => {
+test("13.4 / 20.5 viewfinder: vector only; map reticle Mat only; the portrait placeholder keeps it in both modes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await setMode(page, "mat");
   await page.goto("/vi/");
@@ -117,6 +119,22 @@ test("13.4 viewfinder: portrait lines and map reticle in Mat only, vector only",
 
   await page.locator("[data-mode-toggle]").click();
   await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
-  await expect(page.locator("[data-finder]")).toBeHidden();
+  // No real photo yet: the Giai mat frame shows the viewfinder, not an empty grey box (ROADMAP 20.5).
+  await expect(page.locator("[data-portrait] [data-placeholder]")).toHaveCount(1);
+  await expect(page.locator("[data-finder]")).toBeVisible();
   await expect(page.locator('[data-place="da-nang"] .map__reticle')).toHaveCSS("opacity", "0");
+});
+
+test("20.6 tier legend: the same bars in Mat, three columns on desktop, one at 375px", async ({ page }) => {
+  await setMode(page, "mat");
+  for (const [width, cols] of [[1280, 3], [375, 1]] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/vi/");
+    const items = page.locator("[data-tier-legend] li");
+    for (let i = 0; i < 3; i++) await expect(items.nth(i).locator(".tier-meter i.is-on")).toHaveCount(i + 1);
+    await expect(items.first().locator(".tier-meter")).toBeVisible();
+    const tops = await items.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(new Set(tops).size, `${width}px`).toBe(cols === 3 ? 1 : 3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  }
 });

@@ -11,3 +11,6 @@ Thumbs.db
 
 # Downloaded source data (scripts/fetch-map-data.mjs); only derived files are committed
 data/
+
+# Performance measurements (docs/performance-playbook.md)
+.perf/

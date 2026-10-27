@@ -2,6 +2,16 @@
 // `period` of open entries: a month counts an entry from its start month through its end month;
 // ongoing entries run to the build month. Entries whose period has no month (year only) or no
 // end are left out rather than guessed. No money, no rates: just how many at once.
+import { publicClaims } from "./ledger";
+import type { Claim } from "./schema";
+
+/**
+ * Entries the chart counts: public, open, with a period, and not paused (ROADMAP 20.2: a paused
+ * entry is not a commitment being carried now).
+ */
+export function chartEntries(claims: Claim[]): Extract<Claim, { kind: "role" | "education" | "project" }>[] {
+  return publicClaims(claims).flatMap((c) => (c.kind !== "classified" && c.period && !c.paused ? [c] : []));
+}
 
 export type Span = { id: string; start: string; end: string | null; ongoing?: true | undefined };
 /** A run of consecutive months with the same set of entries ("YYYY-MM", both inclusive). */

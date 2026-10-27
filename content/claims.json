@@ -261,6 +261,7 @@
     "id": "role-bluesea",
     "kind": "role",
     "visibility": "open",
+    "paused": true,
     "status": "confirmed",
     "bluf": { "vi": "Làm kinh doanh cho công ty phân phối thực phẩm của gia đình; vai trò đang tạm dừng.", "en": "Worked in sales for the family food distributor; the role is now paused." },
     "org": {

@@ -1,15 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { chartEntries } from "./commitments";
 import { tierOf } from "./evidence";
-import { claims as claimsSchema } from "./schema";
-import { durationMonths, ledgerStats } from "./stats";
+import { claim, claims as claimsSchema, type Claim } from "./schema";
+import { durationMonths, tierSpread } from "./stats";
 
-// ROADMAP 14.3: every figure must trace back to content/. The expectations below are recomputed
-// straight from the raw JSON, independently of stats.ts.
+// ROADMAP 14.3 / 20.2 / 20.3: every figure traces back to content/, and paused entries do not run.
 const raw = JSON.parse(readFileSync("content/claims.json", "utf8")) as Array<{
+  id: string;
   kind: string;
   visibility?: string;
-  period?: { start: string; end: string | null; ongoing?: boolean } | null;
+  paused?: boolean;
   evidence?: { type: string; url?: string; consent?: boolean }[];
 }>;
 const built = new Date("2026-10-26T12:00:00Z");
@@ -27,30 +28,42 @@ describe("durationMonths", () => {
   });
 });
 
-describe("ledgerStats on the real content", () => {
-  const stats = ledgerStats(claimsSchema.parse(raw), built);
-  const shown = raw.filter((c) => c.kind === "classified" || c.visibility !== "hold");
-  const open = shown.filter((c) => c.kind !== "classified");
-
-  it("counts only what the ledger shows (hold never counts)", () => {
-    expect(stats.entries).toBe(shown.length);
-    expect(stats.open).toBe(open.length);
-    expect(stats.classified).toBe(shown.length - open.length);
+describe("20.3 tier spread on the real content", () => {
+  it("counts every shown open entry once, hold never", () => {
+    const open = raw.filter((c) => c.kind !== "classified" && c.visibility !== "hold");
+    const expected = { T1: 0, T2: 0, T3: 0 };
+    for (const c of open) expected[tierOf((c.evidence ?? []) as Parameters<typeof tierOf>[0])]++;
+    expect(tierSpread(claimsSchema.parse(raw))).toEqual(expected);
     expect(raw.some((c) => c.visibility === "hold")).toBe(true); // the case is really exercised
   });
+});
 
-  it("years on file run from the earliest public start to the build month", () => {
-    const first = open.map((c) => c.period?.start).filter((s): s is string => !!s && s.includes("-")).sort()[0]!;
-    const [y, m] = first.split("-").map(Number) as [number, number];
-    expect(stats.since).toBe(first);
-    expect(stats.years).toBe(Math.floor((2026 * 12 + 9 - (y * 12 + m - 1)) / 12));
+describe("20.2 paused entries", () => {
+  const entry = (id: string, paused?: true): Claim =>
+    claim.parse({
+      id,
+      kind: "role",
+      visibility: "open",
+      status: "confirmed",
+      org: { vi: id, en: id },
+      title: null,
+      period: { start: "2025-06", end: null, ongoing: true },
+      teaser: null,
+      summary: null,
+      evidence: [],
+      ...(paused ? { paused } : {}),
+    });
+
+  it("schema accepts only paused: true", () => {
+    expect(claim.safeParse({ ...entry("a"), paused: false }).success).toBe(false);
   });
 
-  it("ongoing and evidence tiers match the entries", () => {
-    expect(stats.ongoing).toBe(open.filter((c) => c.period?.ongoing).length);
-    const tiers = { T1: 0, T2: 0, T3: 0 };
-    for (const c of open) tiers[tierOf((c.evidence ?? []) as Parameters<typeof tierOf>[0])]++;
-    expect(stats.tiers).toEqual(tiers);
-    expect(stats.tiers.T1 + stats.tiers.T2 + stats.tiers.T3).toBe(stats.open);
+  it("the commitment chart leaves paused entries out", () => {
+    expect(chartEntries([entry("running"), entry("on-hold", true)]).map((c) => c.id)).toEqual(["running"]);
+  });
+
+  it("Bluesea is paused in content/ and so out of the chart", () => {
+    expect(raw.find((c) => c.id === "role-bluesea")?.paused).toBe(true);
+    expect(chartEntries(claimsSchema.parse(raw)).map((c) => c.id)).not.toContain("role-bluesea");
   });
 });

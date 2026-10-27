@@ -23,7 +23,7 @@ const places = inFileOrder(
 );
 const map = buildMap(
   topo as unknown as Topology,
-  places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon })),
+  places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon, text: p.label[locale] })),
 );
 const heading = await t("mapHeading", locale);
 const title = await t("mapTitle", locale);
@@ -108,10 +108,9 @@ const seas = [
                     <circle class="map__halo" r="4" />
                     {role === "origin" && <circle class="map__ring" r="7" />}
                     <circle class="map__dot" r={role === "current" ? 5.5 : 4} />
-                    <text x="11" y={p.labelY - p.y}>
+                    {/* Spot chosen at build so no label covers another (ROADMAP 20.4); the role is in the list only. */}
+                    <text x={p.label.dx} y={p.label.dy} text-anchor={p.label.anchor}>
                       {label[locale]}
-                      {/* Same line as the name: close places (Da Nang, Dien Ban) never overlap. */}
-                      <tspan class="map__role" dx="6">{roles[role]}</tspan>
                     </text>
                   </g>
                 </g>
@@ -386,17 +385,9 @@ const seas = [
   .map__point text {
     fill: var(--ink);
   }
-  /* Role line: shown for the place under the pointer or picked in the legend (150 ms, opacity). */
-  .map__svg .map__role {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    fill: var(--accent);
-    opacity: 0;
-    transition: opacity 150ms ease;
-  }
-  .map__point.is-active .map__role {
-    opacity: 1;
+  /* Giai mat (ROADMAP 20.4): neighbours a shade darker, so Viet Nam reads as the subject. */
+  :global(:root[data-mode="giai-mat"]) .map__land path {
+    fill: var(--line);
   }
 
   /* Draw once when scrolled into view (UX section 3; UX-v2 caps each effect at 600 ms): outline

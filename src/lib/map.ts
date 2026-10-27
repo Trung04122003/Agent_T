@@ -19,17 +19,21 @@ const ARCHIPELAGOS = {
 } as const;
 
 type Box = { west: number; east: number; south: number; north: number };
-type Point = { id: string; lat: number; lon: number };
+/** `text` is the label as shown (it sets the label's width for the placement). */
+type Point = { id: string; lat: number; lon: number; text: string };
+/** Where a point's label goes, relative to its dot (SVG units, text anchor). */
+export type LabelSpot = { dx: number; dy: number; anchor: "start" | "end" };
 export type MapGeometry = {
   countries: { code: string; d: string }[];
   archipelagos: Record<
     keyof typeof ARCHIPELAGOS,
     { dots: [number, number][]; label: [number, number]; anchor: "start" | "end" }
   >;
-  points: { id: string; x: number; y: number; labelY: number }[];
+  points: { id: string; x: number; y: number; label: LabelSpot }[];
 };
 
-const LABEL_GAP = 14;
+/** Label metrics at the map's 11px monospace: about 0.6em per character. */
+export const LABEL = { size: 11, char: 6.6, dot: 7, pad: 2 } as const;
 
 const inside = ([lon, lat]: [number, number], b: Box) => lon >= b.west && lon <= b.east && lat >= b.south && lat <= b.north;
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -88,22 +92,52 @@ export function buildMap(topo: Topology, points: Point[]): MapGeometry {
       hoangSa: archipelago(ARCHIPELAGOS.hoangSa, "start"),
       truongSa: archipelago(ARCHIPELAGOS.truongSa, "end"),
     },
-    points: spreadLabels(
+    points: placeLabels(
       points.map((p) => {
         const [x, y] = project(p.lon, p.lat);
-        return { id: p.id, x, y, labelY: y + 4 };
+        return { id: p.id, x, y, text: p.text };
       }),
     ),
   };
 }
 
-/** Point labels sit to the right of their dot; close neighbours (Da Nang, Dien Ban) get pushed apart. */
-function spreadLabels<T extends { y: number; labelY: number }>(points: T[]): T[] {
-  const byY = [...points].sort((a, b) => a.labelY - b.labelY);
-  for (let i = 1; i < byY.length; i++) {
-    const prev = byY[i - 1]!;
-    const cur = byY[i]!;
-    if (cur.labelY - prev.labelY < LABEL_GAP) cur.labelY = prev.labelY + LABEL_GAP;
-  }
-  return points;
+export type Rect = { x0: number; y0: number; x1: number; y1: number };
+const overlaps = (a: Rect, b: Rect) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+
+/** The box a label covers at a given spot (baseline at dy; ascent ~0.8em, descent ~0.3em). */
+export function labelRect(p: { x: number; y: number; text: string }, s: LabelSpot): Rect {
+  const w = [...p.text].length * LABEL.char + LABEL.pad * 2;
+  const x0 = s.anchor === "start" ? p.x + s.dx - LABEL.pad : p.x + s.dx - w + LABEL.pad;
+  const base = p.y + s.dy;
+  return { x0, y0: base - LABEL.size * 0.8 - LABEL.pad, x1: x0 + w, y1: base + LABEL.size * 0.3 + LABEL.pad };
+}
+
+/** Tried in order: right, left, then below and above on either side. */
+const SPOTS: LabelSpot[] = [
+  { dx: 11, dy: 4, anchor: "start" },
+  { dx: -11, dy: 4, anchor: "end" },
+  { dx: 9, dy: 17, anchor: "start" },
+  { dx: -9, dy: 17, anchor: "end" },
+  { dx: 9, dy: -10, anchor: "start" },
+  { dx: -9, dy: -10, anchor: "end" },
+];
+
+/**
+ * ROADMAP 20.4: give every point label a spot that covers no other label and no other dot
+ * (Da Nang / Dien Ban, Thai Nguyen / Thuong Tin are close). First free spot wins; if none is free,
+ * the spot with the least overlap is kept.
+ */
+function placeLabels(points: { id: string; x: number; y: number; text: string }[]) {
+  const dots: Rect[] = points.map((p) => ({ x0: p.x - LABEL.dot, y0: p.y - LABEL.dot, x1: p.x + LABEL.dot, y1: p.y + LABEL.dot }));
+  const taken: Rect[] = [];
+  return points.map((p, i) => {
+    const others = dots.filter((_, j) => j !== i);
+    const cost = (s: LabelSpot) => {
+      const r = labelRect(p, s);
+      return [...taken, ...others].filter((o) => overlaps(r, o)).length;
+    };
+    const label = SPOTS.find((s) => cost(s) === 0) ?? [...SPOTS].sort((a, b) => cost(a) - cost(b))[0]!;
+    taken.push(labelRect(p, label));
+    return { id: p.id, x: p.x, y: p.y, label };
+  });
 }

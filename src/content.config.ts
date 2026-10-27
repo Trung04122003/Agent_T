@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { file } from "astro/loaders";
-import { CLAIMS_FILE, RISKS_FILE } from "./lib/paths";
-import { claim, identity as identitySchema, localized, place, risk, withoutInternal, withoutNotes } from "./lib/schema";
+import { CLAIMS_FILE, METRICS_FILE, RISKS_FILE } from "./lib/paths";
+import { claim, identity as identitySchema, localized, metric, place, risk, withoutInternal, withoutNotes } from "./lib/schema";
 
 const claims = defineCollection({
   loader: file(CLAIMS_FILE, {
@@ -34,4 +34,9 @@ const risks = defineCollection({
   schema: risk.transform(withoutNotes),
 });
 
-export const collections = { claims, identity, places, ui, risks };
+const metrics = defineCollection({
+  loader: file(METRICS_FILE),
+  schema: metric.transform(withoutNotes),
+});
+
+export const collections = { claims, identity, places, ui, risks, metrics };

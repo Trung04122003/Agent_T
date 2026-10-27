@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fx-metric-1",
+    "label": { "vi": "Chỉ số thử", "en": "Test figure" },
+    "value": 12,
+    "unit": { "vi": "đơn vị", "en": "units" },
+    "source": "fx-pending",
+    "notes": "METRIC-NOTES-SENTINEL"
+  }
+]

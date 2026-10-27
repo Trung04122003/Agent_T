@@ -6,8 +6,7 @@
 // Static SVG built here; labels are HTML on top so they stay readable at any width.
 import { t, type Locale } from "../lib/i18n";
 import { BUILT } from "../lib/dossier";
-import { concurrency } from "../lib/commitments";
-import { publicClaims } from "../lib/ledger";
+import { chartEntries, concurrency } from "../lib/commitments";
 import type { Claim } from "../lib/schema";
 
 interface Props {
@@ -15,7 +14,7 @@ interface Props {
   locale: Locale;
 }
 const { claims, locale } = Astro.props;
-const open = publicClaims(claims).flatMap((c) => (c.kind !== "classified" && c.period ? [c] : []));
+const open = chartEntries(claims);
 const data = concurrency(
   open.map((c) => ({ id: c.id, ...c.period! })),
   BUILT,

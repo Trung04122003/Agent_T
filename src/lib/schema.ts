@@ -142,6 +142,8 @@ const openClaim = z
     bluf: bluf.nullable().optional(),
     tearSheet: tearSheet.nullable().optional(),
     aar: aar.nullable().optional(),
+    /** ROADMAP 20.2: on pause. Shown as "paused", not counted as ongoing nor in the commitment chart. */
+    paused: z.literal(true).optional(),
     evidence: z.array(evidence),
     /** Internal record that the organisation agreed to publication (ROADMAP 9.6). Never rendered. */
     approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).optional(),
@@ -247,6 +249,19 @@ export const risk = z.strictObject({
   id: text,
   risk: localized,
   mitigation: localized,
+  notes: z.string().optional(),
+});
+
+/**
+ * content/metrics.json (ROADMAP 20.3): result figures the owner gives, each traced to the entry it
+ * comes from (`source`, an open entry id). Never filled in by Claude Code; empty means none shown.
+ */
+export const metric = z.strictObject({
+  id: text,
+  label: localized,
+  value: z.number(),
+  unit: localized.nullable(),
+  source: text,
   notes: z.string().optional(),
 });
 

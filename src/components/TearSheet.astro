@@ -17,9 +17,9 @@ interface Props {
 const { claim, locale } = Astro.props;
 const sheet = claim.tearSheet;
 const show = hasTearSheet(sheet);
-const keys = ["tearSheetHeading", "tsRole", "tsScale", "colPeriod", "tsResult", "evidenceHeading", "durationUnit", "periodPresent"];
-const [heading, role, scale, time, result, evidence, unit, present] = show ? await Promise.all(keys.map((k) => t(k, locale))) : [];
-const months = claim.period ? durationMonths(claim.period, BUILT) : null;
+const keys = ["tearSheetHeading", "tsRole", "tsScale", "colPeriod", "tsResult", "evidenceHeading", "durationUnit", "periodPresent", "pausedLabel"];
+const [heading, role, scale, time, result, evidence, unit, present, paused] = show ? await Promise.all(keys.map((k) => t(k, locale))) : [];
+const months = claim.period && !claim.paused ? durationMonths(claim.period, BUILT) : null;
 const tier = tierOf(claim.evidence);
 ---
 
@@ -37,6 +37,7 @@ const tier = tierOf(claim.evidence);
             <dd class="ts__mono" dir="ltr">
               {formatPeriod(claim.period, present!)}
               {months !== null && <span class="ts__sub">{months} {unit}</span>}
+              {claim.paused && <span class="ts__sub">{paused}</span>}
             </dd>
           </div>
         )}
