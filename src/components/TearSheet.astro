@@ -1,0 +1,135 @@
+---
+// Tear sheet (ROADMAP 17.1): a project's key facts as a compact data card, Giai mat only.
+// Role, scale and result are the owner's words; time and evidence tier are derived from the
+// entry. A null cell is left out; with no written cell the card is not rendered at all.
+import { t, type Locale } from "../lib/i18n";
+import { BUILT } from "../lib/dossier";
+import { tierOf } from "../lib/evidence";
+import { formatPeriod } from "../lib/ledger";
+import { hasTearSheet, type Claim } from "../lib/schema";
+import { durationMonths } from "../lib/stats";
+import TierMeter from "./TierMeter.astro";
+
+interface Props {
+  claim: Extract<Claim, { kind: "role" | "education" | "project" }>;
+  locale: Locale;
+}
+const { claim, locale } = Astro.props;
+const sheet = claim.tearSheet;
+const show = hasTearSheet(sheet);
+const keys = ["tearSheetHeading", "tsRole", "tsScale", "colPeriod", "tsResult", "evidenceHeading", "durationUnit", "periodPresent"];
+const [heading, role, scale, time, result, evidence, unit, present] = show ? await Promise.all(keys.map((k) => t(k, locale))) : [];
+const months = claim.period ? durationMonths(claim.period, BUILT) : null;
+const tier = tierOf(claim.evidence);
+---
+
+{
+  show && sheet && (
+    <section class="ts only-giai-mat" data-tear-sheet aria-label={heading}>
+      <p class="ts__heading" aria-hidden="true">
+        {heading}
+      </p>
+      <dl class="ts__grid">
+        {/* Short derived facts first, side by side; the owner's sentences below, one per row. */}
+        {claim.period && (
+          <div class="ts__cell" data-cell="time">
+            <dt>{time}</dt>
+            <dd class="ts__mono" dir="ltr">
+              {formatPeriod(claim.period, present!)}
+              {months !== null && <span class="ts__sub">{months} {unit}</span>}
+            </dd>
+          </div>
+        )}
+        <div class="ts__cell" data-cell="evidence">
+          <dt>{evidence}</dt>
+          <dd class="ts__mono">
+            <TierMeter tier={tier} /> {tier}
+          </dd>
+        </div>
+        {sheet.role && (
+          <div class="ts__cell ts__cell--wide" data-cell="role">
+            <dt>{role}</dt>
+            <dd>{sheet.role[locale]}</dd>
+          </div>
+        )}
+        {sheet.scale && (
+          <div class="ts__cell ts__cell--wide" data-cell="scale">
+            <dt>{scale}</dt>
+            <dd>{sheet.scale[locale]}</dd>
+          </div>
+        )}
+        {sheet.result && (
+          <div class="ts__cell ts__cell--wide" data-cell="result">
+            <dt>{result}</dt>
+            <dd>{sheet.result[locale]}</dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  )
+}
+
+<style>
+  .ts {
+    margin-block: var(--space) calc(var(--space) * 2);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--accent);
+    background: var(--surface);
+  }
+  .ts__heading {
+    margin: 0;
+    padding: calc(var(--space) * 0.75) calc(var(--space) * 1.5);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--line);
+  }
+  .ts__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+  }
+  .ts__cell {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: var(--space) calc(var(--space) * 1.5);
+    border-inline-end: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .ts__cell--wide {
+    grid-column: 1 / -1;
+    border-inline-end: 0;
+  }
+  .ts__cell--wide:last-child {
+    border-bottom: 0;
+  }
+  /* Owner text: label beside the sentence on wide screens, like a data sheet. */
+  @media (min-width: 720px) {
+    .ts__cell--wide {
+      grid-template-columns: 12ch minmax(0, 1fr);
+      gap: calc(var(--space) * 2);
+    }
+  }
+  .ts__cell dt {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .ts__cell dd {
+    margin: 0;
+  }
+  .ts__mono {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .ts__sub {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+</style>

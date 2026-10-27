@@ -26,6 +26,17 @@
     "period": { "start": "2021", "end": "2022-06" },
     "teaser": null,
     "summary": { "vi": "Tóm tắt thử nghiệm số hai.", "en": "Test summary two." },
+    "tearSheet": {
+      "role": { "vi": "Vai trò thử", "en": "Test role" },
+      "scale": { "vi": "Quy mô thử", "en": "Test scale" },
+      "result": { "vi": "Kết quả thử", "en": "Test result" }
+    },
+    "aar": {
+      "planned": { "vi": "Dự định thử", "en": "Test plan" },
+      "actual": { "vi": "Thực tế thử", "en": "Test actual" },
+      "whyDifferent": { "vi": "Lý do thử", "en": "Test reason" },
+      "nextTime": { "vi": "Lần sau thử", "en": "Test next time" }
+    },
     "evidence": [],
     "notes": "NOTES-SENTINEL-TWO"
   },
@@ -51,6 +62,12 @@
     "period": null,
     "teaser": null,
     "summary": { "vi": "HOLD-SENTINEL-SUMMARY", "en": "HOLD-SENTINEL-SUMMARY" },
+    "aar": {
+      "planned": { "vi": "HOLD-AAR-SENTINEL", "en": "HOLD-AAR-SENTINEL" },
+      "actual": { "vi": "x thử", "en": "x test" },
+      "whyDifferent": { "vi": "y thử", "en": "y test" },
+      "nextTime": { "vi": "z thử", "en": "z test" }
+    },
     "evidence": []
   },
   {
@@ -69,6 +86,7 @@
     "period": { "start": "2020", "end": null },
     "teaser": null,
     "summary": { "vi": "Tóm tắt thử bổ sung 1.", "en": "Extra test summary 1." },
+    "tearSheet": { "role": null, "scale": null, "result": null },
     "evidence": []
   },
   {

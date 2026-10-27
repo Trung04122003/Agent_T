@@ -22,6 +22,24 @@
       "vi": "Đã tốt nghiệp vào tháng 06/2026",
       "en": "Graduated in June 2026"
     },
+    "aar": {
+      "planned": {
+        "vi": "Hoàn thành & Tốt nghiệp trong đúng 4 năm (2021 - 2025)",
+        "en": "Finish and graduate in exactly 4 years (2021–2025)"
+      },
+      "actual": {
+        "vi": "Hoàn thành & Tốt nghiệp trong 5 năm (2021 - 2026)",
+        "en": "Finished and graduated in 5 years (2021–2026)"
+      },
+      "whyDifferent": {
+        "vi": "Học trễ hơn 1 năm, thiếu tín chỉ vì bỏ lỡ 2 kỳ học hè.",
+        "en": "One year behind: short of credits after missing 2 summer terms."
+      },
+      "nextTime": {
+        "vi": "Lấy làm kinh nghiệm, không bỏ lỡ bất cứ thứ gì có khả năng ảnh hưởng đến việc hoàn thành tiến độ công việc/dự án về sau.",
+        "en": "A lesson kept: never miss anything that could affect finishing work or projects on schedule."
+      }
+    },
     "evidence": [
       {
         "type": "document-on-request",
@@ -55,6 +73,24 @@
     "summary": {
       "vi": "Một Chapter đã ra đời mang tên BBE Gryffindor Chapter, với tổng cộng 26 thành viên, trong đó có 2 Giám đốc và 1 đại sứ.",
       "en": "A Chapter named BBE Gryffindor Chapter was established, with a total of 26 members, including 2 Directors and 1 Ambassador."
+    },
+    "aar": {
+      "planned": {
+        "vi": "Lập được 3 Chapter (Chi hội) tại BBE.",
+        "en": "Found 3 Chapters at BBE."
+      },
+      "actual": {
+        "vi": "Lập được 1 Chapter (Chi hội) tại BBE.",
+        "en": "Founded 1 Chapter at BBE."
+      },
+      "whyDifferent": {
+        "vi": "Không đủ động lực, lửa, đam mê & sự kiên trì. Không đủ thời gian vì khoảng thời gian sinh viên có hạn.",
+        "en": "Not enough drive, fire, passion and persistence. Not enough time, as a student’s time is limited."
+      },
+      "nextTime": {
+        "vi": "Kiên trì với mục tiêu, lập ra mục tiêu, thực hiện bằng con số.",
+        "en": "Stick to goals: set them, and work towards them in numbers."
+      }
     },
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
@@ -117,6 +153,20 @@
     "summary": {
       "vi": "Hệ thống giám sát chất lượng không khí tại Việt Nam, cho phép theo dõi và phân tích dữ liệu chất lượng không khí theo thời gian thực. Khóa luận tốt nghiệp, đề tài cá nhân, thực hiện và bảo vệ hoàn toàn bằng tiếng Anh; điểm 9.1/10.",
       "en": "Air quality monitoring system in Vietnam, allowing real-time tracking and analysis of air quality data. Graduation thesis, an individual project, written and defended entirely in English; graded 9.1/10."
+    },
+    "tearSheet": {
+      "role": {
+        "vi": "Làm một mình: Thiết kế, tìm kiếm & phân tích dữ liệu, thống kê, lập trình, bảo vệ, thiết lập công nghệ.",
+        "en": "Solo: design, data sourcing and analysis, statistics, programming, defence and technology setup."
+      },
+      "scale": {
+        "vi": "Dữ liệu rộng lớn, đủ dùng để đo AQI cho cả Việt Nam ít nhất trong vòng 3 tháng cho đến khi có dữ liệu mới. Số người dùng: 1 (xem cá nhân). Số module: 6",
+        "en": "A large dataset, enough to measure AQI for all of Viet Nam for at least 3 months, until new data arrives. Users: 1 (personal viewing). Modules: 6"
+      },
+      "result": {
+        "vi": "9.1/10 điểm (bảo vệ & phản biện bằng tiếng Anh). Chỉ số AQI được thực hiện thành công với bản đồ nhiệt theo từng khu vực và báo hiệu nguy cơ sức khỏe tiềm ẩn thông qua AQI.",
+        "en": "Graded 9.1/10 (defence and examination in English). The AQI was computed successfully, with a heat map by region and alerts on potential health risks based on the AQI."
+      }
     },
     "evidence": [
       { "type": "link", "url": "https://github.com/Trung04122003/aqm_front_end.git", "note": { "vi": "Mã nguồn dự án FE trên GitHub", "en": "Front-end source code on GitHub" } },
@@ -233,6 +283,24 @@
     "summary": {
       "vi": "Công ty phân phối thực phẩm của gia đình, phục vụ khách sạn, nhà hàng và quán cà phê tại Đà Nẵng – Hội An. Vai trò kinh doanh tạm dừng; việc chăm sóc khách hàng hiện có vẫn được duy trì.",
       "en": "Family-owned food distributor serving hotels, restaurants and cafés in Da Nang and Hoi An. The sales role is paused; care for existing customers continues."
+    },
+    "aar": {
+      "planned": {
+        "vi": "Mở rộng đáng kể số khách hàng của công ty trong vòng 1 năm.",
+        "en": "Grow the company’s customer base substantially within 1 year."
+      },
+      "actual": {
+        "vi": "Số khách hàng của công ty có tăng nhưng chưa đạt mục tiêu đề ra trong năm đó.",
+        "en": "The customer base grew, but fell short of the target within the year."
+      },
+      "whyDifferent": {
+        "vi": "Chưa đủ nghiên cứu thị trường, chưa đủ phân tích thống kê, chưa đủ kinh nghiệm kinh doanh (Sales), chưa đủ bền bỉ để chăm sóc khách hàng hàng ngày.",
+        "en": "Not enough market research, statistical analysis or sales experience, and not enough stamina for daily customer care."
+      },
+      "nextTime": {
+        "vi": "Lập kế hoạch bài bản, kỷ luật là sức mạnh, làm việc thông minh.",
+        "en": "Plan properly; discipline is strength; work smart."
+      }
     },
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }

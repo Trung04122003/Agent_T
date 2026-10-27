@@ -1,0 +1,123 @@
+---
+// After-action review (ROADMAP 17.2), the owner's words. Mat shows only the label, sealed;
+// Giai mat opens it: planned -> actual, why it differed -> next time.
+import { t, type Locale } from "../lib/i18n";
+import type { Claim } from "../lib/schema";
+
+interface Props {
+  aar: NonNullable<Extract<Claim, { kind: "role" | "education" | "project" }>["aar"]>;
+  locale: Locale;
+}
+const { aar, locale } = Astro.props;
+const [heading, planned, actual, why, next] = await Promise.all(
+  ["aarHeading", "aarPlanned", "aarActual", "aarWhy", "aarNext"].map((k) => t(k, locale)),
+);
+const cells = [
+  { key: "planned", label: planned, text: aar.planned[locale] },
+  { key: "actual", label: actual, text: aar.actual[locale] },
+  { key: "why", label: why, text: aar.whyDifferent[locale] },
+  { key: "next", label: next, text: aar.nextTime[locale] },
+];
+---
+
+<section class="aar" data-aar aria-label={heading}>
+  <p class="aar__label" aria-hidden="true">
+    <span>{heading}</span>
+    <span class="only-mat aar__seal"></span>
+  </p>
+  <dl class="aar__grid only-giai-mat">
+    {
+      cells.map((c, i) => (
+        <div class={`aar__cell${i % 2 === 0 ? " aar__cell--from" : ""}`} data-aar-cell={c.key}>
+          <dt>{c.label}</dt>
+          <dd>{c.text}</dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>
+
+<style>
+  .aar {
+    margin-block: var(--space) calc(var(--space) * 2);
+  }
+  .aar__label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space);
+    margin: 0 0 var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  /* Mat: the review is sealed; only its label and a closed bar show. */
+  .aar__seal {
+    display: inline-block;
+    width: 12ch;
+    height: 0.9em;
+    background: var(--redact);
+  }
+  /* Two rows: planned -> actual, why it differed -> next time. */
+  .aar__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1px;
+    margin: 0;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  @media (min-width: 720px) {
+    .aar__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .aar__cell {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: var(--space) calc(var(--space) * 1.5);
+    background: var(--surface);
+  }
+  @media (min-width: 720px) {
+    /* The arrow sits on the divider between the two cells of a row. */
+    .aar__cell--from::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      inset-inline-end: 0;
+      z-index: 1;
+      padding: 0 6px;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--accent);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      transform: translate(50%, -50%);
+    }
+    :global([dir="rtl"]) .aar__cell--from::after {
+      content: "←";
+      transform: translate(-50%, -50%);
+    }
+  }
+  .aar__cell dt {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .aar__cell dd {
+    margin: 0;
+  }
+  @media (forced-colors: active) {
+    .aar__seal {
+      background: CanvasText;
+    }
+  }
+</style>

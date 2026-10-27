@@ -1,7 +1,7 @@
 // Every displayed localized string in content/, gathered for the completeness check (ROADMAP 10.3).
 // Reads the JSON files directly so both the build (Astro) and scripts/check-locales.mjs use it.
 import { readFileSync } from "node:fs";
-import { CLAIMS_FILE } from "./paths.ts";
+import { CLAIMS_FILE, RISKS_FILE } from "./paths.ts";
 
 const read = (path: string): unknown => JSON.parse(readFileSync(path, "utf8"));
 
@@ -29,6 +29,7 @@ export function contentStrings(): { strings: Record<string, unknown>[]; reviewed
     ...localizedObjects(claims),
     ...localizedObjects(read("content/places.json")),
     ...localizedObjects(read("content/lenses.json")),
+    ...localizedObjects(read(RISKS_FILE)),
     identity.positioning,
   ];
   return { strings, reviewed: identity.codenames.filter((c) => c.reviewed).map((c) => c.locale) };

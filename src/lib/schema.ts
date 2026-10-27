@@ -109,6 +109,25 @@ export function sameLabel(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
+/**
+ * Tear sheet (ROADMAP 17.1), projects only, written by the owner. Time and evidence tier are not
+ * typed here: they come from `period` and `evidence`. A null cell is left out on the page; with
+ * no written cell at all the tear sheet is not shown.
+ */
+export const tearSheet = z.strictObject({
+  role: localized.nullable(),
+  scale: localized.nullable(),
+  result: localized.nullable(),
+});
+
+/** After-action review (ROADMAP 17.2): all four fields, or no `aar` at all. */
+export const aar = z.strictObject({
+  planned: localized,
+  actual: localized,
+  whyDifferent: localized,
+  nextTime: localized,
+});
+
 const openClaim = z
   .strictObject({
     id: text,
@@ -121,6 +140,8 @@ const openClaim = z
     teaser: localized.nullable(),
     summary: localized.nullable(),
     bluf: bluf.nullable().optional(),
+    tearSheet: tearSheet.nullable().optional(),
+    aar: aar.nullable().optional(),
     evidence: z.array(evidence),
     /** Internal record that the organisation agreed to publication (ROADMAP 9.6). Never rendered. */
     approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).optional(),
@@ -133,7 +154,15 @@ const openClaim = z
         ctx.addIssue({ code: "custom", path: ["title", l], message: "title repeats org" });
       }
     }
+    if (c.tearSheet && c.kind !== "project") {
+      ctx.addIssue({ code: "custom", path: ["tearSheet"], message: "a tear sheet belongs to a project" });
+    }
   });
+
+/** Has the owner written at least one tear sheet cell? Otherwise nothing is shown. */
+export function hasTearSheet(t: z.infer<typeof tearSheet> | null | undefined): boolean {
+  return Boolean(t && (t.role || t.scale || t.result));
+}
 
 // No empty row may be published. Enforced by the production ledger gate only, so local builds
 // still work while the owner fills in missing data (decision 2026-10-24).
@@ -208,6 +237,17 @@ export const lenses = z.strictObject({
       }),
     )
     .min(1),
+});
+
+/**
+ * content/risks.json (ROADMAP 17.3): "Limits and risks", written by the owner about themself, in
+ * the manner of a prospectus's risk factors. Each item is a risk and how it is reduced.
+ */
+export const risk = z.strictObject({
+  id: text,
+  risk: localized,
+  mitigation: localized,
+  notes: z.string().optional(),
 });
 
 /** content/ui.json: interface microcopy (UX section 6), one localized string per key. */

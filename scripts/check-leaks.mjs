@@ -19,6 +19,7 @@ const norm = (s) => s.normalize("NFC").toLowerCase();
 const claims = readJson("claims.json");
 const identity = readJson("identity.json");
 const places = readJson("places.json");
+const risks = readJson("risks.json");
 
 const SKIP_KEYS = new Set(["kind", "visibility", "status", "type"]);
 function collectStrings(value, out, key = "") {
@@ -48,6 +49,9 @@ for (const c of claims) {
     }
   }
   if (typeof c.notes === "string") secrets.push({ rule: `notes (${c.id})`, s: c.notes });
+}
+for (const r of risks) {
+  if (typeof r.notes === "string") secrets.push({ rule: `notes (risk ${r.id})`, s: r.notes });
 }
 for (const p of places) if (typeof p.notes === "string") secrets.push({ rule: `notes (place ${p.id})`, s: p.notes });
 if (typeof identity.positioning?.notes === "string") secrets.push({ rule: "notes (identity)", s: identity.positioning.notes });

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "fx-risk-1",
+    "risk": { "vi": "Rủi ro thử một.", "en": "Test risk one." },
+    "mitigation": { "vi": "Cách giảm thử một.", "en": "Test mitigation one." },
+    "notes": "RISK-NOTES-SENTINEL"
+  },
+  {
+    "id": "fx-risk-2",
+    "risk": { "vi": "Rủi ro thử hai.", "en": "Test risk two." },
+    "mitigation": { "vi": "Cách giảm thử hai.", "en": "Test mitigation two." }
+  }
+]

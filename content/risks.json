@@ -1,0 +1,38 @@
+[
+  {
+    "id": "risk-large-teams",
+    "risk": {
+      "vi": "Kinh nghiệm quản lý đội lớn còn ít.",
+      "en": "Little experience managing large teams."
+    },
+    "mitigation": {
+      "vi": "Học cách quản lý từng đội nhỏ một cách chắc chắn và chất lượng, đội nhỏ thực hiện được thì đội lớn không quá khó khăn.",
+      "en": "Learning to manage each small team solidly and well: once small teams deliver, large ones are not too hard."
+    },
+    "notes": "Owner's words (2026-10-27); 'chắc suất' corrected to 'chất lượng' by the owner. EN drafted by Claude, awaiting owner review."
+  },
+  {
+    "id": "risk-drive-discipline",
+    "risk": {
+      "vi": "Hạn chế về động lực & kỷ luật của bản thân trong công việc.",
+      "en": "Limited personal drive and discipline at work."
+    },
+    "mitigation": {
+      "vi": "Lấy sức mạnh thể chất để học tập về sự kỷ luật, lấy mục tiêu nhiều năm sau để học tập về động lực.",
+      "en": "Using physical training to learn discipline, and long-term goals to learn drive."
+    },
+    "notes": "Owner's words (2026-10-27). EN drafted by Claude, awaiting owner review."
+  },
+  {
+    "id": "risk-dreams-action",
+    "risk": {
+      "vi": "Mơ mộng về những ước mơ lớn, những khát vọng lớn nhưng thiếu sự hành động.",
+      "en": "Big dreams and big ambitions, but too little action."
+    },
+    "mitigation": {
+      "vi": "Làm những điều nhỏ nhưng thực tế, vẫn giữ ước mơ lớn nhưng phân chia nó ra thành những hành động nhỏ cụ thể.",
+      "en": "Doing small, practical things: keeping the big dreams, but breaking them into small, concrete actions."
+    },
+    "notes": "Owner's words (2026-10-27). EN drafted by Claude, awaiting owner review."
+  }
+]

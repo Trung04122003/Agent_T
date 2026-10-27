@@ -28,6 +28,7 @@ describe("Ledger (ROADMAP 3.1)", () => {
     const html = await render(true);
     expect(claims.some((c) => c.id === "fx-hold")).toBe(true);
     expect(html).not.toContain("HOLD-SENTINEL");
+    expect(html).not.toContain("HOLD-AAR-SENTINEL"); // its after-action review neither (P17)
     expect(html).not.toContain("fx-hold");
   });
 

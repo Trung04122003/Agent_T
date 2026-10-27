@@ -5,10 +5,12 @@
 import { t, type Locale } from "../lib/i18n";
 import { tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
-import type { Claim } from "../lib/schema";
+import { hasTearSheet, type Claim } from "../lib/schema";
 import { BUILT } from "../lib/dossier";
 import { durationMonths } from "../lib/stats";
+import TearSheet from "./TearSheet.astro";
 import TierMeter from "./TierMeter.astro";
+import Aar from "./Aar.astro";
 import PageMark from "./PageMark.astro";
 import Redaction from "./Redaction.astro";
 
@@ -87,7 +89,7 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
         const teaser = c.teaser?.[locale];
         const summary = c.summary?.[locale];
         const bluf = c.bluf?.[locale];
-        const hasPanel = Boolean(teaser || summary || c.evidence.length);
+        const hasPanel = Boolean(teaser || summary || c.evidence.length || hasTearSheet(c.tearSheet) || c.aar);
         const months = c.period ? durationMonths(c.period, BUILT) : null;
         const tier = tierOf(c.evidence);
         const cells = (
@@ -142,6 +144,9 @@ const [colCode, colPeriod, colEntry, unit] = await Promise.all(["colCode", "colP
                     </div>
                   )}
                   {summary && <p class="only-giai-mat row__summary">{summary}</p>}
+                  {/* Owner-written blocks (ROADMAP 17.1-17.2): nothing renders until they exist. */}
+                  <TearSheet claim={c} locale={locale} />
+                  {c.aar && <Aar aar={c.aar} locale={locale} />}
                   {c.evidence.length > 0 && (
                     <div class="only-giai-mat row__evidence">
                       <p class="row__evidence-heading">{labels.evidence}</p>
