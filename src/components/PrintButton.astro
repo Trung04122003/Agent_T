@@ -1,0 +1,67 @@
+---
+// "Download the one-page file" (ROADMAP 18.2). Rendered only once the owner has approved the
+// one-pager in content/print.json; it opens the print dialog, where the page prints as the
+// one-page file (OnePage.astro) and can be saved as PDF. Needs JS, so it waits for it.
+import printJson from "../../content/print.json";
+import { t, type Locale } from "../lib/i18n";
+import { printSettings } from "../lib/schema";
+
+interface Props {
+  locale: Locale;
+  /** Tests only: render as if approved. */
+  approved?: boolean;
+}
+const { locale, approved = printSettings.parse(printJson).approval !== null } = Astro.props;
+const [label, hint] = approved ? await Promise.all(["printButton", "printHint"].map((k) => t(k, locale))) : [];
+---
+
+{
+  approved && (
+    <p class="print-cta sheet sheet--block" data-print-cta hidden>
+      <button type="button" class="print-cta__button" aria-describedby="print-hint" data-print-button>
+        {label}
+      </button>
+      <span id="print-hint" class="print-cta__hint">
+        {hint}
+      </span>
+    </p>
+  )
+}
+
+<script>
+  for (const cta of document.querySelectorAll<HTMLElement>("[data-print-cta]")) {
+    cta.hidden = false;
+    cta.querySelector("[data-print-button]")?.addEventListener("click", () => print());
+  }
+</script>
+
+<style>
+  .print-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space) calc(var(--space) * 2);
+  }
+  .print-cta[hidden] {
+    display: none;
+  }
+  .print-cta__button {
+    min-height: var(--target);
+    padding: 0 calc(var(--space) * 2.5);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .print-cta__hint {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+</style>

@@ -51,6 +51,8 @@
   "risksHeading": { "vi": "Giới hạn và rủi ro", "en": "Limits and risks" },
   "riskLabel": { "vi": "Rủi ro", "en": "Risk" },
   "mitigationLabel": { "vi": "Cách giảm", "en": "Mitigation" },
+  "printButton": { "vi": "Tải hồ sơ một trang (PDF)", "en": "Download the one-page file (PDF)" },
+  "printHint": { "vi": "Mở hộp thoại in; chọn \"Lưu thành PDF\".", "en": "Opens the print dialog; choose \"Save as PDF\"." },
   "tierT1": { "vi": "T1 — tự khai, không có bằng chứng ngoài", "en": "T1 — self-declared, no outside evidence" },
   "tierT2": { "vi": "T2 — tài liệu cung cấp khi có yêu cầu", "en": "T2 — document available on request" },
   "tierT3": { "vi": "T3 — liên kết công khai hoặc người xác nhận đã đồng ý", "en": "T3 — public link, or a referee who agreed to be named" },

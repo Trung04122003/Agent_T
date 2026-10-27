@@ -154,6 +154,11 @@ body {
   .controls {
     display: none;
   }
+  /* A page that carries the one-page file (ROADMAP 18.1) prints only that. */
+  body:has([data-onepage]) > :not(main),
+  body:has([data-onepage]) main > :not([data-onepage]) {
+    display: none !important;
+  }
   body {
     background-image: none;
   }

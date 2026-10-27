@@ -2,22 +2,14 @@
 // "Limits and risks" (ROADMAP 17.3), the owner's own words about themself, in the manner of a
 // prospectus's risk factors: each item a risk and how it is reduced. Claude Code only builds the
 // frame; with no item in content/risks.json the section is not rendered.
-import { getCollection } from "astro:content";
-import { readFileSync } from "node:fs";
 import { t, type Locale } from "../lib/i18n";
-import { inFileOrder } from "../lib/ledger";
-import { RISKS_FILE } from "../lib/paths";
+import { orderedRisks } from "../lib/risks";
 
 interface Props {
   locale: Locale;
 }
 const { locale } = Astro.props;
-// Collections do not keep file order; the owner's order is the reading order.
-const order = (JSON.parse(readFileSync(RISKS_FILE, "utf8")) as { id: string }[]).map((r) => r.id);
-const risks = inFileOrder(
-  (await getCollection("risks")).map((e) => e.data),
-  order,
-);
+const risks = await orderedRisks();
 const [kicker, heading, riskLabel, mitigation] =
   risks.length > 0 ? await Promise.all(["risksKicker", "risksHeading", "riskLabel", "mitigationLabel"].map((k) => t(k, locale))) : [];
 ---

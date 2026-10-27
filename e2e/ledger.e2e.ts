@@ -115,11 +115,12 @@ test("Giai mat shows summary and evidence links", async ({ page }) => {
   await expect(r.locator(".row__tier")).toHaveText("Bằng chứng T3");
 });
 
-test("print opens every row in its Giai mat version", async ({ page }) => {
+test("print gives every open row in its Giai mat version (one-page file, P18)", async ({ page }) => {
   await page.goto("/vi/");
   await page.emulateMedia({ media: "print" });
-  await expect(row(page, "fx-pending").locator(".row__summary")).toBeVisible();
-  await expect(row(page, "fx-pending").locator(".redaction")).toBeHidden();
+  const printed = page.locator("[data-onepage] [data-op-row=\"fx-pending\"]");
+  await expect(printed).toContainText("Tóm tắt thử nghiệm số hai."); // its summary: no BLUF, no teaser
+  await expect(printed.locator(".redaction")).toHaveCount(0);
 });
 
 test.describe("without JavaScript", () => {

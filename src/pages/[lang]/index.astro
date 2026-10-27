@@ -6,6 +6,8 @@ import Gate from "../../components/Gate.astro";
 import Ledger, { type LedgerLabels } from "../../components/Ledger.astro";
 import LensNav from "../../components/LensNav.astro";
 import Map from "../../components/Map.astro";
+import OnePage from "../../components/OnePage.astro";
+import PrintButton from "../../components/PrintButton.astro";
 import RiskFactors from "../../components/RiskFactors.astro";
 import StatsBoard from "../../components/StatsBoard.astro";
 import Base from "../../layouts/Base.astro";
@@ -47,4 +49,6 @@ const labels: LedgerLabels = {
   <CommitChart claims={claims} locale={locale} />
   <Map locale={locale} />
   <RiskFactors locale={locale} />
+  <PrintButton locale={locale} />
+  <OnePage claims={claims} locale={locale} />
 </Base>

@@ -250,6 +250,14 @@ export const risk = z.strictObject({
   notes: z.string().optional(),
 });
 
+/**
+ * content/print.json (ROADMAP 18.2): the "download the one-page file" button exists only once the
+ * owner has approved the one-pager. Internal record, never rendered.
+ */
+export const printSettings = z.strictObject({
+  approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).nullable(),
+});
+
 /** content/ui.json: interface microcopy (UX section 6), one localized string per key. */
 export const ui = z.record(z.string().regex(/^[a-z][A-Za-z0-9]*$/), localized);
 

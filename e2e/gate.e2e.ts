@@ -53,11 +53,11 @@ test("Giai mat: legal name shown in place, no bar", async ({ page }) => {
   await expect(legal(page).locator(".redact")).toBeHidden();
 });
 
-test("print shows the legal name even when Mat is active", async ({ page }) => {
+test("print shows the legal name even when Mat is active (one-page file, P18)", async ({ page }) => {
   await page.goto("/vi/");
   await page.emulateMedia({ media: "print" });
-  await expect(legal(page).locator(".gate__legal-name")).toBeVisible();
-  await expect(legal(page).locator(".redact")).toBeHidden();
+  await expect(page.locator("[data-onepage] .op__legal")).toHaveText(identity.legalName);
+  await expect(page.locator("[data-onepage] .redact")).toHaveCount(0);
 });
 
 test.describe("without JavaScript", () => {

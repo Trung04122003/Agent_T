@@ -1,0 +1,285 @@
+---
+// One-page file (ROADMAP 18.1): what print gives, on one A4 page. Always the Giai mat version,
+// built from the same content/ as the page (no data of its own). Hold entries never reach the
+// collections; classified entries are left out here entirely. Hidden on screen. Plain divs, not
+// header/footer: the page's own landmarks (and the language swap's selectors) stay unique.
+import { t, type Locale } from "../lib/i18n";
+import { BUILT, dtg, fileNumber } from "../lib/dossier";
+import { tierOf } from "../lib/evidence";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
+import { orderedRisks } from "../lib/risks";
+import type { Claim } from "../lib/schema";
+import { durationMonths, ledgerStats } from "../lib/stats";
+import { updatedStamp } from "../lib/updated";
+import TierMeter from "./TierMeter.astro";
+
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+}
+const { claims, locale } = Astro.props;
+const identity = await getIdentity();
+const codename = codenameFor(identity, locale);
+const keys = [
+  "portraitLabel", "classLevelLabel", "modeMat", "modeGiaiMat", "fileNoLabel", "codenameLabel",
+  "statsEntries", "statsYears", "statsSince", "statsOngoing", "statsT3", "ledgerHeading", "colCode",
+  "colPeriod", "colEntry", "evidenceHeading", "durationUnit", "periodPresent", "risksHeading",
+  "mitigationLabel", "updatedLabel", "pageLabel",
+];
+const L = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const)));
+
+// Same codes as the ledger on screen (01, 02... in file order), then without classified rows.
+const rows = publicClaims(claims)
+  .map((c, i) => ({ c, code: fileCode(i) }))
+  .flatMap(({ c, code }) => (c.kind === "classified" ? [] : [{ c, code }]));
+const stats = ledgerStats(claims, BUILT);
+const risks = await orderedRisks();
+const updated = updatedStamp(BUILT);
+const since = stats.since ? `${stats.since.slice(5)}/${stats.since.slice(0, 4)}` : null;
+---
+
+<article class="onepage" data-onepage lang={locale} aria-hidden="true">
+  <div class="op__strip">
+    <span>
+      {L.portraitLabel} · {L.classLevelLabel}: <s>{L.modeMat}</s>{" "}
+      {L.modeGiaiMat}
+    </span>
+    <span>
+      {L.fileNoLabel} {fileNumber(codename.name, BUILT)} · DTG {dtg(BUILT)}
+    </span>
+  </div>
+
+  <section class="op__id">
+    <div>
+      <p class="op__kicker">{L.codenameLabel}</p>
+      <h1 class="op__name">{codename.name}</h1>
+      <p class="op__legal">{identity.legalName}</p>
+    </div>
+    <p class="op__positioning">{identity.positioning[locale]}</p>
+  </section>
+
+  <dl class="op__stats">
+    <div><dt>{L.statsEntries}</dt><dd>{stats.open}</dd></div>
+    {stats.years !== null && <div><dt>{L.statsYears}</dt><dd>{stats.years} <small>{L.statsSince} {since}</small></dd></div>}
+    <div><dt>{L.statsOngoing}</dt><dd>{stats.ongoing}</dd></div>
+    <div><dt>{L.statsT3}</dt><dd>{stats.tiers.T3}</dd></div>
+  </dl>
+
+  <section class="op__ledger">
+    <h2 class="op__heading">{L.ledgerHeading}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{L.colCode}</th>
+          <th scope="col">{L.colPeriod}</th>
+          <th scope="col">{L.colEntry}</th>
+          <th scope="col">{L.evidenceHeading}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map(({ c, code }) => {
+            const months = c.period ? durationMonths(c.period, BUILT) : null;
+            const line = c.bluf?.[locale] ?? c.summary?.[locale] ?? null;
+            const tier = tierOf(c.evidence);
+            return (
+              <tr data-op-row={c.id}>
+                <td class="op__mono">{code}</td>
+                <td class="op__mono">
+                  {c.period && formatPeriod(c.period, L.periodPresent!)}
+                  {months !== null && <small>{months} {L.durationUnit}</small>}
+                </td>
+                <td>
+                  {c.org && <b>{c.org[locale]}</b>}
+                  {c.title && <span class="op__title">{c.title[locale]}</span>}
+                  {line && <span class="op__line">{line}</span>}
+                </td>
+                <td class="op__mono op__tier">
+                  <TierMeter tier={tier} /> {tier}
+                </td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </section>
+
+  {
+    risks.length > 0 && (
+      <section class="op__risks">
+        <h2 class="op__heading">{L.risksHeading}</h2>
+        <ol>
+          {risks.map((r) => (
+            <li>
+              <b>{r.risk[locale]}</b> <span class="op__mitigation">{L.mitigationLabel}: {r.mitigation[locale]}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
+  }
+
+  <div class="op__foot">
+    <span>{L.updatedLabel}: {updated.text}</span>
+    <span>{L.pageLabel} 1/1</span>
+  </div>
+</article>
+
+<style>
+  /* Never on screen: this is the printed page. */
+  .onepage {
+    display: none;
+  }
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+    }
+    .onepage {
+      display: grid;
+      gap: 5mm;
+      font-size: 10pt;
+      line-height: 1.4;
+      color: var(--ink);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+  .op__strip {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    padding: 1.5mm 2.5mm;
+    font-family: var(--font-mono);
+    font-size: 7pt;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-block: 1px solid var(--accent);
+  }
+  .op__strip s {
+    text-decoration-thickness: 1.5px;
+  }
+  .op__id {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+    gap: 8mm;
+    padding-bottom: 3mm;
+    border-bottom: 2px solid var(--accent);
+  }
+  .op__kicker,
+  .op__heading,
+  .op__stats dt,
+  .op__ledger th,
+  .op__foot {
+    font-family: var(--font-mono);
+    font-size: 6.5pt;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .op__kicker,
+  .op__legal,
+  .op__positioning,
+  .op__heading {
+    margin: 0;
+  }
+  .op__name {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 32pt;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .op__legal {
+    margin-top: 2mm;
+    font-family: var(--font-mono);
+    font-size: 8.5pt;
+    color: var(--ink-muted);
+  }
+  .op__positioning {
+    font-size: 11.5pt;
+    max-width: 60ch;
+  }
+  .op__stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .op__stats div {
+    padding: 0 3mm 2mm;
+    border-inline-start: 1px solid var(--line);
+  }
+  .op__stats div:first-child {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  .op__stats dd {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 20pt;
+    font-weight: 700;
+  }
+  .op__stats small {
+    font-family: var(--font-mono);
+    font-size: 6.5pt;
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+  .op__heading {
+    margin-bottom: 1.5mm;
+  }
+  .op__ledger table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .op__ledger th {
+    white-space: nowrap;
+    text-align: start;
+    padding: 0 2mm 1mm 0;
+    border-bottom: 1px solid var(--accent);
+  }
+  .op__ledger td {
+    padding: 2.2mm 2mm 2.2mm 0;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+    break-inside: avoid;
+  }
+  .op__ledger td:nth-child(3) {
+    display: grid;
+    gap: 0.5mm;
+  }
+  .op__mono {
+    font-family: var(--font-mono);
+    font-size: 8pt;
+    white-space: nowrap;
+  }
+  .op__mono small {
+    display: block;
+    color: var(--ink-muted);
+  }
+  .op__title,
+  .op__mitigation {
+    color: var(--ink-muted);
+  }
+  .op__tier {
+    text-align: end;
+  }
+  .op__risks ol {
+    margin: 0;
+    padding-inline-start: 4mm;
+    display: grid;
+    gap: 1.5mm;
+  }
+  .op__foot {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 1.5mm;
+    border-top: 1px solid var(--line);
+    color: var(--ink-muted);
+  }
+</style>
