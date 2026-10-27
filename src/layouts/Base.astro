@@ -3,6 +3,7 @@ import "../styles/fonts.css";
 import "../styles/tokens.css";
 import "../styles/base.css";
 import "../styles/motion.css";
+import "../styles/cursor.css";
 import LangSwitch from "../components/LangSwitch.astro";
 import ModeToggle from "../components/ModeToggle.astro";
 import ClassBanner from "../components/ClassBanner.astro";
@@ -12,6 +13,7 @@ import { dirFor, localeReport, LOCALES } from "../lib/locales";
 import { contentStrings } from "../lib/translations";
 import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
+import { CURSOR_KEY } from "../scripts/cursor";
 import { MODE_KEY } from "../scripts/mode";
 
 interface Props {
@@ -35,7 +37,9 @@ const published = LOCALES.filter((l) => complete.has(l));
 
 // Runs before first paint: mark JS as available (mode-dependent hiding only applies then, so the
 // no-JS page shows all public content), then apply the saved mode. Default stays "mat".
-const modeScript = `document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}`;
+// The cursor preference (ROADMAP 21.4) is read here too, so the right cursor is there from the
+// first paint; blocked storage means the default ("custom").
+const modeScript = `document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
 ---
 
 <!doctype html>

@@ -25,6 +25,8 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 - AAR của BBE: mục "vì sao khác" và "lần sau" cần cụ thể hơn (một hành động, một con số).
 - Các con số thành quả (`metrics`) và BLUF còn thiếu.
 
+**Ngoại lệ (chủ dự án duyệt sau P20, 27/10/2026):** cho phép Claude Code viết lại **dòng định vị** và **"Giới hạn và rủi ro" mục 02, 03**, mỗi thứ hai phiên bản: bản bí ẩn cho Mật (`positioningMat`, `mat` trong `risks.json`) và bản chân chính cho Giải mật (bản này cũng dùng cho in và SEO). Chủ dự án là người nhiệt huyết, đam mê, tận tụy; dòng định vị cần mạnh mẽ. Chủ dự án đã chốt cả hai phiên bản cùng ngày (27/10/2026). AAR của BBE và `metrics` vẫn do chủ dự án viết (cần dữ kiện thật).
+
 ## Vẫn cấm tuyệt đối trên site
 - Bất cứ điều gì về vai trò trợ lý cho thầy Cường / FBV, dưới mọi hình thức (kể cả thanh che).
 - Chính trị, địa chính trị (trừ bản đồ chủ quyền Hoàng Sa, Trường Sa đã duyệt).

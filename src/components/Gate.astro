@@ -28,7 +28,18 @@ const legalNameLabel = await t("legalNameRedacted", locale);
       <span class="redact" role="img" aria-label={legalNameLabel}></span>
       <span class="gate__legal-name">{identity.legalName}</span>
     </p>
-    <p class="gate__positioning">{identity.positioning[locale]}</p>
+    <!-- Two wordings when the owner gave a Mat one: Mat in Mat, the plain line in Giai mat (and
+         without JS, where the Giai mat version shows). -->
+    <p class:list={["gate__positioning", identity.positioningMat && "only-giai-mat"]} data-positioning="plain">
+      {identity.positioning[locale]}
+    </p>
+    {
+      identity.positioningMat && (
+        <p class="gate__positioning only-mat" data-positioning="mat">
+          {identity.positioningMat[locale]}
+        </p>
+      )
+    }
   </div>
   <div class="gate__portrait">
     <Portrait locale={locale} />
@@ -122,6 +133,9 @@ const legalNameLabel = await t("legalNameRedacted", locale);
   }
   .gate__positioning {
     max-width: 40ch;
+    /* Room for two lines whatever the wording or language: the card is centred, so a line count
+       change on a language switch would move the codename (ROADMAP 10.4). */
+    min-height: 2lh;
     margin: calc(var(--space) * 3) 0 0;
     font-size: 1.125rem;
     line-height: 1.5;

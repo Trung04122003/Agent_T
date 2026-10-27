@@ -27,16 +27,22 @@ const [kicker, heading, riskLabel, mitigation] =
             <span class="risks__no" aria-hidden="true">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <div class="risks__body">
-              <p class="risks__risk">
-                <span class="visually-hidden">{riskLabel}: </span>
-                {r.risk[locale]}
-              </p>
-              <p class="risks__mitigation">
-                <span class="risks__tag">{mitigation}</span>
-                {r.mitigation[locale]}
-              </p>
-            </div>
+            {/* An item with a Mat wording shows it in Mat and the plain one in Giai mat and print. */}
+            {[
+              { text: r, cls: r.mat ? "only-giai-mat" : undefined },
+              ...(r.mat ? [{ text: r.mat, cls: "only-mat" }] : []),
+            ].map(({ text, cls }) => (
+              <div class:list={["risks__body", cls]} data-risk-version={cls === "only-mat" ? "mat" : "plain"}>
+                <p class="risks__risk">
+                  <span class="visually-hidden">{riskLabel}: </span>
+                  {text.risk[locale]}
+                </p>
+                <p class="risks__mitigation">
+                  <span class="risks__tag">{mitigation}</span>
+                  {text.mitigation[locale]}
+                </p>
+              </div>
+            ))}
           </li>
         ))}
       </ol>

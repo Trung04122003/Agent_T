@@ -22,6 +22,7 @@ export function contentStrings(): { strings: Record<string, unknown>[]; reviewed
   );
   const identity = read("content/identity.json") as {
     positioning: Record<string, unknown>;
+    positioningMat?: Record<string, unknown> | null;
     codenames: { locale: string; reviewed: boolean }[];
   };
   const strings = [
@@ -32,6 +33,7 @@ export function contentStrings(): { strings: Record<string, unknown>[]; reviewed
     ...localizedObjects(read(RISKS_FILE)),
     ...localizedObjects(read(METRICS_FILE)),
     identity.positioning,
+    ...localizedObjects(identity.positioningMat ?? []),
   ];
   return { strings, reviewed: identity.codenames.filter((c) => c.reviewed).map((c) => c.locale) };
 }

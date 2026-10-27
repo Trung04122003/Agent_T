@@ -221,7 +221,10 @@ export const identity = z.strictObject({
       reviewed: z.boolean(),
     }),
   ),
+  /** The plain line, shown in Giai mat, in print, to search engines and without JS. */
   positioning: z.strictObject({ vi: text, en: text, notes: z.string().optional() }),
+  /** Optional Mat version of that line (owner decision 2026-10-27, DECISIONS-v3.md). */
+  positioningMat: z.strictObject({ vi: text, en: text }).nullable().optional(),
   contact: z.strictObject({ email: z.email() }).nullable(),
 });
 
@@ -249,6 +252,8 @@ export const risk = z.strictObject({
   id: text,
   risk: localized,
   mitigation: localized,
+  /** Optional Mat wording of the same item; `risk`/`mitigation` stay the plain (Giai mat) one. */
+  mat: z.strictObject({ risk: localized, mitigation: localized }).optional(),
   notes: z.string().optional(),
 });
 

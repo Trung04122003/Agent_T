@@ -95,9 +95,11 @@ export function revealWords(el: HTMLElement, delay: number): Promise<void> {
  */
 export async function revealGate(dir: string): Promise<void> {
   const short = [".gate__label", "#gate-codename", ".gate__legal-name", "[data-mode-toggle]"];
-  const long = [".gate__codename-line", ".gate__positioning"];
   const pick = (sels: string[]) => sels.map((s) => document.querySelector<HTMLElement>(s)).filter((el) => el !== null);
-  const sentences = pick(long);
+  // The positioning line can come in a Mat and a Giai mat wording: only the one on screen animates.
+  const sentences = [...document.querySelectorAll<HTMLElement>(".gate__codename-line, .gate__positioning")].filter(
+    (el) => el.getClientRects().length > 0,
+  );
   // Hide the sentences from the start: they wait for the decode to finish.
   const words = Promise.all(sentences.map((el) => revealWords(el, DECODE_MS)));
   await Promise.all(pick(short).map((el) => revealName(el, el.textContent?.trim() ?? "", dir)));

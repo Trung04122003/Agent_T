@@ -7,9 +7,13 @@
     { "locale": "ja", "name": "Musashi", "positioning": null, "reviewed": false }
   ],
   "positioning": {
-    "vi": "Khả năng dịch hệ thống phức tạp thành hành động cho một người cụ thể, một tập thể cụ thể",
-    "en": "The ability to translate complex systems into action for a specific person, a specific team.",
-    "notes": "Bản vi do chủ dự án chọn. Bản en là bản nháp, chờ chủ dự án duyệt. Mỗi mật danh cần một dòng định vị riêng, chủ dự án viết."
+    "vi": "Tôi biến hệ thống phức tạp thành hành động rõ ràng cho từng người, từng tập thể — và theo đến cùng.",
+    "en": "I turn complex systems into clear action for one person or a whole team — and I see it through.",
+    "notes": "Drafted by Claude at the owner's request (2026-10-27, DECISIONS-v3.md); this line and positioningMat approved by the owner the same day. Earlier line chosen by the owner: 'Khả năng dịch hệ thống phức tạp thành hành động cho một người cụ thể, một tập thể cụ thể'. Each codename still needs its own line, written by the owner."
+  },
+  "positioningMat": {
+    "vi": "Nhận hỗn loạn. Trả về kế hoạch. Không bỏ dở nhiệm vụ.",
+    "en": "Takes in chaos. Returns a plan. Never leaves a mission half-done."
   },
   "contact": null
 }

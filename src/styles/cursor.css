@@ -1,0 +1,40 @@
+/* CSS cursors (ROADMAP 21.2-21.3, UX-v3 section 1): real OS cursors from public/cursors/, so
+   there is no lag. Pointer devices only; never `cursor: none`; a fallback keyword always last.
+   url() cannot take a custom property, hence one rule per mode. `data-cursor="system"` (set by the
+   head script from the cursorFx preference) leaves the system cursors alone. Text that can be
+   selected keeps the text cursor; form fields keep theirs. */
+@media (hover: hover) and (pointer: fine) {
+  :root:not([data-cursor="system"]) body {
+    cursor: url("/cursors/mat.svg") 16 16, crosshair;
+  }
+  :root[data-mode="giai-mat"]:not([data-cursor="system"]) body {
+    cursor: url("/cursors/giai.svg") 16 16, crosshair;
+  }
+
+  :root:not([data-cursor="system"]) :where(p, h1, h2, h3, h4, li, dt, dd, td, th, figcaption, blockquote) {
+    cursor: text;
+  }
+
+  /* Targets: everything you can act on, and what it contains. */
+  :root:not([data-cursor="system"])
+    :is(a[href], button, [role="button"], summary, [data-cursor-target], [data-chart-plot]),
+  :root:not([data-cursor="system"])
+    :is(a[href], button, [role="button"], summary, [data-cursor-target], [data-chart-plot])
+    * {
+    cursor: url("/cursors/mat-target.svg") 16 16, pointer;
+  }
+  :root[data-mode="giai-mat"]:not([data-cursor="system"])
+    :is(a[href], button, [role="button"], summary, [data-cursor-target], [data-chart-plot]),
+  :root[data-mode="giai-mat"]:not([data-cursor="system"])
+    :is(a[href], button, [role="button"], summary, [data-cursor-target], [data-chart-plot])
+    * {
+    cursor: url("/cursors/giai-target.svg") 16 16, pointer;
+  }
+
+  :root:not([data-cursor="system"]) :is(input, textarea, select) {
+    cursor: auto;
+  }
+  :root:not([data-cursor="system"]) :is(button, a[href]):disabled {
+    cursor: not-allowed;
+  }
+}

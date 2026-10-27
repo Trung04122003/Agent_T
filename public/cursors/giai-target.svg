@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Giai mat, on a target: a selection frame (four corners) around a short crosshair. Hotspot 16 16. -->
+  <g fill="none" stroke-linecap="square">
+    <g stroke="#f3f1ea" stroke-width="3">
+      <path d="M4.5 10.5v-6h6M21.5 4.5h6v6M27.5 21.5v6h-6M10.5 27.5h-6v-6"/>
+      <path d="M16 10.5v3M16 18.5v3M10.5 16h3M18.5 16h3"/>
+    </g>
+    <g stroke="#7a5f2a" stroke-width="1">
+      <path d="M4.5 10.5v-6h6M21.5 4.5h6v6M27.5 21.5v6h-6M10.5 27.5h-6v-6"/>
+      <path d="M16 10.5v3M16 18.5v3M10.5 16h3M18.5 16h3"/>
+    </g>
+  </g>
+  <rect x="15" y="15" width="2" height="2" fill="#7a5f2a"/>
+</svg>

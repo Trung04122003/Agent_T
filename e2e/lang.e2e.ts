@@ -108,12 +108,14 @@ test("P12: the identity card and mode button decode, then the positioning appear
       return { delay: Math.round(Number(t.delay)), duration: Number(t.duration) };
     }),
   );
-  expect(words.length).toBe(identity.positioning.en.split(/\s+/).length);
+  // The page opens in Mat: the line on screen is the Mat wording when there is one.
+  const shownLine = (identity.positioningMat ?? identity.positioning).en as string;
+  expect(words.length).toBe(shownLine.split(/\s+/).length);
   words.forEach((w, i) => expect(w).toEqual({ delay: 420 + i * 70, duration: 240 }));
 
   // Ends as plain text with the right strings, nothing left over.
   await expect(page.locator(".gate__positioning span")).toHaveCount(0, { timeout: 5000 });
-  await expect(page.locator(".gate__positioning")).toHaveText(identity.positioning.en);
+  await expect(page.locator(".gate__positioning:visible")).toHaveText(shownLine);
   await expect(page.locator(".gate__label")).toHaveText(ui.codenameLabel.en);
   await expect(page.locator("[data-mode-toggle]")).toHaveText(ui.modeGiaiMat.en);
   await expect(page.locator(".gate__label")).not.toHaveAttribute("aria-label", /.+/);

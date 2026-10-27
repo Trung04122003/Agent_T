@@ -13,6 +13,7 @@ const devPages = {
       injectRoute({ pattern: "/dev/portrait", entrypoint: "./src/dev/portrait.astro" });
       injectRoute({ pattern: "/dev/name", entrypoint: "./src/dev/name.astro" });
       injectRoute({ pattern: "/dev/rtl", entrypoint: "./src/dev/rtl.astro" });
+      injectRoute({ pattern: "/dev/cursor", entrypoint: "./src/dev/cursor.astro" });
     },
   },
 };

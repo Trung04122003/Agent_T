@@ -1,0 +1,113 @@
+---
+// Dev-only (ROADMAP 21.1, 21.4): the cursor switch until the "Aa" panel exists (P27), and a test
+// bench for the four cursor images on every ground they must show on: the Mat page, the Giai mat
+// page, the solid brass strip and the redaction bars. Hover the grounds to try the real cursors;
+// the small images show the same files for comparison.
+import Base from "../layouts/Base.astro";
+
+const cursors = [
+  ["mat.svg", "Mat"],
+  ["mat-target.svg", "Mat target"],
+  ["giai.svg", "Giai mat"],
+  ["giai-target.svg", "Giai mat target"],
+] as const;
+const grounds = [
+  ["ground--page", "page ground (follows the mode)"],
+  ["ground--surface", "card surface"],
+  ["ground--accent", "brass strip"],
+  ["ground--redact", "redaction bar"],
+] as const;
+---
+
+<Base locale="vi" title="Cursor (dev)">
+  <div class="page bench">
+    <h1>Cursors (dev)</h1>
+    <p>
+      Preference: <strong data-cursor-state></strong>
+      <button type="button" data-cursor-switch>Toggle custom / system</button>
+      <button type="button" data-mode-flip>Toggle Mat / Giai mat</button>
+    </p>
+    {
+      grounds.map(([cls, label]) => (
+        <section class:list={["ground", cls]} data-ground={cls}>
+          <h2>{label}</h2>
+          <div class="ground__row">
+            {cursors.map(([file, name]) => (
+              <figure>
+                <img src={`/cursors/${file}`} width="32" height="32" alt={name} />
+                <figcaption>{name}</figcaption>
+              </figure>
+            ))}
+            <button type="button" data-cursor-target>
+              target
+            </button>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<script>
+  import { readCursorFx, setCursorFx } from "../scripts/cursor";
+  const state = document.querySelector<HTMLElement>("[data-cursor-state]")!;
+  const show = () => (state.textContent = readCursorFx());
+  show();
+  document.querySelector("[data-cursor-switch]")!.addEventListener("click", () => {
+    setCursorFx(document.documentElement.dataset["cursor"] === "system" ? "custom" : "system");
+    show();
+  });
+  document.querySelector("[data-mode-flip]")!.addEventListener("click", () => {
+    const root = document.documentElement;
+    root.dataset["mode"] = root.dataset["mode"] === "giai-mat" ? "mat" : "giai-mat";
+  });
+</script>
+
+<style>
+  .bench {
+    display: grid;
+    gap: calc(var(--space) * 2);
+    padding-block: calc(var(--space) * 4);
+  }
+  .ground {
+    padding: calc(var(--space) * 2);
+    border: 1px solid var(--line);
+  }
+  .ground h2 {
+    margin: 0 0 var(--space);
+    font-size: 0.875rem;
+  }
+  .ground--page {
+    background: var(--bg);
+  }
+  .ground--surface {
+    background: var(--surface);
+  }
+  .ground--accent {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .ground--redact {
+    background: var(--redact);
+    color: var(--bg);
+  }
+  .ground__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--space) * 3);
+    min-height: 96px;
+  }
+  figure {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    margin: 0;
+    font-size: 0.75rem;
+  }
+  figure img {
+    width: 64px;
+    height: 64px;
+    image-rendering: pixelated;
+  }
+</style>

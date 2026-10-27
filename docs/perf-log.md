@@ -3,6 +3,18 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-27 · P21 · CSS cursors
+
+Size only: P21 adds no JavaScript at runtime beyond a few bytes in the existing head script, and
+CSS cursors are drawn by the operating system (no frame cost). Measured on `build:prod` output.
+
+| Item | Before | After |
+|---|---|---|
+| `/vi/` HTML (gzip) | 19 486 B | 19 526 B (+40) |
+| `/en/` HTML (gzip) | 18 605 B | 18 640 B (+35) |
+| CSS total (gzip) | 9 264 B | 9 505 B (+241) |
+| Cursor images | — | 4 SVG, 305–339 B gzip each, fetched by the browser only when a cursor is shown |
+
 ## 2026-10-27 · P20.7 · Ledger row open/close (`grid-template-rows` transition)
 
 Tool: `node tools/perf/ledger-frames.mjs` (raw results in `.perf/ledger-frames.json`). Each run opens
