@@ -24,3 +24,8 @@ Claude Code dùng file này khi làm P9 và P10. Mọi chữ dưới đây do ch
 ## Vẫn cấm tuyệt đối trên site
 - Bất cứ điều gì về vai trò trợ lý cho thầy Cường / FBV, dưới mọi hình thức (kể cả thanh che).
 - Chính trị, địa chính trị (trừ bản đồ chủ quyền Hoàng Sa, Trường Sa đã duyệt).
+
+## Chuyển cảnh Giải mật v2 (P16.1)
+- Chủ dự án chọn (27/10/2026): giữ đủ hiệu ứng (lật dấu, mờ ảnh chân dung, dải phân loại, đường biểu đồ, thanh che) và cho thanh che co chậm để thấy được (mỗi thanh 280 ms, nối nhau 25 ms).
+- Cảnh dài 720 ms, khoảng 800 ms tính từ cú bấm. Đây là ngoại lệ so với mức "tổng ≤ 600 ms" của ROADMAP 16.1.
+- Vẫn giữ tối đa 2 hiệu ứng chạy cùng lúc; chỉ animate transform, opacity, clip-path.

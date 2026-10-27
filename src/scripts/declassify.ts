@@ -3,22 +3,32 @@
 import { currentMode, setMode, type Mode } from "./mode";
 
 /**
- * One sequence, at most 2 effects at a time and each <= 600 ms (UX-v2 section 1), ms from the click:
- *   open:  stamp 0-220 + reveal 0-500 | portrait 220-520 (+ reveal) | bars + text 540-1010
- *   close: stamp 0-220 + reveal 0-350 | portrait 220-520 | bars 370-710 (+ portrait until 520)
+ * Declassify v2 (ROADMAP 16.1), never more than 2 effects at a time (UX-v2 section 1). The owner
+ * chose (2026-10-27) to keep every effect and let the bars move slowly enough to be seen, so the
+ * scene runs 720 ms instead of the 600 ms the roadmap asked for (about 800 ms from the click,
+ * with the browser's page capture). Every effect starts from the same clock (transition.ready,
+ * when the reveal starts); hand-overs keep a 10 ms gap so a dropped frame never lines up three
+ * effects. Milliseconds from the scene start:
+ *     0-140  reveal + stamp       150-255  reveal + portrait
+ *   265-360  bars + banner        370-570  bars + chart line     570-720  bars (last ends at 720)
+ * The bars start as soon as the reveal is done and each one eases out over 280 ms, 25 ms apart.
+ * Closing runs the same way without the chart line (the chart is a signal in Mat).
+ * The text under the bars has no fade of its own: the shrinking bars uncover it.
  */
 export const TIMING = {
-  open: 500, // reveal, Mat -> Giai mat
-  close: 350, // reveal, Giai mat -> Mat
+  total: 720,
+  reveal: 255, // View Transition circle, both directions
   fallback: 250, // crossfade when View Transitions are missing
-  stamp: 220, // toggle stamp flip, runs with the reveal
-  portraitAt: 220, // portrait crossfade starts once the stamp is done
-  barsAtOpen: 540, // bars shrink (and text fades in) after the reveal and portrait
-  barsAtClose: 370, // bars cover again after the (shorter) closing reveal
-  barOpen: 260,
-  barClose: 200,
-  barStaggerOpen: 30,
-  barStaggerClose: 20,
+  stamp: 140, // toggle stamp flip, with the reveal
+  portraitAt: 150,
+  portrait: 105, // previous photo fades out, done with the reveal
+  bannerAt: 265,
+  banner: 95, // classification strip types its new level in (clip-path)
+  chartAt: 370,
+  chart: 200, // chart line drawn left to right (clip-path), opening only
+  barsAt: 265,
+  bar: 280,
+  barStagger: 25,
   maxBars: 8,
 } as const;
 
@@ -80,9 +90,8 @@ export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () =>
     return;
   }
 
-  flipStamp();
-
   if (!document.startViewTransition) {
+    flipStamp();
     // Fallback: plain crossfade, no clip or bar effects.
     const half = TIMING.fallback / 2;
     document.body
@@ -103,24 +112,39 @@ export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () =>
   root.style.setProperty("--vt-y", `${y}px`);
   root.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
   root.dataset["vt"] = opening ? "open" : "close";
-  const barsAt = opening ? TIMING.barsAtOpen : TIMING.barsAtClose;
-  root.style.setProperty("--portrait-at", `${TIMING.portraitAt}ms`);
-  root.style.setProperty("--bars-at", `${barsAt}ms`);
+  // motion.css reads every time from here, so TIMING stays the single source.
+  const vars: Record<string, number> = {
+    "reveal-dur": TIMING.reveal,
+    "portrait-at": TIMING.portraitAt,
+    "portrait-dur": TIMING.portrait,
+    "banner-at": TIMING.bannerAt,
+    "banner-dur": TIMING.banner,
+    "chart-at": TIMING.chartAt,
+    "chart-dur": TIMING.chart,
+    "bars-at": TIMING.barsAt,
+    "bar-dur": TIMING.bar,
+  };
+  for (const [name, ms] of Object.entries(vars)) root.style.setProperty(`--${name}`, `${ms}ms`);
   // The scene ends with the last bar, after the View Transition itself has finished.
-  const sceneEnd =
-    barsAt +
-    (TIMING.maxBars - 1) * (opening ? TIMING.barStaggerOpen : TIMING.barStaggerClose) +
-    (opening ? TIMING.barOpen : TIMING.barClose);
-  const started = performance.now();
+  const sceneEnd = TIMING.barsAt + (TIMING.maxBars - 1) * TIMING.barStagger + TIMING.bar;
+  let started = performance.now();
 
   // Opening: the bars on screen now (Mat) shrink away in the new state. Closing: the bars that
   // appear on screen in the new state grow back.
   const leaving = opening ? visibleBars() : [];
   const transition = document.startViewTransition(() => {
     apply();
-    root.dataset["scene"] = opening ? "declassify" : "classify";
-    markBars(opening ? leaving : visibleBars(), opening ? TIMING.barStaggerOpen : TIMING.barStaggerClose);
+    markBars(opening ? leaving : visibleBars(), TIMING.barStagger);
   });
+  // One clock for the whole scene: it starts with the reveal. At that moment the circle has no
+  // size yet, so nothing of the new state shows before its effects are in place.
+  transition.ready
+    .then(() => {
+      started = performance.now();
+      root.dataset["scene"] = opening ? "declassify" : "classify";
+      flipStamp();
+    })
+    .catch(() => {});
   transition.finished.finally(() => {
     delete root.dataset["vt"];
     setTimeout(() => {

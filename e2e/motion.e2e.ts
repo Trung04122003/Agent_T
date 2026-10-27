@@ -23,37 +23,46 @@ async function instrument(page: Page, removeViewTransitions = false) {
   }, removeViewTransitions);
 }
 
-/** Click (from JS, so the page does not scroll), then snapshot every running animation. */
+/**
+ * Click (from JS, so the page does not scroll), then snapshot every animation in the first frame
+ * where the scene is running: the reveal pseudo-element exists (or, without View Transitions, any
+ * animation runs). Waiting and snapshot happen in the page, in one frame, so a busy machine can
+ * never let the 255 ms reveal finish in between.
+ */
 async function clickAndCapture(page: Page, selector: string): Promise<Anim[]> {
-  await page.locator(selector).evaluate((el: HTMLElement) => el.click());
-  await page.waitForFunction(() => document.getAnimations().some((a) => a.playState === "running"));
-  // The scene attribute is set inside the transition callback, but the pseudo-element animations
-  // only start a frame later: wait for the reveal itself (or for the fallback, which has none).
-  await page.waitForFunction(
-    () =>
-      !document.startViewTransition ||
-      document.getAnimations().some((a) => (a.effect as KeyframeEffect).pseudoElement === "::view-transition-new(root)"),
-  );
-  return page.evaluate(() =>
-    // Mode-change layer only: the map's own draw-in (UX section 3, map row) is tested in map-motion.
-    document
-      .getAnimations()
-      .filter((a) => !((a.effect as KeyframeEffect).target as Element | null)?.closest?.("[data-map]"))
-      .map((a) => {
-        const effect = a.effect as KeyframeEffect;
-        const timing = effect.getComputedTiming();
-        const props = new Set<string>();
-        for (const k of effect.getKeyframes()) {
-          for (const p of Object.keys(k)) if (!["offset", "computedOffset", "easing", "composite"].includes(p)) props.add(p);
-        }
-        const target = effect.target as Element | null;
-        return {
-          pseudo: effect.pseudoElement,
-          cls: target?.getAttribute("class") ?? "",
-          duration: Number(timing.duration),
-          delay: Number(timing.delay),
-          props: [...props],
-        };
+  return page.locator(selector).evaluate(
+    (el: HTMLElement) =>
+      new Promise<Anim[]>((resolve) => {
+        // Read through a loose type: tests may delete the API to simulate an older browser.
+        const vt = typeof (document as { startViewTransition?: unknown }).startViewTransition === "function";
+        const ready = () =>
+          vt
+            ? document.getAnimations().some((a) => (a.effect as KeyframeEffect).pseudoElement === "::view-transition-new(root)")
+            : document.getAnimations().some((a) => a.playState === "running");
+        const snapshot = (): Anim[] =>
+          // Mode-change layer only: the map's own draw-in (UX section 3, map row) is tested in map-motion.
+          document
+            .getAnimations()
+            .filter((a) => !((a.effect as KeyframeEffect).target as Element | null)?.closest?.("[data-map]"))
+            .map((a) => {
+              const effect = a.effect as KeyframeEffect;
+              const timing = effect.getComputedTiming();
+              const props = new Set<string>();
+              for (const k of effect.getKeyframes()) {
+                for (const p of Object.keys(k)) if (!["offset", "computedOffset", "easing", "composite"].includes(p)) props.add(p);
+              }
+              const target = effect.target as Element | null;
+              return {
+                pseudo: effect.pseudoElement,
+                cls: target?.getAttribute("class") ?? "",
+                duration: Number(timing.duration),
+                delay: Number(timing.delay),
+                props: [...props],
+              };
+            });
+        const tick = () => (ready() ? resolve(snapshot()) : requestAnimationFrame(tick));
+        el.click();
+        requestAnimationFrame(tick);
       }),
   );
 }
@@ -107,7 +116,7 @@ test("4.1 without View Transitions: 250 ms crossfade, no errors", async ({ page 
   expect(errors).toEqual([]);
 });
 
-test("4.1-4.2 Declassify: circle reveal 500 ms, at most 8 bars, 30 ms stagger, all within the scene", async ({ page }) => {
+test("4.1-4.2 Declassify: circle reveal 255 ms, at most 8 bars, 25 ms stagger, all within the scene", async ({ page }) => {
   await instrument(page);
   await openFixture(page);
   expect(await barsOnScreen(page)).toBeGreaterThan(8); // so the cap is exercised
@@ -116,19 +125,19 @@ test("4.1-4.2 Declassify: circle reveal 500 ms, at most 8 bars, 30 ms stagger, a
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBe(1);
 
   const reveal = anims.find((a) => a.pseudo === "::view-transition-new(root)");
-  expect(reveal?.duration).toBe(500);
+  expect(reveal?.duration).toBe(255);
   expect(reveal?.props).toEqual(["clipPath"]);
 
   const bars = anims.filter((a) => a.cls.includes("bar-anim"));
   expect(bars.length).toBe(8);
   // Sequenced after the reveal and the portrait (UX-v2 budget: never 3 effects at once).
-  expect(bars.map((b) => Math.round(b.delay)).sort((a, b) => a - b)).toEqual([540, 570, 600, 630, 660, 690, 720, 750]);
+  expect(bars.map((b) => Math.round(b.delay)).sort((a, b) => a - b)).toEqual([265, 290, 315, 340, 365, 390, 415, 440]);
   for (const b of bars) {
-    expect(b.duration).toBe(260);
-    expect(b.delay).toBeGreaterThanOrEqual(500); // the reveal is over
+    expect(b.duration).toBe(280);
+    expect(b.delay).toBeGreaterThanOrEqual(255); // the reveal is over
   }
   const stamp = anims.find((a) => a.cls.includes("mode-toggle"));
-  expect(stamp?.duration).toBe(220);
+  expect(stamp?.duration).toBe(140);
 
   for (const a of anims) expect(a.props.filter((p) => !ALLOWED.has(p)), JSON.stringify(a)).toEqual([]);
 
@@ -137,19 +146,19 @@ test("4.1-4.2 Declassify: circle reveal 500 ms, at most 8 bars, 30 ms stagger, a
   await expect(page.locator(".bar-anim")).toHaveCount(0);
 });
 
-test("4.2 closing the file: 350 ms reveal, bars cover again faster (20 ms stagger)", async ({ page }) => {
+test("4.2 closing the file: 255 ms reveal, bars cover again (25 ms stagger)", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("mode", "giai-mat"));
   await instrument(page);
   await openFixture(page);
   const anims = await clickAndCapture(page, "[data-mode-toggle]");
-  expect(anims.find((a) => a.pseudo === "::view-transition-new(root)")?.duration).toBe(350);
+  expect(anims.find((a) => a.pseudo === "::view-transition-new(root)")?.duration).toBe(255);
   const bars = anims.filter((a) => a.cls.includes("bar-anim"));
   expect(bars.length).toBe(8);
-  expect(Math.round(Math.min(...bars.map((b) => b.delay)))).toBe(370);
-  expect(Math.round(Math.max(...bars.map((b) => b.delay)))).toBe(510);
+  expect(Math.round(Math.min(...bars.map((b) => b.delay)))).toBe(265);
+  expect(Math.round(Math.max(...bars.map((b) => b.delay)))).toBe(440);
   for (const b of bars) {
-    expect(b.duration).toBe(200);
-    expect(b.delay).toBeGreaterThanOrEqual(350); // the reveal is over
+    expect(b.duration).toBe(280);
+    expect(b.delay).toBeGreaterThanOrEqual(255); // the reveal is over
   }
   await expect(page.locator("html")).toHaveAttribute("data-mode", "mat");
 });
@@ -167,9 +176,9 @@ test("12.3 restored effects run in sequence: stamp first, then the portrait cros
   await gotoStable(page, `${DEV}/dev/portrait`);
   const anims = await clickAndCapture(page, "[data-mode-toggle]");
   const stamp = anims.find((a) => a.cls.includes("mode-toggle"));
-  expect(stamp).toMatchObject({ duration: 220, delay: 0, props: ["transform"] });
+  expect(stamp).toMatchObject({ duration: 140, delay: 0, props: ["transform"] });
   const portrait = anims.find((a) => a.cls.includes("portrait__pic--mat"));
-  expect(portrait).toMatchObject({ duration: 300, delay: 220, props: ["opacity"] });
+  expect(portrait).toMatchObject({ duration: 105, delay: 150, props: ["opacity"] });
   await expect(page.locator("html")).not.toHaveAttribute("data-scene", /.+/);
   await expect(page.locator(".portrait__pic--giai-mat")).toBeVisible();
 });

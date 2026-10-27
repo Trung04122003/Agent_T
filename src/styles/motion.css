@@ -10,11 +10,12 @@
   animation: none;
   mix-blend-mode: normal;
 }
+/* Every duration and delay below comes from TIMING in declassify.ts (custom properties). */
 :root[data-vt="open"]::view-transition-new(root) {
-  animation: vt-reveal 500ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: vt-reveal var(--reveal-dur, 255ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 :root[data-vt="close"]::view-transition-new(root) {
-  animation: vt-reveal 350ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: vt-reveal var(--reveal-dur, 255ms) cubic-bezier(0.2, 0, 0, 1) both;
 }
 @keyframes vt-reveal {
   from {
@@ -26,7 +27,7 @@
 }
 
 /* Declassify: redaction blocks stay on screen, laid over the text they hid, while their bars
-   shrink to the left one after another; the text fades in underneath. */
+   shrink to the left one after another and uncover it. */
 .row__inner,
 .gate__legal {
   position: relative;
@@ -59,19 +60,17 @@
 :root[data-scene="declassify"] .gate__legal .redact {
   transform: scaleX(0);
 }
-/* Bars wait for the reveal and portrait (--bars-at, set by declassify.ts), then shrink in turn;
-   the text underneath fades in at the same moment (2 effects). */
+/* Bars follow the reveal at once (--bars-at), easing out in turn; the text under them needs no
+   fade of its own. */
 :root[data-scene="declassify"] .bar-anim {
-  animation: bar-out 260ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms)) both;
-}
-:root[data-scene="declassify"] .only-giai-mat,
-:root[data-scene="declassify"] .gate__legal-name {
-  animation: text-in 300ms ease var(--bars-at, 0ms) both;
+  animation: bar-out var(--bar-dur, 280ms) cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms))
+    both;
 }
 
 /* Classify (closing the file): bars cover again from left to right, faster. */
 :root[data-scene="classify"] .bar-anim {
-  animation: bar-in 200ms cubic-bezier(0.2, 0, 0, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms)) both;
+  animation: bar-in var(--bar-dur, 280ms) cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--bars-at, 0ms) + var(--bar-delay, 0ms))
+    both;
 }
 
 @keyframes bar-out {
@@ -90,23 +89,15 @@
     transform: scaleX(1);
   }
 }
-@keyframes text-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
-/* Portrait: the previous mode's photo stays on top and fades out (300 ms), after the stamp. */
+/* Portrait: the previous mode's photo stays on top and fades out, after the stamp. */
 :root[data-mode="giai-mat"][data-scene="declassify"] .portrait .portrait__pic--mat,
 :root[data-mode="mat"][data-scene="classify"] .portrait .portrait__pic--giai-mat {
   display: block;
   position: absolute;
   inset: 0;
   z-index: 0;
-  animation: fade-out 300ms ease var(--portrait-at, 0ms) both;
+  animation: fade-out var(--portrait-dur, 105ms) ease var(--portrait-at, 0ms) both;
 }
 @keyframes fade-out {
   from {
@@ -114,6 +105,49 @@
   }
   to {
     opacity: 0;
+  }
+}
+
+/* Classification strip (ROADMAP 16.1): the new level types in, like a teleprinter line. */
+[data-banner] .banner__level :is(.only-mat, .only-giai-mat) {
+  display: inline-block;
+}
+:root[data-scene="declassify"] [data-banner] .banner__level .only-giai-mat,
+:root[data-scene="classify"] [data-banner] .banner__level .only-mat {
+  animation: type-on var(--banner-dur, 95ms) linear var(--banner-at, 0ms) both;
+}
+@keyframes type-on {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+:root[dir="rtl"][data-scene="declassify"] [data-banner] .banner__level .only-giai-mat,
+:root[dir="rtl"][data-scene="classify"] [data-banner] .banner__level .only-mat {
+  animation-name: type-on-rtl;
+}
+@keyframes type-on-rtl {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Chart (ROADMAP 16.1): opening draws the brass line left to right; time runs left to right in
+   every language, so no RTL variant. */
+:root[data-scene="declassify"] .chart__plot svg {
+  animation: chart-draw var(--chart-dur, 200ms) cubic-bezier(0.4, 0, 0.2, 1) var(--chart-at, 0ms) both;
+}
+@keyframes chart-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
