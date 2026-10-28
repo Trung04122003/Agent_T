@@ -1,0 +1,4 @@
+{
+  "_comment": "check-leaks allowlist (ROADMAP 24.1): exactly one address, the work email from DECISIONS-v3.md. Any other email or phone number still fails the build check.",
+  "emails": ["lethaitrungwork@gmail.com"]
+}

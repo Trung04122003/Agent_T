@@ -15,5 +15,5 @@
     "vi": "Nhận hỗn loạn. Trả về kế hoạch. Không bỏ dở nhiệm vụ.",
     "en": "Takes in chaos. Returns a plan. Never leaves a mission half-done."
   },
-  "contact": null
+  "contact": { "email": "lethaitrungwork@gmail.com" }
 }

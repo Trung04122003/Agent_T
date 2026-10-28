@@ -3,6 +3,22 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-28 · P24 · "Request declassified documents" buttons
+
+Size only. P24 adds no animation, no frame work and no request: links built at build time and
+one delegated click handler for "Copy address". Measured on `build:prod` output, gzip. "Before" is
+the P23 commit.
+
+| Item | Before | After |
+|---|---|---|
+| `/vi/` HTML | 19 688 B | 21 139 B (+1 451) |
+| All JS | 9 933 B | 10 144 B (+211) |
+| All CSS | 10 594 B | 10 807 B (+213) |
+
+The HTML growth is the mail template, percent-encoded, in two links (mailto: and Gmail) for each
+of the 6 entries with documents on request, plus the page-end request. That is the price of "no
+JS needed to write the mail". If it matters at P30, the links could be built on click instead.
+
 ## 2026-10-28 · P23 · Chart crosshair
 
 Tool: `node tools/perf/chart-frames.mjs` (new; raw results in `.perf/chart-frames-*.json`).

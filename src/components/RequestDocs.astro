@@ -1,0 +1,108 @@
+---
+// "Request declassified documents" (ROADMAP 24.2-24.5, UX-v3 section 6): a mailto: link with the
+// file reference and a template the visitor fills in, plus "Copy address" and "Open in Gmail".
+// No form, no backend, no tracking; the address is shown as it is. Nothing renders without the
+// owner's contact email in content/identity.json.
+import { t, type Locale } from "../lib/i18n";
+import { getIdentity } from "../lib/identity";
+import { gmailHref, mailtoHref, requestMail } from "../lib/request";
+
+interface Props {
+  locale: Locale;
+  /** File reference: the file number, plus the entry's code for a ledger row ("CUPID-2610-02"). */
+  fileRef: string;
+  /** Documents asked for, from the entry's evidence (empty for the general request). */
+  docs?: string[];
+}
+const { locale, fileRef, docs = [] } = Astro.props;
+const email = (await getIdentity()).contact?.email;
+const keys = ["requestDocs", "requestCopy", "requestGmail", "requestNewTab", "requestCopied", "requestSelected", "requestSubject", "requestBody"];
+const [main, copy, gmail, newTab, copied, selected, subject, body] = await Promise.all(keys.map((k) => t(k, locale)));
+const mail = requestMail(fileRef, docs, subject!, body!);
+---
+
+{
+  email && (
+    <div class="request" data-request={fileRef}>
+      <a class="request__main" href={mailtoHref(email, mail)} data-request-mail>
+        {main}
+      </a>
+      <span class="request__alts">
+        <a class="request__alt" href={gmailHref(email, mail)} target="_blank" rel="noopener noreferrer" data-request-gmail>
+          {gmail}
+          <span class="visually-hidden"> {newTab}</span>
+        </a>
+        <button class="request__alt" type="button" data-copy-email={email} data-copied={copied} data-selected={selected}>
+          {copy}
+        </button>
+      </span>
+      <span class="request__addr" dir="ltr" data-request-addr>
+        {email}
+      </span>
+      <span class="request__status" aria-live="polite" data-copy-status />
+    </div>
+  )
+}
+
+<style>
+  .request {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space) calc(var(--space) * 1.5);
+  }
+  .request__main,
+  .request__alt {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target);
+    padding: 0 calc(var(--space) * 1.5);
+    font: inherit;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .request__main {
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--accent);
+  }
+  .request__alts {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+  }
+  .request__alt {
+    color: var(--accent);
+    background: transparent;
+  }
+  .request__main:hover,
+  .request__alt:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .request__addr {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    overflow-wrap: anywhere;
+  }
+  .request__status {
+    flex-basis: 100%;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  .request__status:empty {
+    display: none;
+  }
+  @media print {
+    .request {
+      display: none;
+    }
+  }
+</style>

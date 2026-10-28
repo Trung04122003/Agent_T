@@ -76,7 +76,15 @@ if (existsSync(denyPath)) {
 const needles = secrets.map(({ rule, s }) => ({ rule, s: norm(s) }));
 
 // --- Patterns ---
-const allowedEmail = identity.contact?.email?.toLowerCase();
+// The one email allowed on the site (ROADMAP 24.1), from tools/leak-allow.json; LEAK_ALLOW points
+// elsewhere in tests only. More than one address there is refused, so it cannot grow quietly.
+const allowPath = process.env["LEAK_ALLOW"] ?? join(root, "tools", "leak-allow.json");
+const allowList = JSON.parse(readFileSync(allowPath, "utf8")).emails;
+if (!Array.isArray(allowList) || allowList.length !== 1 || typeof allowList[0] !== "string") {
+  console.error("check-leaks: tools/leak-allow.json must list exactly one email address.");
+  process.exit(2);
+}
+const allowedEmail = allowList[0].toLowerCase();
 const patterns = [
   // VN mobile (0 + 9 digits) or landline (02xx + 7 digits), optional +84 and separators.
   { rule: "VN phone number", re: /(?<![\w.])(?:\+?84|0)[\s.-]?(?:[35789]\d|2\d\d)(?:[\s.-]?\d){7}(?!\d)/g },

@@ -7,8 +7,10 @@ import "../styles/cursor.css";
 import LangSwitch from "../components/LangSwitch.astro";
 import ModeToggle from "../components/ModeToggle.astro";
 import ClassBanner from "../components/ClassBanner.astro";
+import RequestDocs from "../components/RequestDocs.astro";
+import { BUILT, fileNumber } from "../lib/dossier";
 import { t, type Locale } from "../lib/i18n";
-import { getIdentity } from "../lib/identity";
+import { codenameFor, getIdentity } from "../lib/identity";
 import { dirFor, localeReport, LOCALES } from "../lib/locales";
 import { contentStrings } from "../lib/translations";
 import { NOINDEX } from "../lib/site";
@@ -28,7 +30,9 @@ const { locale, title, path, dir = dirFor(locale) } = Astro.props;
 const updatedLabel = await t("updatedLabel", locale);
 const updated = updatedStamp(new Date());
 // Neutral SEO (ROADMAP 8.4): the positioning line from content/, nothing more.
-const description = (await getIdentity()).positioning[locale];
+const identity = await getIdentity();
+const description = identity.positioning[locale];
+const fileNo = fileNumber(codenameFor(identity, locale).name, BUILT);
 const ogLocale = { vi: "vi_VN", en: "en_US" }[locale];
 // Only complete languages are offered (ROADMAP 10.3; scripts/check-locales.mjs reports the rest).
 const { strings, reviewed } = contentStrings();
@@ -73,13 +77,17 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
       <slot />
     </main>
     <footer class="footer sheet sheet--block">
+      {/* ROADMAP 24.2: one general request at the end of the page, for the whole file. */}
+      {path !== undefined && <RequestDocs locale={locale} fileRef={fileNo} />}
       <p class="footer__updated">{updatedLabel}: <time datetime={updated.iso}>{updated.text}</time></p>
     </footer>
     <ClassBanner locale={locale} position="bottom" />
     <script>
       // Cursor layer (ROADMAP P22): the gate decides; the layer's code is fetched only if allowed.
       import { initCursorFx } from "../scripts/cursor-loader";
+      import { initRequest } from "../scripts/request";
       initCursorFx();
+      initRequest();
     </script>
   </body>
 </html>

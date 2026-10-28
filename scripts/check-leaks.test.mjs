@@ -46,6 +46,28 @@ describe("check-leaks", () => {
     expect(r.out).toContain("index.html:2: full date dd/mm/yyyy");
   });
 
+  it("24.1 allows exactly the work email from tools/leak-allow.json, and no other", () => {
+    const allowed = JSON.parse(readFileSync("tools/leak-allow.json", "utf8")).emails;
+    expect(allowed).toEqual(["lethaitrungwork@gmail.com"]);
+    const ok = run("allow-ok", { "index.html": page(`<a href="mailto:${allowed[0]}?subject=x">${allowed[0]}</a>`) });
+    expect(ok.out).toContain("check-leaks: OK");
+    const other = run("allow-other", { "index.html": page(`${allowed[0]} lethaitrung.work@gmail.com`) });
+    expect(other.code).toBe(1);
+    expect(other.out).toContain("index.html:1: email address");
+  });
+
+  it("24.1 refuses an allowlist with more than one address", () => {
+    const list = join(base, "two.json");
+    mkdirSync(base, { recursive: true });
+    writeFileSync(list, JSON.stringify({ emails: ["a@example.com", "b@example.com"] }));
+    const dir = join(base, "allow-two");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "index.html"), page("a@example.com"));
+    const r = spawnSync(process.execPath, ["scripts/check-leaks.mjs", dir], { encoding: "utf8", env: { ...process.env, LEAK_ALLOW: list } });
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain("exactly one email address");
+  });
+
   it("fails on hold text (even HTML-escaped) and internal notes, without printing them", () => {
     const escaped = holdTitle.replace(/[^\x20-\x7e]/g, (ch) => `&#${ch.codePointAt(0)};`);
     const r = run("hold-notes", { "index.html": page(escaped), "data.json": JSON.stringify({ x: someNote }) });

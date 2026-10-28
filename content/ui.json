@@ -65,5 +65,16 @@
   "truongSaLabel": { "vi": "Quần đảo Trường Sa (Việt Nam)", "en": "Truong Sa Archipelago (Viet Nam)" },
   "mapCredit": { "vi": "Made with Natural Earth", "en": "Made with Natural Earth" },
   "lensQuestion": { "vi": "Bạn đến với tư cách gì?", "en": "In what capacity are you here?" },
-  "notFound": { "vi": "Không tìm thấy hồ sơ này.", "en": "This file could not be found." }
+  "notFound": { "vi": "Không tìm thấy hồ sơ này.", "en": "This file could not be found." },
+  "requestDocs": { "vi": "Yêu cầu giải mật tài liệu", "en": "Request declassified documents" },
+  "requestCopy": { "vi": "Sao chép địa chỉ", "en": "Copy address" },
+  "requestGmail": { "vi": "Mở bằng Gmail", "en": "Open in Gmail" },
+  "requestNewTab": { "vi": "(mở trong thẻ mới)", "en": "(opens in a new tab)" },
+  "requestCopied": { "vi": "Đã sao chép địa chỉ.", "en": "Address copied." },
+  "requestSelected": { "vi": "Đã chọn địa chỉ, nhấn Ctrl+C để sao chép.", "en": "Address selected, press Ctrl+C to copy." },
+  "requestSubject": { "vi": "Yêu cầu giải mật tài liệu", "en": "Request for declassified documents" },
+  "requestBody": {
+    "vi": "Xin chào,\n\nTôi muốn yêu cầu xem tài liệu của hồ sơ {ref}.\n\nTên / tổ chức: \nMục đích: \nTài liệu cần xem: {docs}\n\nXin cảm ơn.",
+    "en": "Hello,\n\nI would like to request the documents of file {ref}.\n\nName / organisation: \nPurpose: \nDocuments requested: {docs}\n\nThank you."
+  }
 }

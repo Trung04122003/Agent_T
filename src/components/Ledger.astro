@@ -6,8 +6,11 @@ import { t, type Locale } from "../lib/i18n";
 import { tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import { hasTearSheet, type Claim } from "../lib/schema";
-import { BUILT } from "../lib/dossier";
+import { BUILT, fileNumber } from "../lib/dossier";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { requestDocs } from "../lib/request";
 import { durationMonths } from "../lib/stats";
+import RequestDocs from "./RequestDocs.astro";
 import TearSheet from "./TearSheet.astro";
 import TierMeter from "./TierMeter.astro";
 import Aar from "./Aar.astro";
@@ -36,6 +39,8 @@ const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
 const stamp = await t("stampOpened", locale);
 // Giai mat "data floor" (ROADMAP 14.1): column heads and each entry's length in months.
+// File number for the request mail's reference ("CUPID-2610" + the row code, ROADMAP 24.3).
+const fileNo = fileNumber(codenameFor(await getIdentity(), locale).name, BUILT);
 const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
   ["colCode", "colPeriod", "colEntry", "durationUnit", "pausedLabel"].map((k) => t(k, locale)),
 );
@@ -96,6 +101,8 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
         // ROADMAP 20.2: a paused entry shows "paused" instead of a running length.
         const months = c.period && !c.paused ? durationMonths(c.period, BUILT) : null;
         const tier = tierOf(c.evidence);
+        // ROADMAP 24.2: open entries with documents given on request get the request button.
+        const onRequest = requestDocs(c.evidence, locale);
         const cells = (
           <>
             <span class="row__code">{code}</span>
@@ -160,6 +167,7 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
                           <li>{e.type === "link" && e.url ? <a href={e.url}>{e.note[locale]}</a> : e.note[locale]}</li>
                         ))}
                       </ul>
+                      {onRequest.length > 0 && <RequestDocs locale={locale} fileRef={`${fileNo}-${code}`} docs={onRequest} />}
                     </div>
                   )}
                 </div>
@@ -465,6 +473,9 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
   .row__evidence ul {
     margin: var(--space) 0 0;
     padding-inline-start: 1.25em;
+  }
+  .row__evidence :global(.request) {
+    margin-top: calc(var(--space) * 1.5);
   }
   .row__closed {
     color: var(--ink-muted);
