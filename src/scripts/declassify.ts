@@ -81,6 +81,9 @@ function flipStamp(): void {
  * link); `onSwitch` runs right after the mode changes (open a row, move focus, scroll).
  */
 export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () => void): void {
+  // Never on top of the entry gate's aperture (ROADMAP 26.4): the page is inert until it ends,
+  // and this also stops a scripted click.
+  if (document.documentElement.dataset["vt"] === "gate") return;
   const apply = (): void => {
     setMode(next);
     onSwitch?.();

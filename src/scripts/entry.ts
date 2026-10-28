@@ -42,25 +42,101 @@ function sweep(el: Element, duration: number, delay = 0, steps = 0): void {
   });
 }
 
-function enter(via: "lens" | "skip" | "esc", lens: string): void {
+// Into the file (ROADMAP P26, UX-v3 section 3): an "aperture" opens from where the reader clicked,
+// a circle growing over the gate (View Transition of the root, 520 ms: with the ~100 ms the
+// browser needs to capture the page, the gate is gone within 700 ms). Narrow screens (< 768 px,
+// where capturing the page costs most on a weak CPU) and browsers without View Transitions get a
+// 250 ms fade of the gate instead; reduced motion closes it at once. Whatever happens, the gate is
+// closed and focus is on the page heading within 1200 ms (26.3).
+export const ENTER_FX = { aperture: 520, fade: 250, guard: 1200, narrow: 768 } as const;
+let leaving = false;
+
+/** Resolves when `p` does, rejects if it fails or takes longer than the guard. */
+function guarded(p: Promise<unknown>): Promise<unknown> {
+  return Promise.race([p, new Promise((_, fail) => setTimeout(() => fail(new Error("gate: transition timed out")), ENTER_FX.guard))]);
+}
+
+function enter(via: "lens" | "skip" | "esc", lens: string, at?: { x: number; y: number }): void {
+  const gate = document.querySelector<HTMLElement>("[data-entry]");
+  if (leaving || !gate || !isOpen()) return;
+  leaving = true;
+  gate.inert = true; // no second choice while it closes
   const root = document.documentElement;
-  track({ type: "enter", via, lens, ms: Math.round(performance.now() - shownAt) });
-  saveLens(lens);
+  // Bookkeeping after the next paint, so the click answers at once (INP, 26.5).
+  const ms = Math.round(performance.now() - shownAt);
+  setTimeout(() => {
+    track({ type: "enter", via, lens, ms });
+    saveLens(lens);
+  });
   const url = new URL(location.href);
   url.searchParams.set("lens", lens);
   history.replaceState(history.state, "", url);
-  document.querySelector("[data-lens-nav]")?.dispatchEvent(new CustomEvent("lens:sync", { detail: { animate: false } }));
-  root.dataset["gate"] = "skip";
-  setInert(false);
   if (onKey) removeEventListener("keydown", onKey);
   onKey = null;
-  // Focus back to the page's heading (25.5).
-  const h1 = document.querySelector<HTMLElement>("#gate-codename");
-  if (h1) {
-    h1.tabIndex = -1;
-    h1.focus({ preventScroll: true });
+  // The lens is applied without FLIP and, with the aperture, before the new state is captured,
+  // so the ledger does not move a second time (26.4).
+  const applyLens = (): void => {
+    document.querySelector("[data-lens-nav]")?.dispatchEvent(new CustomEvent("lens:sync", { detail: { animate: false } }));
+  };
+  let done = false;
+  const finish = (): void => {
+    if (done) return;
+    done = true;
+    root.dataset["gate"] = "skip";
+    delete root.dataset["vt"];
+    // The page (mode button included) stays inert until here: no Declassify on top of the
+    // aperture (26.4).
+    setInert(false);
+    gate.inert = false;
+    leaving = false;
+    // Focus back to the page's heading (25.5).
+    const h1 = document.querySelector<HTMLElement>("#gate-codename");
+    if (h1) {
+      h1.tabIndex = -1;
+      h1.focus({ preventScroll: true });
+    }
+    performance.mark("gate:entered"); // read by tools/perf/gate-inp.mjs and e2e/entry.e2e.ts
+    void revealGate(root.dir);
+  };
+
+  if (still()) {
+    applyLens();
+    return finish();
   }
-  void revealGate(root.dir);
+  try {
+    if (!document.startViewTransition || innerWidth < ENTER_FX.narrow) {
+      // The fade starts at once; the reorder waits a frame, behind the still-opaque gate (INP).
+      const fade = gate.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ENTER_FX.fade, easing: "ease-out", fill: "forwards" });
+      requestAnimationFrame(applyLens);
+      guarded(fade.finished).then(finish, finish);
+      return;
+    }
+    const x = at?.x ?? innerWidth / 2;
+    const y = at?.y ?? innerHeight / 2;
+    root.style.setProperty("--vt-x", `${x}px`);
+    root.style.setProperty("--vt-y", `${y}px`);
+    root.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
+    root.dataset["vt"] = "gate";
+    const transition = document.startViewTransition(() => {
+      applyLens();
+      root.dataset["gate"] = "skip";
+    });
+    transition.ready.then(() => performance.mark("gate:aperture-ready"), () => {});
+    guarded(transition.finished).then(finish, () => {
+      transition.skipTransition();
+      finish();
+    });
+  } catch {
+    applyLens();
+    finish();
+  }
+}
+
+/** Where a click started the aperture: the pointer, or the control's centre from the keyboard. */
+function origin(e: MouseEvent): { x: number; y: number } {
+  if (e.detail > 0) return { x: e.clientX, y: e.clientY };
+  const box = (e.currentTarget as Element).getBoundingClientRect();
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
 }
 
 /** Runs on load and again after a language swap while the gate is open (focus on the new flag). */
@@ -96,13 +172,13 @@ export function initEntry(afterLangSwap = false): void {
 
   for (const b of lensButtons) {
     const id = b.dataset["entryLens"]!;
-    b.addEventListener("click", () => enter("lens", id));
+    b.addEventListener("click", (e) => enter("lens", id, origin(e)));
     b.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && point(id, true));
     b.addEventListener("focus", () => point(id, true));
   }
-  gate.querySelector("[data-entry-skip]")?.addEventListener("click", (e) => {
+  gate.querySelector<HTMLElement>("[data-entry-skip]")?.addEventListener("click", (e) => {
     e.preventDefault();
-    enter("skip", fallback);
+    enter("skip", fallback, origin(e));
   });
   if (onKey) removeEventListener("keydown", onKey);
   onKey = (e) => e.key === "Escape" && isOpen() && enter("esc", fallback);

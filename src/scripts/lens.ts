@@ -43,12 +43,15 @@ function reducedMotion(): boolean {
  */
 function reorder(list: HTMLElement, ids: string[], animate: boolean): number {
   const rows = new Map([...list.querySelectorAll<HTMLElement>(":scope > [data-claim]")].map((li) => [li.dataset["claim"]!, li]));
-  const before = new Map([...rows].map(([id, li]) => [id, li.getBoundingClientRect().top]));
+  // Positions are only needed to animate: without FLIP, no layout is read (P26: the entry gate
+  // reorders inside its View Transition, where every millisecond delays the aperture).
+  const flip = animate && !reducedMotion();
+  const before = flip ? new Map([...rows].map(([id, li]) => [id, li.getBoundingClientRect().top])) : null;
   for (const id of ids) {
     const li = rows.get(id);
     if (li) list.append(li);
   }
-  if (!animate || reducedMotion()) return 0;
+  if (!before) return 0;
   let moved = 0;
   for (const id of ids) {
     const li = rows.get(id);

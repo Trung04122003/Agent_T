@@ -17,6 +17,12 @@
 :root[data-vt="close"]::view-transition-new(root) {
   animation: vt-reveal var(--reveal-dur, 255ms) cubic-bezier(0.2, 0, 0, 1) both;
 }
+/* Into the file from the entry gate (ROADMAP P26): the same circle, an aperture opening from the
+   reader's click over the gate, 520 ms (ENTER_FX in src/scripts/entry.ts). With the browser's
+   capture of the page first, the gate is gone within 700 ms. */
+:root[data-vt="gate"]::view-transition-new(root) {
+  animation: vt-reveal 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
 @keyframes vt-reveal {
   from {
     clip-path: circle(0 at var(--vt-x) var(--vt-y));
