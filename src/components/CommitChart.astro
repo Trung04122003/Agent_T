@@ -63,6 +63,9 @@ const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
           data-chart-plot
           data-segments={JSON.stringify(segments.map(({ a, b, label, count: c, names: ns }) => ({ a, b, label, count: c, names: ns })))}
           data-months={n}
+          data-start={data.months[0]}
+          data-counts={JSON.stringify(data.counts)}
+          data-top={H}
         >
           <svg viewBox={`0 0 ${n} ${H}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <g class="chart__grid">
@@ -83,7 +86,22 @@ const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
               {data.counts.map((c, i) => c > 0 && <rect x={i + 0.18} width="0.64" y={y(c)} height={c} />)}
               <line class="chart__baseline" x1="0" x2={n} y1={H} y2={H} />
             </g>
+            {/* Crosshair (ROADMAP 23.1-23.2): one group, moved by chart.ts through transform, never rebuilt. */}
+            <g class="chart__xhair" data-chart-xhair>
+              <line x1="0" x2="0" y1="0" y2={H} data-xhair-v />
+              <line x1="0" x2={n} y1="0" y2="0" data-xhair-h />
+            </g>
           </svg>
+          {/* Readouts on the axes, trading-screen style. HTML, since the drawing is stretched and text in
+              it would be too; Mat shows a bar instead of the figure, and declassifying shows the figure. */}
+          <span class="chart__tag chart__tag--x" aria-hidden="true" data-xhair-x>
+            <span class="only-giai-mat" data-xhair-date />
+            <span class="only-mat chart__redact" />
+          </span>
+          <span class="chart__tag chart__tag--y" aria-hidden="true" data-xhair-y>
+            <span class="only-giai-mat" data-xhair-count />
+            <span class="only-mat chart__redact chart__redact--digit" />
+          </span>
           <span
             class="chart__band"
             style={`left:${pct(current.a, n)};width:${pct(current.b - current.a, n)}`}
@@ -246,6 +264,53 @@ const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
   /* The chart's small print: in Mat one step brighter than the console's muted grey (tokens.css). */
   .chart {
     --ink-muted: var(--ink-hud);
+  }
+  /* Crosshair: hidden (but measurable) until the pointer or the arrow keys pick a month. No
+     transition: it follows the pointer, one move per frame. */
+  .chart__xhair,
+  .chart__tag {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .chart__plot.is-xhair .chart__xhair,
+  .chart__plot.is-xhair .chart__tag {
+    visibility: visible;
+  }
+  .chart__xhair line {
+    stroke: var(--accent);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+  }
+  .chart__tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    padding: 1px 5px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    color: var(--bg);
+    background: var(--accent);
+  }
+  /* Under the plot, over the year labels. chart.ts moves it along x. */
+  .chart__tag--x {
+    top: calc(100% + 2px);
+  }
+  /* Mat: the readout is a covered field, not a figure. */
+  :global(:root[data-mode="mat"]) .chart__tag {
+    padding: 2px 4px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+  }
+  .chart__tag .chart__redact {
+    display: block;
+    width: 7ch;
+    height: 1em;
+  }
+  .chart__tag .chart__redact--digit {
+    width: 1.2ch;
   }
   .chart__axis-x {
     grid-column: 2;

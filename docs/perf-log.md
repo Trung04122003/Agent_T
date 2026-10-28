@@ -3,6 +3,27 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-28 · P23 · Chart crosshair
+
+Tool: `node tools/perf/chart-frames.mjs` (new; raw results in `.perf/chart-frames-*.json`).
+1280×900, `/vi/`. The mouse scrubs the chart plot left to right and back four times (244 small
+moves). Median of 3 runs. "Before" is the P22 build (band and readout only), "after" adds the
+crosshair. Its updates are batched into one `requestAnimationFrame`, it reads the cached plot box,
+and it writes `transform`/`textContent` only.
+
+| Mode | CPU | Before (p95 / max / >33 ms) | After, run 1 | After, run 2 |
+|---|---|---|---|---|
+| Mat | 1x | 16.7 / 33.3 / 0 | 16.7 / 16.8 / 0 | 16.7 / 16.8 / 0 |
+| Mat | 4x | 16.8 / 16.8 / 0 | 16.7 / 33.4 / 1 | 16.8 / 16.8 / 0 |
+| Giai mat | 1x | 16.8 / 16.8 / 0 | 16.8 / 16.8 / 0 | 16.8 / 16.8 / 0 |
+| Giai mat | 4x | 16.8 / 16.8 / 0 | 16.8 / 16.8 / 0 | 16.8 / 16.8 / 0 |
+
+All within thresholds; no change beyond noise. The earlier per-move `getBoundingClientRect` of the
+P15 readout is gone too: the box is measured on pointer entry and after a resize.
+
+Size (`build:prod`, gzip, before → after): `/vi/` HTML 19 547 → 19 686 B (+139: the crosshair group,
+two readouts, the counts); all JS 9 369 → 9 933 B (+564); all CSS 10 456 → 10 594 B (+138).
+
 ## 2026-10-28 · P22 (owner idea) · Brighter sight lines on the Mat ring
 
 The four lines now use the map crosshair's dash (6px on, 4px off, was 2 on, 4 off) at opacity 0.75
