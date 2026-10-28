@@ -17,9 +17,10 @@ test("13.1 classification strip top and bottom, own words only, no real agency m
     const text = (await banner.textContent())!.toUpperCase();
     for (const word of ["TOP SECRET", "NOFORN", "FBI", "CIA", "NSA", "TUYỆT MẬT", "TỐI MẬT", "//"]) expect(text).not.toContain(word);
   }
-  // Top strip comes first in the page, bottom one last.
+  // Top strip comes first in the page, bottom one last (scripts and the pointer layer of P22,
+  // which are not content, may follow it).
   const order = await page.evaluate(() => {
-    const all = [...document.body.children];
+    const all = [...document.body.children].filter((e) => e.tagName !== "SCRIPT" && !e.hasAttribute("data-cfx"));
     return [all.indexOf(document.querySelector('[data-banner="top"]')!), all.indexOf(document.querySelector('[data-banner="bottom"]')!), all.length];
   });
   expect(order).toEqual([0, order[2]! - 1, order[2]]);
@@ -123,6 +124,24 @@ test("13.4 / 20.5 viewfinder: vector only; map reticle Mat only; the portrait pl
   await expect(page.locator("[data-portrait] [data-placeholder]")).toHaveCount(1);
   await expect(page.locator("[data-finder]")).toBeVisible();
   await expect(page.locator('[data-place="da-nang"] .map__reticle')).toHaveCSS("opacity", "0");
+});
+
+test("P22 Mat map as a tactical display: bright crosshair and labels, Viet Nam lit, static only", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await setMode(page, "mat");
+  await page.goto("/vi/");
+  await page.locator('[data-place-btn="da-nang"]').click();
+  const cross = page.locator('[data-place="da-nang"] .map__cross');
+  await expect(cross).toHaveCSS("opacity", "0.95");
+  await expect(cross).toHaveCSS("stroke-dasharray", "6px, 4px");
+  // Small print in the map uses the brighter readout grey (tokens.css --ink-hud).
+  await expect(page.locator(".map__place-role").first()).toHaveCSS("color", "rgb(196, 193, 185)");
+  await expect(page.locator(".map__vn")).not.toHaveCSS("fill", await page.locator(".map__land path").first().evaluate((e) => getComputedStyle(e).fill));
+  // No animation of its own: the look is CSS only.
+  expect(await page.locator("[data-map]").evaluate((m) => m.getAnimations({ subtree: true }).length)).toBe(0);
+
+  await page.locator("[data-mode-toggle]").click();
+  await expect(page.locator(".map__place-role").first()).toHaveCSS("color", "rgb(85, 83, 78)"); // Giai mat unchanged
 });
 
 test("20.6 tier legend: the same bars in Mat, three columns on desktop, one at 375px", async ({ page }) => {

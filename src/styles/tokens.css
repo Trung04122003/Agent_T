@@ -8,6 +8,7 @@
   --surface: #ffffff;
   --ink: #111111;
   --ink-muted: #55534e;
+  --ink-hud: #55534e; /* small print of the chart and map readouts (Mat: brighter, owner feedback 2026-10-28) */
   --line: #d9d6cc;
   --accent: #7a5f2a;
   --redact: #111111;
@@ -21,6 +22,7 @@
     --surface: #131316;
     --ink: #e8e6e1;
     --ink-muted: #9c9a94;
+    --ink-hud: #c4c1b9;
     --line: #26262b;
     --accent: #b8975a;
     --redact: #7a735f; /* khaki grey, owner choice 2026-10-24 */

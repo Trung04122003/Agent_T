@@ -390,6 +390,51 @@ const seas = [
     fill: var(--line);
   }
 
+  /* Mat: the map is the console's tactical display (owner feedback 2026-10-28). Static only, no
+     motion of its own: brass frame and ruler, a faint plotting grid, Viet Nam lit in brass, a
+     bright crosshair and readable labels. On screen only; print keeps the Giai mat drawing. */
+  @media not print {
+    :global(:root[data-mode="mat"]) .map {
+      --ink-muted: var(--ink-hud);
+    }
+    :global(:root[data-mode="mat"]) .map__frame {
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background-image:
+        linear-gradient(color-mix(in srgb, var(--accent) 7%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    :global(:root[data-mode="mat"]) .map__frame::after {
+      --tick: color-mix(in srgb, var(--accent) 70%, transparent);
+      background:
+        repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 32px) top / 100% 6px no-repeat,
+        repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 32px) bottom / 100% 6px no-repeat,
+        repeating-linear-gradient(var(--tick) 0 1px, transparent 1px 32px) left / 6px 100% no-repeat,
+        repeating-linear-gradient(var(--tick) 0 1px, transparent 1px 32px) right / 6px 100% no-repeat;
+    }
+    :global(:root[data-mode="mat"]) .map__land path {
+      fill: color-mix(in srgb, var(--surface) 85%, transparent);
+    }
+    :global(:root[data-mode="mat"]) .map__vn {
+      fill: color-mix(in srgb, var(--accent) 14%, var(--surface));
+      stroke-width: calc(1.5px / var(--k, 1));
+    }
+    :global(:root[data-mode="mat"]) .map__reticle {
+      stroke-width: 1.5;
+    }
+    :global(:root[data-mode="mat"]) .map__cross {
+      stroke-width: 1;
+      stroke-dasharray: 6 4;
+      opacity: 0.95;
+    }
+    :global(:root[data-mode="mat"]) .map__point text {
+      font-weight: 500;
+    }
+    :global(:root[data-mode="mat"]) .map__svg .map__sea-label {
+      fill: var(--accent);
+    }
+  }
+
   /* Draw once when scrolled into view (UX section 3; UX-v2 caps each effect at 600 ms): outline
      600 ms, then the points one by one (120 ms each) with a single 600 ms pulse. Armed only with
      JS and without reduced motion; Hoang Sa, Truong Sa and their labels are never hidden. */

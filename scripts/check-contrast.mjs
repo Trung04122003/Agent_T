@@ -41,6 +41,8 @@ const PAIRS = [
   // Text must stay readable where it crosses a grid line (UX-v2 section 3).
   ["ink", "grid", 4.5, true],
   ["ink-muted", "grid", 4.5, true],
+  ["ink-hud", "bg", 4.5, true],
+  ["ink-hud", "surface", 4.5, true],
 ];
 
 let failed = 0;

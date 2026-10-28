@@ -80,6 +80,15 @@ test("15.2 Mat: same data as a signal, labels and names covered", async ({ page 
   expect(await bars.count()).toBeGreaterThan(0);
   await expect(bars.first()).toBeVisible();
   expect((await bars.first().boundingBox())!.width).toBeGreaterThan(20);
+
+  // Owner feedback 2026-10-28: a clear sight frame on the period, and brighter small print.
+  const band = await chart.locator("[data-chart-band]").evaluate((e) => {
+    const s = getComputedStyle(e);
+    const tint = s.backgroundColor !== "rgba(0, 0, 0, 0)";
+    return { opacity: s.opacity, side: s.borderLeftWidth, caps: s.backgroundImage.split("linear-gradient").length - 1, tint };
+  });
+  expect(band).toEqual({ opacity: "1", side: "2px", caps: 4, tint: true });
+  await expect(chart.locator(".chart__hint")).toHaveCSS("color", "rgb(196, 193, 185)");
 });
 
 test("15.2 the page source never carries hold or classified entries into the chart", async ({ page }) => {

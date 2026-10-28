@@ -38,3 +38,190 @@
     cursor: not-allowed;
   }
 }
+
+/* JS cursor layer (ROADMAP P22), built by src/scripts/cursor-fx.ts only where allowed. It never
+   takes a click, sits over the page without covering anything for long, and is hidden until the
+   mouse moves. transform and clip-path only; will-change on the moving parts only. */
+.cfx {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden; /* the sight lines end at the viewport edge, never widen the page */
+  pointer-events: none;
+  visibility: hidden;
+}
+.cfx.is-on {
+  visibility: visible;
+}
+.cfx__ring {
+  position: absolute;
+  /* Centred on the hotspot: translate() then moves its centre to the mouse. */
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  will-change: transform;
+}
+.cfx__lock {
+  width: 100%;
+  height: 100%;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Locking overshoots a little and settles, like a gimbal stopping on its mark. */
+.cfx__lock.is-locked {
+  transition-timing-function: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+.cfx__lock.is-snap {
+  transition: none;
+}
+/* "Target locked": 1.4x and 45 degrees, in 180 ms. */
+.cfx__lock.is-locked {
+  transform: scale(1.4) rotate(45deg);
+}
+.cfx__ring svg {
+  display: block;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.cfx__ring .cfx__halo {
+  stroke: var(--bg);
+  stroke-width: 3;
+}
+/* The lock and every sight line are their own compositor layers: a line is then a 1px strip
+   texture that the GPU moves and turns. Inside the ring's layer they made it a ~6000px square
+   re-rasterised on every lock (p95 33 ms, docs/perf-log.md). */
+.cfx__lock,
+.cfx__hair {
+  will-change: transform;
+}
+.cfx__lock {
+  position: relative;
+}
+/* Sight lines: dashed brass, from just outside the ring to past the screen edge (long enough for
+   the 45-degree turn: 150vmax each way). Children of the lock, so they move and turn with it,
+   one composited layer, nothing repainted per frame. */
+.cfx__hair {
+  position: absolute;
+  opacity: 0.75; /* the map crosshair is 0.95; a little softer here, since these lines cross text */
+}
+.cfx__hair--l,
+.cfx__hair--r {
+  top: 50%;
+  width: 150vmax;
+  height: 1px;
+  margin-top: -0.5px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 10px);
+}
+.cfx__hair--l {
+  right: calc(50% + 20px);
+}
+.cfx__hair--r {
+  left: calc(50% + 20px);
+}
+.cfx__hair--u,
+.cfx__hair--d {
+  left: 50%;
+  width: 1px;
+  height: 150vmax;
+  margin-left: -0.5px;
+  background: repeating-linear-gradient(180deg, var(--accent) 0 6px, transparent 6px 10px);
+}
+.cfx__hair--u {
+  bottom: calc(50% + 20px);
+}
+.cfx__hair--d {
+  top: calc(50% + 20px);
+}
+.cfx__frame i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  border: 0 solid var(--accent);
+  will-change: transform;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 120ms ease;
+}
+.cfx__frame.is-on i {
+  opacity: 1;
+}
+.cfx__frame.is-jump i {
+  transition: none;
+}
+.cfx__frame [data-c="tl"] {
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.cfx__frame [data-c="tr"] {
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.cfx__frame [data-c="bl"] {
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.cfx__frame [data-c="br"] {
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+/* Mat lock confirmation: the closed-in corners blink twice, hard on/off like a display (200 ms,
+   after the 180 ms close-in, so the two never run together). */
+.cfx__frame.is-confirm i {
+  animation: cfx-confirm 200ms steps(1, end) 200ms;
+}
+@keyframes cfx-confirm {
+  0%,
+  50% {
+    opacity: 0.15;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+}
+/* Giai mat "financial lock": the corners open out from inside the target and settle with a
+   slight overshoot, a highlight popping open rather than a sight closing in. */
+:root[data-mode="giai-mat"] .cfx__frame i {
+  transition-timing-function: cubic-bezier(0.34, 1.45, 0.64, 1), ease;
+}
+/* The ring is Mat only; the frame serves both modes (Mat closes it in, Giai mat opens it out). */
+:root[data-mode="giai-mat"] .cfx__ring {
+  display: none;
+}
+@media print {
+  .cfx {
+    display: none;
+  }
+}
+
+/* Giai mat: a brass underline sweeps under the ledger row being pointed at (clip-path, 220 ms). */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :root[data-js][data-mode="giai-mat"]:not([data-cursor="system"]) .row__head {
+    position: relative;
+  }
+  :root[data-js][data-mode="giai-mat"]:not([data-cursor="system"]) .row__head::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 220ms ease;
+    pointer-events: none;
+  }
+  :root[data-js][data-mode="giai-mat"]:not([data-cursor="system"]) .row__head:hover::after {
+    clip-path: inset(0 0 0 0);
+  }
+  /* No sweep of its own while a mode-change scene runs (UX-v2 budget). */
+  :root[data-scene] .row__head::after {
+    transition: none !important;
+  }
+  :root[dir="rtl"][data-js][data-mode="giai-mat"]:not([data-cursor="system"]) .row__head:not(:hover)::after {
+    clip-path: inset(0 0 0 100%);
+  }
+}

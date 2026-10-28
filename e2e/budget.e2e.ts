@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { FIXTURE } from "../playwright.config";
 
 // UX-v2 section 1 (ROADMAP 12.2-12.3): at most 2 effects running at once, each <= 600 ms.
@@ -59,12 +59,24 @@ function check(name: string, s: Sample) {
   expect(s.longest, `${name}: ${s.longestName}`).toBeLessThanOrEqual(600);
 }
 
+/**
+ * A person points at a control before clicking it, so the pointer layer (P22: ring lock, frame,
+ * row underline) has already answered. Playwright would move and click in the same instant; hover
+ * first and let everything settle, so the sample measures the scene the click starts.
+ */
+async function approach(page: Page, target: Locator) {
+  await target.hover();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+}
+
 test("mode change on the Gate screen", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/vi/");
+  await approach(page, page.locator("[data-mode-toggle]"));
   await startSampling(page);
   await page.locator("[data-mode-toggle]").click();
   check("Gate open", await stopSampling(page));
+  await approach(page, page.locator("[data-mode-toggle]"));
   await startSampling(page);
   await page.locator("[data-mode-toggle]").click();
   check("Gate close", await stopSampling(page));
@@ -77,6 +89,7 @@ test("View declassified link", async ({ page }) => {
   // Opening the row has its own effects (panel, stamp): let them finish so they are not counted
   // as part of the declassify scene. A fixed wait was not enough on a busy machine.
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  await approach(page, page.locator("#claim-fx-pending [data-declassify]"));
   await startSampling(page);
   await page.locator("#claim-fx-pending [data-declassify]").click();
   check("declassify link", await stopSampling(page));
@@ -86,6 +99,7 @@ test("opening a ledger row in Mat (panel + stamp)", async ({ page }) => {
   await page.goto("/vi/");
   const toggle = page.locator("[data-row-toggle]").first();
   await toggle.scrollIntoViewIfNeeded();
+  await approach(page, toggle);
   await startSampling(page);
   await toggle.click();
   check("row open", await stopSampling(page, 800));
@@ -94,6 +108,7 @@ test("opening a ledger row in Mat (panel + stamp)", async ({ page }) => {
 test("lens change", async ({ page }) => {
   await page.goto("/vi/");
   await page.locator("[data-lens-nav]").scrollIntoViewIfNeeded();
+  await approach(page, page.locator('[data-lens="curious"]'));
   await startSampling(page);
   await page.locator('[data-lens="curious"]').click();
   check("lens", await stopSampling(page));
@@ -101,6 +116,7 @@ test("lens change", async ({ page }) => {
 
 test("language change", async ({ page }) => {
   await page.goto("/vi/");
+  await approach(page, page.locator("[data-lang-switch]:not([aria-current])"));
   await startSampling(page);
   await page.locator("[data-lang-switch]:not([aria-current])").click();
   check("language", await stopSampling(page));

@@ -230,6 +230,23 @@ const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
     opacity: 0.06;
     border-inline: 1px solid var(--accent);
   }
+  /* Mat: the band is a sight frame, readable on the dark console (owner feedback 2026-10-28):
+     2px brass sides, brass corner caps top and bottom, a brass tint instead of a grey film. */
+  :global(:root[data-mode="mat"]) .chart__band {
+    --cap: linear-gradient(var(--accent), var(--accent));
+    opacity: 1;
+    border-inline-width: 2px;
+    background:
+      var(--cap) top left / 10px 2px no-repeat,
+      var(--cap) top right / 10px 2px no-repeat,
+      var(--cap) bottom left / 10px 2px no-repeat,
+      var(--cap) bottom right / 10px 2px no-repeat,
+      color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  /* The chart's small print: in Mat one step brighter than the console's muted grey (tokens.css). */
+  .chart {
+    --ink-muted: var(--ink-hud);
+  }
   .chart__axis-x {
     grid-column: 2;
     position: relative;
