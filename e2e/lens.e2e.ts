@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // ROADMAP P7 on the real content: entry UI (7.2), FLIP (7.3), three orders (7.4).
 const lenses = JSON.parse(readFileSync("content/lenses.json", "utf8")).lenses as Array<{ id: string; label: { vi: string; en: string } }>;

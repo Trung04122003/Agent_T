@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 8.2: axe on whole pages (both languages, both modes, rows open) and a keyboard pass.
 for (const locale of ["vi", "en"] as const) {

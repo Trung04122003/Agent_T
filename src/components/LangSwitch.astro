@@ -15,14 +15,16 @@ interface Props {
   path: string;
   /** Languages to offer, already filtered to complete ones (ROADMAP 10.3). */
   locales: readonly Locale[];
+  /** In the entry gate (ROADMAP 25.2): own data attributes, so page tests and styles never mix the two. */
+  entry?: boolean;
 }
-const { locale, path, locales } = Astro.props;
+const { locale, path, locales, entry = false } = Astro.props;
 /** English uses the UK flag (DECISIONS.md). A language without a flag shows its code only. */
 const FLAGS: Partial<Record<string, string>> = { vi: vnFlag, en: gbFlag };
 const links = await Promise.all(locales.map(async (l) => ({ l, name: await t("languageName", l) })));
 ---
 
-<nav class="lang-switch" data-lang-nav>
+<nav class="lang-switch" {...(entry ? { "data-entry-langs": "" } : { "data-lang-nav": "" })}>
   {
     links.map(({ l, name }) => (
       <a
@@ -31,7 +33,7 @@ const links = await Promise.all(locales.map(async (l) => ({ l, name: await t("la
         hreflang={l}
         lang={l}
         aria-current={l === locale ? "page" : undefined}
-        data-lang-switch={l}
+        {...(entry ? { "data-entry-lang": l } : { "data-lang-switch": l })}
       >
         {FLAGS[l] && <img class="lang-switch__flag" src={FLAGS[l]} alt="" width="20" height="14" />}
         <span class="lang-switch__code">{l.toUpperCase()}</span>

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // Owner decision after P20 (DECISIONS-v3.md): the positioning line and risks 02-03 come in a Mat
 // wording and a plain (Giai mat) one. The plain one is what print, search and no-JS readers get.

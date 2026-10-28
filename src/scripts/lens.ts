@@ -7,6 +7,32 @@ function lensFromUrl(): string | null {
   return new URLSearchParams(location.search).get("lens");
 }
 
+// The reader's last lens (ROADMAP 25.4), the default on later visits. Storage may be blocked.
+export const LENS_KEY = "lens";
+export function readLens(): string | null {
+  try {
+    return localStorage.getItem(LENS_KEY);
+  } catch {
+    return null;
+  }
+}
+export function saveLens(id: string | null): void {
+  try {
+    if (id) localStorage.setItem(LENS_KEY, id);
+    else localStorage.removeItem(LENS_KEY);
+  } catch {
+    // storage blocked: nothing to remember
+  }
+}
+
+/** ROADMAP 25.7: the owner's line for this lens replaces the common positioning line(s). */
+function showLensLine(id: string | undefined): void {
+  const lines = [...document.querySelectorAll<HTMLElement>("[data-positioning-lens]")];
+  const own = lines.some((l) => l.dataset["positioningLens"] === id);
+  for (const l of lines) l.hidden = l.dataset["positioningLens"] !== id;
+  for (const p of document.querySelectorAll<HTMLElement>("[data-positioning]")) p.hidden = own;
+}
+
 function reducedMotion(): boolean {
   return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -57,6 +83,7 @@ export function initLens(): void {
     if (!current) return;
     const landed = reorder(current, orderByLens(defaultIds, lens), animate);
     for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset["lens"] === lens?.id));
+    showLensLine(lens?.id);
     if (title) {
       title.textContent = lens ? (buttons.find((b) => b.dataset["lens"] === lens.id)?.textContent?.trim() ?? "") : "";
       // Fades in after the rows have landed: FLIP + card outline, then the title (UX-v2 budget).
@@ -73,6 +100,7 @@ export function initLens(): void {
       if (next) url.searchParams.set("lens", next);
       else url.searchParams.delete("lens");
       history.pushState(null, "", url);
+      saveLens(next);
       apply(next, true);
     });
   }
@@ -83,8 +111,10 @@ export function initLens(): void {
       document.querySelector<HTMLElement>("[data-lens-nav]")?.dispatchEvent(new CustomEvent("lens:sync"));
     });
   }
-  nav.addEventListener("lens:sync", () => apply(lensFromUrl(), true));
+  // detail.animate false: the entry gate applies the chosen lens while it closes, without FLIP.
+  nav.addEventListener("lens:sync", (e) => apply(lensFromUrl(), (e as CustomEvent<{ animate?: boolean }>).detail?.animate ?? true));
 
-  apply(lensFromUrl(), false);
+  // No ?lens=: the reader's remembered lens (ROADMAP 25.4), if any.
+  apply(lensFromUrl() ?? readLens(), false);
   nav.hidden = false;
 }

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import { DEV } from "../playwright.config";
 import { gotoStable } from "./helpers";
 
@@ -41,7 +41,7 @@ test("switches vi -> en in place: decodes the codename, keeps mode and focus, Ba
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/en\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.locator("[data-gate]")).toContainText(identity.positioning.en);
+  await expect(page.locator("[data-level0]")).toContainText(identity.positioning.en);
   await expect(page.locator("[data-mode-toggle]")).toHaveText(ui.modeGiaiMat.en);
   await expect(page.locator(".footer__updated")).toContainText(ui.updatedLabel.en);
   await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
@@ -68,7 +68,7 @@ test("switches vi -> en in place: decodes the codename, keeps mode and focus, Ba
   await page.goBack();
   await expect(page).toHaveURL(/\/vi\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
-  await expect(page.locator("[data-gate]")).toContainText(identity.positioning.vi);
+  await expect(page.locator("[data-level0]")).toContainText(identity.positioning.vi);
   expect(errors).toEqual([]);
 });
 

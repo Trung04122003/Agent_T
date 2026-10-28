@@ -1,6 +1,7 @@
 ---
 import { t, type Locale } from "../lib/i18n";
 import { codenameFor, getIdentity } from "../lib/identity";
+import { getLenses } from "../lib/lenses";
 import PageMark from "./PageMark.astro";
 import Portrait from "./Portrait.astro";
 
@@ -13,10 +14,11 @@ const codename = codenameFor(identity, locale);
 const codenameLabel = await t("codenameLabel", locale);
 const scrollHint = await t("gateScrollHint", locale);
 const legalNameLabel = await t("legalNameRedacted", locale);
+const lensLines = getLenses().flatMap((l) => (l.positioning ? [{ id: l.id, positioning: l.positioning, mat: l.positioningMat }] : []));
 ---
 
 <!-- Level 0 (SPEC section 4): codename, positioning line, portrait. Nothing else. -->
-<section class="gate" data-gate aria-labelledby="gate-codename">
+<section class="gate" data-level0 aria-labelledby="gate-codename">
   <div class="gate__id sheet">
     <PageMark locale={locale} page="gate" />
     <p class="gate__label">{codenameLabel}</p>
@@ -39,6 +41,23 @@ const legalNameLabel = await t("legalNameRedacted", locale);
           {identity.positioningMat[locale]}
         </p>
       )
+    }
+    {/* ROADMAP 25.7: a line per reader where the owner wrote one; lens.ts shows it in place of the
+        common line(s) while that lens is chosen. Without JS or a lens, the common line stays. */}
+    {
+      lensLines.map((l) => (
+        <>
+          {/* Two wordings, like the common line: the mysterious one in Mat, the plain one in Giai mat. */}
+          <p class:list={["gate__positioning", l.mat && "only-giai-mat"]} data-positioning-lens={l.id} hidden>
+            {l.positioning[locale]}
+          </p>
+          {l.mat && (
+            <p class="gate__positioning only-mat" data-positioning-lens={l.id} hidden>
+              {l.mat[locale]}
+            </p>
+          )}
+        </>
+      ))
     }
   </div>
   <div class="gate__portrait">

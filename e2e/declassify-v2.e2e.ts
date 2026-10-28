@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P16: Declassify v2 — bars shrink, the classification strip types its new level, the chart line
 // draws in with clip-path. The roadmap asked for 600 ms; the owner chose (2026-10-27) slower, visible

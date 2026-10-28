@@ -8,8 +8,10 @@ import { initLens } from "./lens";
 import { initChart } from "./chart";
 import { initMap } from "./map-reveal";
 import { initMapView } from "./map-view";
+import { initEntry } from "./entry";
+import { LANG_KEY } from "../lib/locales";
 
-const REGIONS = ["[data-banner=\"top\"]", "header.controls", "main", "footer", "[data-banner=\"bottom\"]"];
+const REGIONS = ["[data-banner=\"top\"]", "header.controls", "main", "footer", "[data-banner=\"bottom\"]", "[data-entry]"];
 const FADE_MS = 200;
 
 async function show(url: string, push: boolean): Promise<void> {
@@ -30,9 +32,18 @@ async function show(url: string, push: boolean): Promise<void> {
   for (const selector of REGIONS) {
     const current = document.querySelector(selector);
     const incoming = next.querySelector(selector);
-    if (current && incoming) current.replaceWith(document.importNode(incoming, true));
+    if (!current || !incoming) continue;
+    // The open entry gate replays only its lenses (and decodes): the strip and question sweeps would
+    // make a third effect next to the cursor lock on the flag just clicked (UX-v2 budget).
+    if (selector === "[data-entry]") incoming.classList.add("is-relang");
+    current.replaceWith(document.importNode(incoming, true));
   }
   if (push) history.pushState(null, "", url);
+  try {
+    localStorage.setItem(LANG_KEY, root.lang);
+  } catch {
+    // storage blocked: nothing to remember
+  }
   shownPath = new URL(url, location.href).pathname;
 
   initModeToggle();
@@ -42,6 +53,9 @@ async function show(url: string, push: boolean): Promise<void> {
   initMap();
   initMapView();
   initChart();
+  // Chosen inside the open entry gate (ROADMAP 25.2): the gate stays, now in the new language; the
+  // page behind it is inert and hidden, so it gets no fade or decode of its own.
+  if (root.dataset["gate"] === "show") return initEntry(true);
   // Focus the language just chosen (now the current one) so keyboard users stay in place.
   document.querySelector<HTMLElement>("[data-lang-switch][aria-current=\"page\"]")?.focus({ preventScroll: true });
 
@@ -63,7 +77,7 @@ export function initLangSwitch(): void {
   if (ready) return;
   ready = true;
   document.addEventListener("click", (event) => {
-    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("[data-lang-switch]");
+    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("[data-lang-switch], [data-entry-lang]");
     if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (link.getAttribute("aria-current") === "page") return; // already in this language

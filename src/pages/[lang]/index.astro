@@ -41,7 +41,7 @@ const labels: LedgerLabels = {
 };
 ---
 
-<Base locale={locale} title="Cupid Dossier" path="/">
+<Base locale={locale} title="Cupid Dossier" path="/" gate>
   <Gate locale={locale} />
   <StatsBoard claims={claims} locale={locale} />
   <LensNav locale={locale} publicIds={publicClaims(claims).map((c) => c.id)} />

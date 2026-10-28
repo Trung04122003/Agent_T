@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // ROADMAP 6.3: the map draws in once when scrolled into view; reduced motion shows it all at once.
 const mapAnimations = (page: Page) =>

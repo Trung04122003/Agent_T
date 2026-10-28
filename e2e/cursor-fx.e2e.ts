@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P22: the JS cursor layer. Mat: a reticle ring that follows the mouse and locks onto targets.
 // Giai mat: a selection frame that slides to the target, and a swept underline on ledger rows.

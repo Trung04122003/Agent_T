@@ -31,6 +31,8 @@ const q = (xs, k) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.
 
 async function run(browser, { cpu, mode }) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  // Measure the page, not the entry gate (P25): a reader who passed it this session.
+  await context.addInitScript(() => sessionStorage.setItem("gateSeen", "1"));
   await context.addInitScript((m) => localStorage.setItem("mode", m), mode);
   const page = await context.newPage();
   await page.goto(`http://localhost:${PORT}/vi/`);

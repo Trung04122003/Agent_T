@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P12 (owner request 2026-10-26): the map has its own frame, a legend that explains it, and can be
 // zoomed and dragged. Text sits on solid sheets so the page grid never runs through it.

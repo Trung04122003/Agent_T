@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import { FIXTURE } from "../playwright.config";
 
 // ROADMAP 4.4: the effect layer causes no unwanted layout shift and animates only

@@ -2,7 +2,18 @@
   "lenses": [
     {
       "id": "partner",
-      "label": { "vi": "Đối tác", "en": "Partner" },
+      "label": {
+        "vi": "Đối tác",
+        "en": "Partner"
+      },
+      "positioning": {
+        "vi": "Giao cho tôi phần việc rối nhất. Tôi sẽ chia nó thành từng bước làm được, rồi theo tới cuối.",
+        "en": "Give me the messiest part of the work. I'll break it into steps people can act on, and see it to the end."
+      },
+      "positioningMat": {
+        "vi": "Bạn mang tới bài toán chưa ai gỡ nổi. Tôi là người ở lại tới khi nó xong.",
+        "en": "You bring the problem nobody could untangle. I'm the one who stays until it's done."
+      },
       "weights": {
         "role-bbe-ldc": 60,
         "role-jci": 50,
@@ -15,7 +26,18 @@
     },
     {
       "id": "client",
-      "label": { "vi": "Khách hàng", "en": "Client" },
+      "label": {
+        "vi": "Khách hàng",
+        "en": "Client"
+      },
+      "positioning": {
+        "vi": "Tôi giải thích những gì bạn đang có và nên làm gì tiếp, bằng lời dễ hiểu. Quyết định vẫn là của bạn.",
+        "en": "I explain what you have and what to do next, in plain words. The decision stays yours."
+      },
+      "positioningMat": {
+        "vi": "Bạn không cần đọc hết mọi điều khoản. Bạn cần một người đã đọc, và nói lại cho bạn bằng lời thường.",
+        "en": "You don't have to read every clause. You need someone who already has, and will tell you in plain words."
+      },
       "weights": {
         "role-prudential": 60,
         "role-bluesea": 50,
@@ -27,7 +49,18 @@
     },
     {
       "id": "curious",
-      "label": { "vi": "Tò mò", "en": "Curious" },
+      "label": {
+        "vi": "Tò mò",
+        "en": "Curious"
+      },
+      "positioning": {
+        "vi": "Đây là những việc tôi đã làm, việc nào thành, việc nào chưa. Bạn cứ đọc thoải mái.",
+        "en": "Here is what I have worked on, what went well and what didn't. Read as much as you like."
+      },
+      "positioningMat": {
+        "vi": "Hồ sơ này không kể hết. Phần bị bôi đen cũng là một phần câu chuyện.",
+        "en": "This file doesn't tell everything. The blacked-out parts are part of the story, too."
+      },
       "weights": {
         "project-air-quality": 60,
         "role-dz-ta": 50,

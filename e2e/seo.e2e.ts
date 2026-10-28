@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 8.4: 404, neutral SEO meta, static OG image, noindex everywhere until launch.
 const identity = JSON.parse(readFileSync("content/identity.json", "utf8"));

@@ -36,7 +36,8 @@ async function run(browser, { cpu, transition, viewport }) {
   const page = await browser.newPage({ viewport });
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Performance.enable");
-  await page.goto(`http://localhost:${PORT}/vi/`);
+  // Measure the ledger, not the entry gate (P25): ?skip=1 opens the page past it.
+  await page.goto(`http://localhost:${PORT}/vi/?skip=1`);
   await page.evaluate(() => document.fonts.ready);
   if (!transition) await page.addStyleTag({ content: ".row__panel{transition:none!important}" });
   const toggles = page.locator("[data-row-toggle]");

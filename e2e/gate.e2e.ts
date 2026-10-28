@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 2.1: Gate shows codename and positioning from content/, and nothing that is not in content/.
 const read = (name: string) => JSON.parse(readFileSync(`content/${name}`, "utf8"));
@@ -17,12 +17,13 @@ function allowedStrings(): Set<string> {
   };
   walk(identity);
   walk(ui);
+  walk(JSON.parse(readFileSync("content/lenses.json", "utf8"))); // the readers' own lines (P25)
   return out;
 }
 
 test("Gate shows codename, legal name and positioning from content/", async ({ page }) => {
   await page.goto("/vi/");
-  const gate = page.locator("[data-gate]");
+  const gate = page.locator("[data-level0]");
   await expect(gate.locator("h1")).toHaveText("Cupid");
   await expect(gate).toContainText(identity.legalName);
   await expect(gate).toContainText(identity.positioning.vi);
@@ -71,7 +72,7 @@ test.describe("without JavaScript", () => {
 
 test("Gate contains no text that is missing from content/", async ({ page }) => {
   await page.goto("/vi/");
-  const texts = await page.locator("[data-gate]").evaluate((root) => {
+  const texts = await page.locator("[data-level0]").evaluate((root) => {
     const found: string[] = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {

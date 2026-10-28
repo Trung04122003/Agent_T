@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 6.2: real map with Hoang Sa and Truong Sa labelled, in vi and en (screenshots).
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));

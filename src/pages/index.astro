@@ -5,9 +5,12 @@ import "../styles/fonts.css";
 import "../styles/tokens.css";
 import "../styles/base.css";
 import { t } from "../lib/i18n";
-import { DEFAULT_LOCALE, LOCALES } from "../lib/locales";
+import { DEFAULT_LOCALE, LANG_KEY, LOCALES } from "../lib/locales";
 import { NOINDEX } from "../lib/site";
 
+// ROADMAP 25.4: a reader who picked a language before goes straight to it (storage may be blocked;
+// then, and without JS, the refresh below picks the default).
+const langScript = `try{var l=localStorage.getItem(${JSON.stringify(LANG_KEY)});if(${JSON.stringify(LOCALES)}.indexOf(l)>=0)location.replace("/"+l+"/")}catch(e){}`;
 const links = await Promise.all(LOCALES.map(async (l) => ({ l, name: await t("languageName", l) })));
 ---
 
@@ -15,6 +18,7 @@ const links = await Promise.all(LOCALES.map(async (l) => ({ l, name: await t("la
 <html lang={DEFAULT_LOCALE} data-mode="mat">
   <head>
     <meta charset="utf-8" />
+    <script is:inline set:html={langScript} />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="refresh" content={`0; url=/${DEFAULT_LOCALE}/`} />
     <link rel="canonical" href={`/${DEFAULT_LOCALE}/`} />

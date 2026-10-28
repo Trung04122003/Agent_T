@@ -18,6 +18,9 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 ## Cổng và chuyển cảnh (P25–P26)
 - Có màn hình cổng, nhưng là cổng **chức năng** (chọn lens và ngôn ngữ), bỏ qua được ngay, tối đa một lần mỗi phiên.
 - Chuyển cảnh khẩu độ vào hồ sơ, có thoái lui.
+- **Ngoại lệ (chủ dự án duyệt khi xem P25, 28/10/2026):**
+  - Mỗi phân khúc (Đối tác, Khách hàng, Tò mò) có một dòng định vị riêng, giọng kỳ bí và cuốn hút, viết theo skill humanizer. Claude Code viết bản nháp vào `positioning` của `content/lenses.json`, chờ chủ dự án chốt. Dòng này hiện trong cổng khi người xem trỏ vào một lens, và thay dòng chung ở đầu trang sau khi vào. Mỗi dòng có hai phiên bản như dòng chung (chủ dự án yêu cầu cùng ngày): bản bí ẩn cho Mật (`positioningMat`) và bản rõ ràng, chân thành cho Giải mật (`positioning`).
+  - Riêng P25 được đo cổng (phân tích) mà không theo quy tắc "không analytics" của SPEC. Chủ dự án chọn đo cục bộ trước: sự kiện của cổng chỉ ghi trong trình duyệt, không gửi đi đâu, kèm một bài đánh giá trong phòng thử (`docs/gate-evaluation.md`). Nhà cung cấp để đo người xem thật được chọn lúc phát hành (P30).
 
 ## Nội dung chủ dự án phải tự viết lại (Claude Code không được đụng)
 - Dòng định vị đầu trang ("Khả năng dịch hệ thống phức tạp…"): trừu tượng, dài; thử bài 5 giây với 3 người lạ.

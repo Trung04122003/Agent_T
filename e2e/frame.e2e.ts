@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 2.3 / 12.4: corner brackets on the frame, monospace label, build-date stamp.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));

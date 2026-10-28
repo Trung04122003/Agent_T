@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 6.4: screen readers get a text list (the legend) instead of the drawing; axe finds no issue.
 const places = JSON.parse(readFileSync("content/places.json", "utf8")) as Array<{

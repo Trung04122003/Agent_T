@@ -238,6 +238,10 @@ export const lenses = z.strictObject({
       z.strictObject({
         id: z.string().regex(/^[a-z]+$/),
         label: localized,
+        /** ROADMAP 25.7: the positioning line for this reader, written by the owner; null = the common line. */
+        positioning: localized.nullable().optional(),
+        /** Its Mat wording (owner request, 28/10/2026), like identity's positioningMat; null = the line above. */
+        positioningMat: localized.nullable().optional(),
         weights: z.record(text, z.number().int()),
       }),
     )

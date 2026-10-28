@@ -16,6 +16,8 @@ import { contentStrings } from "../lib/translations";
 import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
 import { CURSOR_KEY } from "../scripts/cursor";
+import { GATE_KEY } from "../scripts/entry";
+import EntryGate from "../components/EntryGate.astro";
 import { MODE_KEY } from "../scripts/mode";
 
 interface Props {
@@ -25,8 +27,10 @@ interface Props {
   path?: string;
   /** Override text direction (dev RTL smoke test only). */
   dir?: "ltr" | "rtl";
+  /** Offer the entry gate (ROADMAP P25): the file's home page only. */
+  gate?: boolean;
 }
-const { locale, title, path, dir = dirFor(locale) } = Astro.props;
+const { locale, title, path, dir = dirFor(locale), gate = false } = Astro.props;
 const updatedLabel = await t("updatedLabel", locale);
 const updated = updatedStamp(new Date());
 // Neutral SEO (ROADMAP 8.4): the positioning line from content/, nothing more.
@@ -43,7 +47,11 @@ const published = LOCALES.filter((l) => complete.has(l));
 // no-JS page shows all public content), then apply the saved mode. Default stays "mat".
 // The cursor preference (ROADMAP 21.4) is read here too, so the right cursor is there from the
 // first paint; blocked storage means the default ("custom").
-const modeScript = `document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
+// Entry gate (ROADMAP 25.1/25.6), decided here before the first paint: shown only with JS, once a
+// session, without a deep link (#...) or ?skip, and not when the page is opened for printing.
+// Blocked storage means no gate (we could not keep it to once a session).
+const gateScript = `var g="skip";try{if(!sessionStorage.getItem(${JSON.stringify(GATE_KEY)})&&!location.hash&&!/[?&]skip(=|&|$)/.test(location.search)&&!matchMedia("print").matches){sessionStorage.setItem(${JSON.stringify(GATE_KEY)},"1");g="show"}}catch(e){}document.documentElement.dataset.gate=g;`;
+const modeScript = `${gate ? gateScript : ""}document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
 ---
 
 <!doctype html>
@@ -82,6 +90,7 @@ const modeScript = `document.documentElement.dataset.js="";try{var m=localStorag
       <p class="footer__updated">{updatedLabel}: <time datetime={updated.iso}>{updated.text}</time></p>
     </footer>
     <ClassBanner locale={locale} position="bottom" />
+    {gate && path !== undefined && <EntryGate locale={locale} path={path} locales={published} />}
     <script>
       // Cursor layer (ROADMAP P22): the gate decides; the layer's code is fetched only if allowed.
       import { initCursorFx } from "../scripts/cursor-loader";

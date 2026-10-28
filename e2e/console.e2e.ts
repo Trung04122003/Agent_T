@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P13: the Mat "console" — classification strip, file furniture, stamp, viewfinder.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
@@ -17,10 +17,10 @@ test("13.1 classification strip top and bottom, own words only, no real agency m
     const text = (await banner.textContent())!.toUpperCase();
     for (const word of ["TOP SECRET", "NOFORN", "FBI", "CIA", "NSA", "TUYỆT MẬT", "TỐI MẬT", "//"]) expect(text).not.toContain(word);
   }
-  // Top strip comes first in the page, bottom one last (scripts and the pointer layer of P22,
-  // which are not content, may follow it).
+  // Top strip comes first in the page, bottom one last (scripts, the pointer layer of P22 and the
+  // entry gate of P25, which are not the file itself, may follow it).
   const order = await page.evaluate(() => {
-    const all = [...document.body.children].filter((e) => e.tagName !== "SCRIPT" && !e.hasAttribute("data-cfx"));
+    const all = [...document.body.children].filter((e) => e.tagName !== "SCRIPT" && !e.hasAttribute("data-cfx") && !e.hasAttribute("data-entry"));
     return [all.indexOf(document.querySelector('[data-banner="top"]')!), all.indexOf(document.querySelector('[data-banner="bottom"]')!), all.length];
   });
   expect(order).toEqual([0, order[2]! - 1, order[2]]);

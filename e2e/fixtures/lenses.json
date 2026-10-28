@@ -1,0 +1,56 @@
+{
+  "lenses": [
+    {
+      "id": "partner",
+      "label": {
+        "vi": "Đối tác",
+        "en": "Partner"
+      },
+      "positioning": null,
+      "weights": {
+        "role-bbe-ldc": 60,
+        "role-jci": 50,
+        "role-bluesea": 40,
+        "role-prudential": 30,
+        "edu-duy-tan": 20,
+        "role-dz-ta": 10,
+        "project-air-quality": 5
+      }
+    },
+    {
+      "id": "client",
+      "label": {
+        "vi": "Khách hàng",
+        "en": "Client"
+      },
+      "positioning": {
+        "vi": "Dòng định vị thử nghiệm cho khách hàng (fixture).",
+        "en": "Test positioning line for clients (fixture)."
+      },
+      "weights": {
+        "role-prudential": 60,
+        "role-bluesea": 50,
+        "classified-client-files": 40,
+        "role-jci": 30,
+        "role-bbe-ldc": 20,
+        "edu-duy-tan": 10
+      }
+    },
+    {
+      "id": "curious",
+      "label": {
+        "vi": "Tò mò",
+        "en": "Curious"
+      },
+      "positioning": null,
+      "weights": {
+        "project-air-quality": 60,
+        "role-dz-ta": 50,
+        "edu-duy-tan": 40,
+        "role-jci": 30,
+        "role-bbe-ldc": 20,
+        "classified-client-files": 10
+      }
+    }
+  ]
+}

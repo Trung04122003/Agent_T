@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // ROADMAP 1.4 / SPEC section 5: mode switch without effects.
 const html = (page: Page) => page.locator("html");

@@ -4,3 +4,5 @@ export const CLAIMS_FILE = process.env["CUPID_CLAIMS"] ?? "content/claims.json";
 export const RISKS_FILE = process.env["CUPID_RISKS"] ?? "content/risks.json";
 // And the owner's result figures (ROADMAP 20.3): CUPID_METRICS swaps in a test list.
 export const METRICS_FILE = process.env["CUPID_METRICS"] ?? "content/metrics.json";
+// And the reading directions (ROADMAP 25.7): CUPID_LENSES swaps in a test list with lens lines.
+export const LENSES_FILE = process.env["CUPID_LENSES"] ?? "content/lenses.json";

@@ -66,6 +66,8 @@
   "mapCredit": { "vi": "Made with Natural Earth", "en": "Made with Natural Earth" },
   "lensQuestion": { "vi": "Bạn đến với tư cách gì?", "en": "In what capacity are you here?" },
   "notFound": { "vi": "Không tìm thấy hồ sơ này.", "en": "This file could not be found." },
+  "entryTitle": { "vi": "Xác định người xem", "en": "Identify the reader" },
+  "entrySkip": { "vi": "Bỏ qua", "en": "Skip" },
   "requestDocs": { "vi": "Yêu cầu giải mật tài liệu", "en": "Request declassified documents" },
   "requestCopy": { "vi": "Sao chép địa chỉ", "en": "Copy address" },
   "requestGmail": { "vi": "Mở bằng Gmail", "en": "Open in Gmail" },

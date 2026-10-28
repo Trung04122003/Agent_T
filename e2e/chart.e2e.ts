@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P15: commitment chart — one dataset (period of open entries), two drawings.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));

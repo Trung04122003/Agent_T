@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P23: the chart crosshair. Giai mat: lines snapped to a month and to its count, readouts on the
 // axes. Mat: the same lines, the readouts covered. Keyboard and touch drive it too.

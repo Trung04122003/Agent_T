@@ -28,3 +28,6 @@ export function localeReport(strings: Record<string, unknown>[], reviewed: strin
     return { locale, missing, reviewed: isReviewed, available: REQUIRED.has(locale) || (missing === 0 && isReviewed) };
   });
 }
+
+/** localStorage key of the reader's language (ROADMAP 25.4): "/" goes straight to it next time. */
+export const LANG_KEY = "lang";

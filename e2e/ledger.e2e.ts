@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import { FIXTURE, SITE } from "../playwright.config";
 
 // ROADMAP 3.3 / 3.4 on the test dataset (e2e/fixtures/claims.json).

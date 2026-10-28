@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./test";
 import { FIXTURE } from "../playwright.config";
 
 // UX-v2 section 1 (ROADMAP 12.2-12.3): at most 2 effects running at once, each <= 600 ms.

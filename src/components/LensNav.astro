@@ -2,10 +2,9 @@
 // "Entry" (UX section 2, v1.1): In what capacity are you here? Partner · Client · Curious.
 // Reorders the ledger by content/lenses.json; state lives in ?lens=. Hidden without JavaScript,
 // where the ledger simply keeps its default order.
-import lensesJson from "../../content/lenses.json";
 import { t, type Locale } from "../lib/i18n";
 import { publicWeights } from "../lib/lens";
-import { lenses as lensesSchema } from "../lib/schema";
+import { getLenses } from "../lib/lenses";
 
 interface Props {
   locale: Locale;
@@ -13,7 +12,7 @@ interface Props {
   publicIds: string[];
 }
 const { locale, publicIds } = Astro.props;
-const config = lensesSchema.parse(lensesJson);
+const config = { lenses: getLenses() };
 const weights = config.lenses.map((l) => publicWeights(l, publicIds));
 const question = await t("lensQuestion", locale);
 ---

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 1.5 / UX section 4: print is always Giai mat, without controls.
 test("print media shows Giai mat and no mode switch, even when Mat is active", async ({ page }) => {

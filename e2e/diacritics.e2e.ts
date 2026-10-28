@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 import { FIXTURE } from "../playwright.config";
 
 // ROADMAP 5.4 / SPEC section 7: Vietnamese with diacritics survives content -> build -> screen.

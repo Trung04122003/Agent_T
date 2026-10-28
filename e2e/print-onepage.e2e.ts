@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // P18: the one-page file. Print gives one A4 page, Giai mat, from the same content/.
 const raw = JSON.parse(readFileSync("content/claims.json", "utf8")) as Array<{
@@ -25,7 +25,7 @@ for (const locale of ["vi", "en"] as const) {
     const sheet = page.locator("[data-onepage]");
     await expect(sheet).toBeVisible();
     // Nothing else prints.
-    for (const sel of ["[data-gate]", "[data-ledger]", "[data-map]", "[data-chart]", "header.controls", "[data-banner]"]) {
+    for (const sel of ["[data-level0]", "[data-ledger]", "[data-map]", "[data-chart]", "header.controls", "[data-banner]"]) {
       await expect(page.locator(sel).first(), sel).toBeHidden();
     }
     // Giai mat: the legal name, the struck-out level.

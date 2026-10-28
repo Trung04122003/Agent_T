@@ -20,7 +20,7 @@ export default defineConfig({
     {
       command: "pnpm build && pnpm preview --port 4323 --ignore-lock",
       url: FIXTURE,
-      env: { CUPID_CLAIMS: "e2e/fixtures/claims.json", CUPID_RISKS: "e2e/fixtures/risks.json", CUPID_METRICS: "e2e/fixtures/metrics.json" },
+      env: { CUPID_CLAIMS: "e2e/fixtures/claims.json", CUPID_RISKS: "e2e/fixtures/risks.json", CUPID_METRICS: "e2e/fixtures/metrics.json", CUPID_LENSES: "e2e/fixtures/lenses.json" },
       reuseExistingServer: false,
       timeout: 180_000,
     },

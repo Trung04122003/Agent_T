@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 import { SITE } from "../playwright.config";
 
 // ROADMAP 6.5 / SPEC section 8: the page, map included, makes no third-party request.

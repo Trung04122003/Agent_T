@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import { DEV, FIXTURE } from "../playwright.config";
 import { gotoStable } from "./helpers";
 

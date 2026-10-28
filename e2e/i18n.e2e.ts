@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 5.1: /vi/ and /en/ with the right lang (and dir) attributes; "/" leads to /vi/.
 const identity = JSON.parse(readFileSync("content/identity.json", "utf8"));
@@ -10,7 +10,7 @@ for (const locale of ["vi", "en"] as const) {
     await page.goto(`/${locale}/`);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-    await expect(page.locator("[data-gate]")).toContainText(identity.positioning[locale]);
+    await expect(page.locator("[data-level0]")).toContainText(identity.positioning[locale]);
     await expect(page.locator("[data-mode-toggle]")).toHaveText(ui.modeGiaiMat[locale]);
     await expect(page.locator("#ledger-heading")).toHaveText(ui.ledgerHeading[locale]);
     await expect(page.locator(".footer__updated")).toContainText(ui.updatedLabel[locale]);

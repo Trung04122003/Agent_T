@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 8.1: with JavaScript off, every public entry is readable (UX section 1, principle 1).
 type L = { vi: string; en: string };

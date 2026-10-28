@@ -1,0 +1,281 @@
+---
+// Entry gate (ROADMAP P25, UX-v3 section 2): a functional splash, not a fake loader. It identifies
+// the reader: the lens buttons enter at once, the flags pick the language, "Skip" (shown from the
+// first moment) enters with the default lens. No timer, no percentage, no "loading".
+// Hidden unless the head script in Base.astro set data-gate="show" (JS on, first view this
+// session, no deep link, no ?skip, not printing). Without JS the page simply reads as before.
+// Owner request (28/10/2026): it should catch the eye without clutter. The screen decodes as it
+// opens (and again on a language change), the lenses come in one by one, and pointing at a lens
+// types out that reader's own line (content/lenses.json) under the buttons.
+import { t, type Locale } from "../lib/i18n";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { BUILT, fileNumber } from "../lib/dossier";
+import { getLenses } from "../lib/lenses";
+import LangSwitch from "./LangSwitch.astro";
+
+interface Props {
+  locale: Locale;
+  path: string;
+  locales: readonly Locale[];
+}
+const { locale, path, locales } = Astro.props;
+const codename = codenameFor(await getIdentity(), locale);
+const lenses = getLenses();
+const keys = ["portraitLabel", "classLevelLabel", "modeMat", "modeGiaiMat", "codenameLabel", "entryTitle", "entrySkip"];
+const [file, level, mat, giaiMat, codenameLabel, title, skip] = await Promise.all(keys.map((k) => t(k, locale)));
+---
+
+<div class="entry" role="dialog" aria-modal="true" aria-labelledby="entry-title" data-entry>
+  <div class="entry__strip" aria-hidden="true" data-entry-strip>
+    <span>
+      <span data-entry-decode>{file}</span> · <span data-entry-decode>{level}</span>:{" "}
+      <span class="only-mat" data-entry-decode>{mat}</span><span class="only-giai-mat"><s>{mat}</s> {giaiMat}</span>
+    </span>
+    <span data-entry-decode>{fileNumber(codename.name, BUILT)}</span>
+  </div>
+  <div class="entry__body">
+    {/* A large, still sight behind the codename: depth without motion. */}
+    <svg class="entry__sight" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <circle cx="100" cy="100" r="96" />
+      <circle cx="100" cy="100" r="62" />
+      <path d="M100 0v30M100 170v30M0 100h30M170 100h30M100 86v28M86 100h28" />
+    </svg>
+    <p class="entry__label" data-entry-decode>{codenameLabel}</p>
+    <p class="entry__codename" data-entry-codename>{codename.name}</p>
+    <h2 id="entry-title" class="entry__title" data-entry-sweep>{title}</h2>
+    <div class="entry__lenses" role="group" aria-labelledby="entry-title">
+      {
+        lenses.map((l, i) => (
+          <button
+            type="button"
+            class="entry__lens brackets"
+            style={`--i:${i}`}
+            data-entry-lens={l.id}
+            aria-describedby={l.positioning ? `entry-line-${l.id}` : undefined}
+          >
+            <span data-entry-decode>{l.label[locale]}</span>
+          </button>
+        ))
+      }
+    </div>
+    {/* The reader's own line: typed out under the buttons when one is pointed at (decorative copy;
+        each button is described by the same text for screen readers). */}
+    <p class="entry__line" aria-hidden="true" data-entry-line></p>
+    {
+      lenses.map(
+        (l) =>
+          l.positioning && (
+            <span class="visually-hidden" id={`entry-line-${l.id}`} data-entry-line-for={l.id}>
+              {/* Mat reads the mysterious wording, Giai mat the plain one (owner, 28/10/2026). */}
+              <span class:list={[l.positioningMat && "only-giai-mat"]} data-line-mode="plain">
+                {l.positioning[locale]}
+              </span>
+              {l.positioningMat && (
+                <span class="only-mat" data-line-mode="mat">
+                  {l.positioningMat[locale]}
+                </span>
+              )}
+            </span>
+          ),
+      )
+    }
+    <div class="entry__foot">
+      <LangSwitch locale={locale} path={path} locales={locales} entry />
+      <a class="entry__skip" href="?skip=1" data-entry-skip><span data-entry-decode>{skip}</span> <span aria-hidden="true">›</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { initEntry } from "../scripts/entry";
+  initEntry();
+</script>
+
+<style>
+  .entry {
+    display: none;
+  }
+  /* Shown only by the head script; never in print (25.6). */
+  @media not print {
+    :global(:root[data-gate="show"]) .entry {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow-y: auto;
+      background:
+        repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 32px),
+        var(--bg);
+    }
+    :global(:root[data-gate="show"]) {
+      overflow: hidden;
+    }
+  }
+  .entry__strip {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space);
+    padding: calc(var(--space) * 0.75) var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+  }
+  .entry__strip > span {
+    white-space: nowrap;
+  }
+  /* Phones: the level only; the file number would break the strip onto two lines. */
+  @media (max-width: 479px) {
+    .entry__strip > span:last-child {
+      display: none;
+    }
+  }
+  .entry__body {
+    position: relative;
+    align-self: center;
+    justify-self: center;
+    width: min(100%, 40rem);
+    padding: calc(var(--space) * 4) var(--gutter);
+  }
+  .entry__sight {
+    position: absolute;
+    top: 0;
+    left: calc(var(--gutter) - 3rem);
+    z-index: -1;
+    width: min(22rem, 80vw);
+    height: auto;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 0.6;
+    opacity: 0.22;
+    pointer-events: none;
+  }
+  .entry__label,
+  .entry__title {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .entry__codename {
+    margin: var(--space) 0 calc(var(--space) * 5);
+    font-family: var(--font-heading);
+    font-size: clamp(3rem, 12vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .entry__lenses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--space) * 1.5);
+    margin-top: calc(var(--space) * 2);
+  }
+  .entry__lens {
+    position: relative;
+    flex: 1 1 9rem;
+    min-height: calc(var(--target) + var(--space) * 2);
+    padding: 0 calc(var(--space) * 2.5);
+    font: inherit;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .entry__lens:hover,
+  .entry__lens:focus-visible,
+  .entry__lens.is-pointed {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  /* The reader's line: room kept for two lines so nothing jumps when it types out. */
+  .entry__line {
+    min-height: 3lh;
+    margin: calc(var(--space) * 2.5) 0 0;
+    padding-inline-start: calc(var(--space) * 1.5);
+    border-inline-start: 2px solid var(--accent);
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .entry__line:empty {
+    border-color: transparent;
+  }
+  .entry__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--space) * 2);
+    margin-top: calc(var(--space) * 3);
+  }
+  .entry__skip {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target);
+    padding: 0 var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    text-underline-offset: 3px;
+  }
+  .entry__skip:hover {
+    color: var(--ink);
+  }
+  /* The opening, in CSS so it starts with the first paint (no flash before the script runs).
+     Each part within 600 ms and at most two moving at once: the strip (0-300), the question
+     (150-510), the lenses (320-720). A language change swaps in a gate marked .is-relang: only
+     the lenses replay (lang.ts), next to the cursor lock on the flag. */
+  @media (prefers-reduced-motion: no-preference) {
+    .entry__strip {
+      animation: entry-sweep 300ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    }
+    .entry__title {
+      animation: entry-sweep 360ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms backwards;
+    }
+    :global(:root[dir="rtl"]) .entry__strip,
+    :global(:root[dir="rtl"]) .entry__title {
+      animation-name: entry-sweep-rtl;
+    }
+    .entry__lens {
+      animation: entry-rise 260ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+      animation-delay: calc(320ms + var(--i, 0) * 70ms);
+    }
+    .entry.is-relang .entry__strip,
+    .entry.is-relang .entry__title {
+      animation: none;
+    }
+  }
+  @keyframes entry-sweep {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes entry-sweep-rtl {
+    from {
+      clip-path: inset(0 0 0 100%);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  @keyframes entry-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+</style>

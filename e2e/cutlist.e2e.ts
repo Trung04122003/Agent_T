@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 19.2 / UX-v2 section 6: things that must never come (back) onto the page.
 const WORDS = [

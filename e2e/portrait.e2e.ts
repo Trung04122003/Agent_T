@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator } from "./test";
 import { DEV } from "../playwright.config";
 import { gotoStable } from "./helpers";
 

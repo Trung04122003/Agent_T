@@ -3,6 +3,67 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-28 · P25 (owner revision) · Gate opening in CSS, lens lines, local measurement
+
+Changes on top of the first P25 build below:
+- The opening (strip sweep, question sweep, lenses one by one) moved to CSS, so it starts with the
+  first paint. The first build started it from the module script, about 200 ms after the first
+  paint, which made the lens buttons flash: drawn, hidden, then animated in.
+- Every short label decodes on opening and on a language change.
+- The reader's line types out when a lens is pointed at.
+- New `gate-metrics.ts` keeps the gate's events in local storage only.
+
+| Item | First P25 build | This revision |
+|---|---|---|
+| `/vi/` HTML (gzip) | 22 045 B | 22 641 B (+596: lens lines, sight SVG) |
+| All JS (gzip) | 11 181 B | 11 841 B (+660) |
+| All CSS (gzip) | 11 152 B | 11 446 B (+294) |
+| Gate JS (head + script + chunk, gzip; cap 3 KB) | 1 714 B | 2 373 B |
+| Lighthouse `/vi/` Performance, 3 runs | see below (56–100) | 100, 100, 100 (TBT 40, 30, 80 ms) |
+
+Three clean runs do not prove the earlier swings are gone, since that noise was there before P25
+too. They do show that the revision adds no blocking time. Lab timings for the gate are in
+`docs/gate-evaluation.md` (`node tools/gate-eval.mjs`).
+
+## 2026-10-28 · P25 · Entry gate
+
+**Size** (`build:prod`, gzip, P24 → P25):
+
+| Item | Before | After |
+|---|---|---|
+| `/vi/` HTML | 21 145 B | 22 045 B (+900: gate markup, head decision) |
+| All JS | 10 144 B | 11 181 B (+1 037) |
+| All CSS | 10 807 B | 11 152 B (+345) |
+
+Gate JS (ROADMAP 25.6 cap: 3 KB): 1 714 B gzip in all. That is the head decision (188 B), the
+EntryGate script (64 B) and its chunk `entry.*.js` (1 462 B, which bundles the Decode module).
+Checked by `e2e/entry.e2e.ts`. There are no extra requests: a first view and a `?skip=1` view load
+the same files.
+
+**Lighthouse, mobile, `/vi/`** (`node scripts/lighthouse.mjs`; P25 is a first view, so the gate is
+shown). `/vi/` is always audited first and has varied run to run since P20 (cold start):
+
+| Build | Performance by run | TBT by run |
+|---|---|---|
+| P24 (before) | 99, 71, 73, 99 | 0*, 2 450, 1 560, 120 ms |
+| P25 (after) | 75, 100, 66, 56, 100 | 1 280, 0, 7 080, 4 540, 40 ms |
+
+\* first P24 run, logged before the change; TBT 0 ms.
+
+`/en/` (audited second, no gate in the same tab): 99–100 in every run of both builds.
+
+**Reading.** Both builds swing between about 55 and 100 on `/vi/` alone. P25's low runs are lower,
+but five runs cannot separate that from the noise. A direct probe of the main thread does not show
+the gate costing more. The probe used long animation frames, Pixel 5 size, CPU 4x, 3 runs each;
+the probe script was temporary and has been deleted.
+- With the gate shown, blocking time was 530 / 606 / 716 ms, and the gate's own script took
+  35–87 ms of it.
+- With `?skip=1`, blocking time was 611 / 578 / 556 ms.
+
+**Status:** the Performance ≥ 90 budget is not met reliably on `/vi/`, before or after P25. This
+is to settle before release (P30): find the cold-start cost, and re-measure with the gate once it
+is understood.
+
 ## 2026-10-28 · P24 · "Request declassified documents" buttons
 
 Size only. P24 adds no animation, no frame work and no request: links built at build time and

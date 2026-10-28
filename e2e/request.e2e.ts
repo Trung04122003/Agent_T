@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // P24: "Request declassified documents". A button in the evidence of every open entry that gives
 // documents on request (Giai mat), one general button at the end of the page; never on hold or

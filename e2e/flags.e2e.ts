@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 // ROADMAP 10.1-10.4: flag language switch on the real build.
 
 test("10.1 flags render as real images (not letters) in Chromium", async ({ page }) => {
   await page.goto("/vi/");
-  const flags = page.locator(".lang-switch__flag");
+  const flags = page.locator("[data-lang-nav] .lang-switch__flag"); // the bar's switch (the entry gate has its own)
   await expect(flags).toHaveCount(2);
   for (const f of await flags.all()) {
     await expect(f).toBeVisible();
