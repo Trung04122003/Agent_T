@@ -13,8 +13,10 @@ describe("content freeze", () => {
   it("every open entry that needs an approval has one; hold entries stay hold", () => {
     const rows = reconcile();
     expect(rows.filter((r) => r.shows === "open" && r.approval.endsWith("MISSING"))).toEqual([]);
-    for (const id of ["role-prudential", "role-dfl24-ic"]) {
-      expect(rows.find((r) => r.id === id)?.shows, id).toBe("HOLD (never built)");
-    }
+    expect(rows.find((r) => r.id === "role-dfl24-ic")?.shows).toBe("HOLD (never built)");
+    // Opened by the owner on 2026-10-29, approved by the office manager (DECISIONS-v3.md).
+    const prudential = rows.find((r) => r.id === "role-prudential");
+    expect(prudential?.shows).toBe("open");
+    expect(prudential?.approval).toMatch(/^Prudential: .+, 2026-07-01$/);
   });
 });

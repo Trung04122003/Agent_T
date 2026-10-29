@@ -159,7 +159,9 @@ const updated = updatedStamp(BUILT);
       display: grid;
       gap: 4mm;
       font-size: 10pt;
-      line-height: 1.38;
+      /* Tightened with the row padding below when Prudential opened (2026-10-29): seven rows in
+         Vietnamese must still fit one A4 page. */
+      line-height: 1.35;
       color: var(--ink);
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -262,7 +264,7 @@ const updated = updatedStamp(BUILT);
     border-bottom: 1px solid var(--accent);
   }
   .op__ledger td {
-    padding: 2.2mm 2mm 2.2mm 0;
+    padding: 1.2mm 2mm 1.2mm 0;
     vertical-align: top;
     border-bottom: 1px solid var(--line);
     break-inside: avoid;

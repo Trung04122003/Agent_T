@@ -26,10 +26,11 @@ describe("lenses (ROADMAP 7.1)", () => {
   });
 
   it.each([
-    // role-prudential is on hold (ROADMAP 9.6), so it is not part of any order.
-    ["partner", ["role-bbe-ldc", "role-jci", "role-bluesea", "edu-duy-tan", "role-dz-ta", "project-air-quality", "classified-client-files"]],
-    ["client", ["role-bluesea", "classified-client-files", "role-jci", "role-bbe-ldc", "edu-duy-tan", "role-dz-ta", "project-air-quality"]],
-    ["curious", ["project-air-quality", "role-dz-ta", "edu-duy-tan", "role-jci", "role-bbe-ldc", "classified-client-files", "role-bluesea"]],
+    // role-prudential is open since 2026-10-29 (approval in claims.json); curious gives it no
+    // weight, so it follows claims.json order there.
+    ["partner", ["role-bbe-ldc", "role-jci", "role-bluesea", "role-prudential", "edu-duy-tan", "role-dz-ta", "project-air-quality", "classified-client-files"]],
+    ["client", ["role-prudential", "role-bluesea", "classified-client-files", "role-jci", "role-bbe-ldc", "edu-duy-tan", "role-dz-ta", "project-air-quality"]],
+    ["curious", ["project-air-quality", "role-dz-ta", "edu-duy-tan", "role-jci", "role-bbe-ldc", "classified-client-files", "role-prudential", "role-bluesea"]],
   ])("%s order", (id, expected) => {
     expect(orderByLens(publicIds, lens(id))).toEqual(expected);
   });

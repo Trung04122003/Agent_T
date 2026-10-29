@@ -228,7 +228,7 @@
   {
     "id": "role-prudential",
     "kind": "role",
-    "visibility": "hold",
+    "visibility": "open",
     "status": "confirmed",
     "bluf": null,
     "org": {
@@ -255,7 +255,8 @@
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Chứng chỉ tư vấn viên bảo hiểm nhân thọ (kỳ thi của Bộ Tài chính), cung cấp khi có yêu cầu", "en": "Life insurance advisor certificate (Ministry of Finance examination), available on request" } }
     ],
-    "notes": "Chứng chỉ do Bộ Tài chính và Hiệp hội bảo hiểm nhân thọ cấp đầu tháng 7/2026 (chủ dự án, 26/10/2026); đó là chứng chỉ hành nghề, không phải sự cho phép đăng của Prudential. Cần bộ phận tuân thủ của Prudential duyệt cách trình bày chức danh và liên kết trước khi công khai. Hồ sơ khách hàng không bao giờ đưa vào."
+    "approval": { "by": "Trưởng văn phòng/đại lý Prudential, văn phòng Ngũ Hành Sơn", "on": "2026-07-01" },
+    "notes": "Chứng chỉ do Bộ Tài chính và Hiệp hội bảo hiểm nhân thọ cấp đầu tháng 7/2026 (chủ dự án, 26/10/2026); đó là chứng chỉ hành nghề, không phải sự cho phép đăng của Prudential. Chủ dự án xác nhận ngày 29/10/2026: trưởng văn phòng/đại lý đã duyệt ngày 01/07/2026 đúng câu chữ hiện tại (chức danh, tổ chức, thời gian, teaser, summary, bằng chứng); chủ dự án chọn mức duyệt này thay cho bộ phận tuân thủ. Không logo, không liên kết, không số liệu, sản phẩm hay hiệu quả. Hồ sơ khách hàng không bao giờ đưa vào."
   },
   {
     "id": "role-bluesea",

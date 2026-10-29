@@ -35,6 +35,7 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 - Chính trị, địa chính trị (trừ bản đồ chủ quyền Hoàng Sa, Trường Sa đã duyệt).
 - Logo, huy hiệu của cơ quan thật; số liệu giả; ngụ ý hiệu suất đầu tư; chữ ký tay.
 - Prudential và DFL24 chỉ lên site khi có `approval`.
+  - **Prudential đã bật (chủ dự án yêu cầu 29/10/2026):** trưởng văn phòng/đại lý Prudential (văn phòng Ngũ Hành Sơn) duyệt ngày 01/07/2026, đúng câu chữ hiện có trong `claims.json`. Chủ dự án chọn mức duyệt này thay cho bộ phận tuân thủ. `approval` ghi chức vụ, không ghi tên người. DFL24 vẫn `hold`.
 
 ## Buổi chụp ảnh (P29)
 - Ảnh gốc để ngoài git (`private/portrait-raw/`), chỉ bản đã xóa EXIF/GPS vào repo.
