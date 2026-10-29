@@ -46,3 +46,14 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
   - Alt mô tả ảnh, không ghi địa điểm.
   - Cả hai nằm trong `content/portrait.json`; toạ độ cắt nằm trong `tools/portrait/crops.json`.
 - Không logo công ty (nhất là Prudential), không đồ mang hơi hướng quân đội, không địa điểm nhận ra được.
+
+## Tên dự án (28–29/10/2026)
+- Chủ dự án chốt **Agent T** (T là Trung). Đã cân nhắc các rủi ro: tên chung chung, trùng với nhiều sản phẩm AI và nhân vật phim (quy ước "Agent + một chữ cái" là của Men in Black, có nhân vật High T), lộ chữ cái đầu của tên thật, không khớp hệ mật danh theo ngôn ngữ. Chủ dự án chấp nhận.
+- Giả định cần chủ dự án xác nhận: Agent T là **tên dự án/hồ sơ** (tiêu đề, dải phân loại, nhãn ảnh Mật). Cupid, Calisto, Khalid, Musashi vẫn là mật danh cá nhân theo ngôn ngữ. Mã hồ sơ `CUPID-2610` giữ nguyên.
+- Việc của chủ dự án: kiểm tra tên miền và mức trùng tên trong ngành.
+
+## Nhạc nền (29/10/2026)
+- Bài chọn: **"Rush" của Soundroll** (album *Total Overdrive*), nhạc không lời. Chủ dự án đã tải một bản 360p từ YouTube bằng IDM để nghe thử. File đó **chỉ dùng thử trên máy**, không đưa vào repo, bản build hay deploy.
+- **Chưa có giấy phép.** Theo trang của Soundroll: bản nghe thử miễn phí chỉ để đánh giá; phát hành phải mua giấy phép (Personal, Commercial, Broadcast); trang giấy phép **không nêu rõ việc dùng cho website** và cấm remix, bán lại, phân phối lại, đăng ký Content ID. Cần hỏi Soundroll bằng văn bản. Tui chưa xác nhận bài "Rush" có bán trên cửa hàng đó.
+- Chưa có giấy phép thì bản production **không có nhạc và không hiện công tắc âm thanh** (`check:audio`).
+- Hành vi: mặc định **tắt tiếng**, người xem tự bật (chủ dự án chưa trả lời câu này, đây là giả định). Một bài, hai tông: Mật lọc thông thấp, Declassify mở bộ lọc.

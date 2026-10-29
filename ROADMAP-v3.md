@@ -111,6 +111,20 @@ Triết lý: "bí ẩn hơn" là *lộ ít hơn*, không phải *nhiều hiệu 
 | 28.7 | **Giải mật, tài liệu xem trước (tùy chọn):** `evidence.preview` là ảnh do chủ dự án tự che thông tin cá nhân **trước khi** đưa vào repo. Claude Code chỉ dựng khung hiển thị, không xử lý ảnh nhạy cảm; không có ảnh thì ẩn khung. Không dùng chữ ký tay. | Test hiển thị/ẩn |
 | 28.8 | DTG cập nhật mỗi phút (tùy chọn, bỏ nếu thấy thừa). Không dùng `requestAnimationFrame` cho việc này. | Review |
 
+## P28b — Nhạc nền (có điều kiện giấy phép)
+Thiết kế: `UX-v3.md` mục 10. Bài chủ dự án chọn: "Rush" của Soundroll. **Chưa có giấy phép** nên phase này chạy theo hai nhánh: có giấy phép thì bản production có nhạc; chưa có thì bản production **không có nhạc và không hiện công tắc âm thanh**.
+
+| # | Step | Verify |
+|---|---|---|
+| 28b.0 | **Việc của chủ dự án:** hỏi Soundroll bằng văn bản (trang liên hệ của cửa hàng Soundroll): (a) loại giấy phép phù hợp cho nhạc nền website portfolio cá nhân dùng để thu hút khách hàng và đối tác; (b) có được phát lặp, cắt đoạn lặp và lọc thông thấp khi phát không (giấy phép cấm remix, bán lại, phân phối lại); (c) giá. Mua xong thì lưu hóa đơn, file giấy phép và file WAV chuẩn (liên kết tải hết hạn sau 7 ngày). **Không** dùng file tải từ YouTube cho bản phát hành. | Có số đơn hàng và file giấy phép |
+| 28b.1 | `content/audio.json` (chủ dự án điền): tên bài, nghệ sĩ, loại giấy phép, `licenseRef` (số đơn hàng), ngày cấp, yêu cầu ghi công (nếu giấy phép có). `null` thì không có nhạc. | Schema; test |
+| 28b.2 | Cổng giấy phép: script `check:audio` làm thất bại `build:prod` nếu có tệp âm thanh trong `public/` hoặc `dist/` mà `audio.json` thiếu `licenseRef`. Tệp thử, WAV gốc, file giấy phép đặt ở `private/audio-raw/` (git-ignored). Ở chế độ dev được dùng tệp thử, có nhãn "NHẠC THỬ - CHƯA CÓ GIẤY PHÉP" và nhãn này **không bao giờ** vào `dist/`. | Thử: đặt tệp vào `public/` không có `licenseRef` thì build prod lỗi |
+| 28b.3 | Mã hóa từ WAV chuẩn: Opus (ogg/webm) + AAC (m4a), khoảng 96–128 kbps, đoạn lặp 60–90 giây khớp vòng (chủ dự án chọn đoạn; việc cắt phải đúng điều khoản giấy phép). Kiểm tra khe hở khi lặp. Mỗi định dạng ≤ 2 MB. Dùng `ffmpeg` nếu đã có; chưa có thì **hỏi** trước khi cài. | Size report; nghe thử vòng lặp |
+| 28b.4 | Bộ phát: thẻ `<audio loop preload="none">`, chỉ nạp khi người xem bật; không nạp khi `navigator.connection.saveData`. Nối vào Web Audio bằng `createMediaElementSource` (không giải nén cả bài vào bộ nhớ) qua bộ lọc thông thấp. Mật: lọc ở khoảng 700–900 Hz (nghẹn, đục). Declassify: mở bộ lọc lên đủ dải trong ~500 ms (`setTargetAtTime`), về Mật thì đóng lại. Âm lượng mặc định ~30%, mờ vào/ra ~800 ms. Tạm dừng khi `visibilitychange` ẩn và `pagehide`. | Test e2e; đo trong playbook |
+| 28b.5 | Công tắc "Âm thanh: TẮT/BẬT" ở cổng (cạnh nút lens) và ở bảng "Aa". **Mặc định TẮT.** `aria-pressed`, nhãn vi/en, dùng được bằng bàn phím, nhớ lựa chọn (`localStorage`, try/catch). Bấm lens **không** tự bật nhạc; nếu người xem đã bật thì nhạc bắt đầu ở thao tác bấm lens. Nếu `play()` bị từ chối thì trạng thái về TẮT, không báo lỗi. | Playwright; axe |
+| 28b.6 | Ghi công nếu giấy phép yêu cầu (dòng nhỏ ở chân trang, vi/en). Không dùng ảnh bìa album hay logo của Soundroll trừ khi giấy phép cho phép; không gọi Soundroll là đối tác. | Review |
+| 28b.7 | Hiệu năng: không ảnh hưởng LCP/INP/CLS; số trước/sau trong `docs/perf-log.md`; ngân sách âm thanh tách riêng. | Số liệu |
+
 ## P29 — Chân dung từ buổi chụp 27/10 (một buổi chụp, hai bản xử lý)
 Quyết định của chủ dự án: **không chụp lại**, dùng hai ảnh đã chụp (ảnh "nghiêm" và ảnh "cười", cùng tư thế, cùng đồ, 1920×2560). Bản Mật và bản Giải mật đều tạo từ ảnh có sẵn bằng cắt và chỉnh tông.
 
@@ -130,6 +144,17 @@ Quyết định của chủ dự án: **không chụp lại**, dùng hai ảnh �
 
 **Checkpoint P29:** chủ dự án xem ảnh xem trước (bản Mật, hai phương án Giải mật, có/không làm mờ nền) và chọn.
 
+## P29b — Đổi tên thành Agent T
+Chủ dự án chốt **Agent T** (T là Trung). Xem `DECISIONS-v3.md`. Chạy trước P30, độc lập với các phase khác.
+
+| # | Step | Verify |
+|---|---|---|
+| 29b.1 | Kiểm kê mọi chỗ có tên dự án/hồ sơ: `content/identity.json`, `<title>`, meta/Open Graph, dải phân loại, cổng, nhãn ảnh (đã có "Agent T"), 404, bản in/PDF, README. **Liệt kê trước khi sửa.** | Danh sách các chỗ |
+| 29b.2 | Cập nhật: tiêu đề hồ sơ/tên site = "Agent T". Mật danh cá nhân Cupid, Calisto, Khalid, Musashi **giữ nguyên**. Mã hồ sơ `CUPID-2610` **không đổi** (hỏi chủ dự án nếu muốn đổi). Mọi chuỗi có đủ vi và en. | Test i18n |
+| 29b.3 | `<title>` ≤ 60 ký tự, noindex vẫn bật. Không dùng hình hay chữ gợi phim Men in Black, không dùng từ gợi ý bạn là đặc vụ của cơ quan nhà nước. | Review |
+| 29b.4 | Không còn "Agent C" trong `src/` và `content/`. | `grep` ra 0 kết quả; build qua |
+| 29b.5 | **Việc của chủ dự án:** kiểm tra tên miền (các biến thể `agent-t`, `agentt`...) và mức trùng tên trong ngành bảo hiểm/tư vấn ở Việt Nam. | Báo cáo của chủ dự án |
+
 ## P30 — Rà soát hiệu năng và phát hành (P20 cũ)
 | # | Step | Verify |
 |---|---|---|
@@ -138,4 +163,5 @@ Quyết định của chủ dự án: **không chụp lại**, dùng hai ảnh �
 | 30.3 | Cắt tỉa theo `UX-v3.md` mục 8: hiệu ứng nào làm vượt ngưỡng mà không cải thiện cảm nhận thì tắt hoặc xóa. | Danh sách đã cắt |
 | 30.4 | a11y: axe, đi bàn phím cả trang, reduced-motion, `inert`/tiêu điểm của cổng, tắt JS, chữ A+ ở 375 px. | Tất cả qua |
 | 30.5 | `check:leaks` (kể cả allowlist email), noindex cho đến ngày ra mắt, repo private, `private/` không nằm trong git. | Tất cả qua |
-| 30.6 | Phát hành: giữ nguyên các bước ở `ROADMAP.md` (chỉ `build:prod`, chỉ deploy khi chủ dự án yêu cầu). Việc chủ dự án còn mở: ảnh chân dung, tên miền, phê duyệt Prudential và DFL24, duyệt chữ AAR/rủi ro/dòng định vị. | Danh sách còn mở |
+| 30.6 | Giấy phép nhạc: nếu `audio.json` có `licenseRef` thì nhạc vào bản production; nếu không thì bản production không chứa tệp âm thanh và không hiện công tắc. `check:audio` qua. | Tất cả qua |
+| 30.7 | Phát hành: giữ nguyên các bước ở `ROADMAP.md` (chỉ `build:prod`, chỉ deploy khi chủ dự án yêu cầu). Việc chủ dự án còn mở: ảnh chân dung, tên miền, phê duyệt Prudential và DFL24, duyệt chữ AAR/rủi ro/dòng định vị. | Danh sách còn mở |

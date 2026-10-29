@@ -9,6 +9,7 @@ Checked on 2026-10-25 (ROADMAP 6.1).
 - **File:** 13,221,654 bytes, SHA-256 `90067c7f246a7e85a5d501b8f3d7367ad2287816c85ebd8d44634600caf26b64`. Downloaded by `scripts/fetch-map-data.mjs` into `data/` (git-ignored). Only the derived, cropped TopoJSON is committed.
 - **Terms** (<https://www.naturalearthdata.com/about/terms-of-use/>): all Natural Earth data is in the public domain. Personal, educational and commercial use, modification and redistribution are allowed. Credit is not required; "Made with Natural Earth" is suggested. No warranty of accuracy. The terms say nothing specific about disputed areas.
 - **Hoang Sa and Truong Sa:** in this point-of-view file both archipelagos are part of the Viet Nam (`VNM`) feature, so no extra feature was added.
+- **Provinces (added 2026-10-29):** Admin 1 – States, Provinces, 1:10m (`ne_10m_admin_1_states_provinces.geojson`), same commit; 40,726,851 bytes, SHA-256 `22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5`. Same terms. Only Viet Nam's 63 mainland provinces are kept (ISO 3166-2 code only; names come from `content/provinces.json`). This file has no Viet Nam point of view: it files Hoang Sa and Truong Sa under other countries, so those features are never used; the islands still come from the admin 0 file above. Three units carry region names in the file (VN-39, VN-53, VN-66); the code and `gn_name` identify them as Dong Nai, Bac Kan and Hung Yen.
 
 **Conclusion: use allowed.** No attribution required. Whether to show "Made with Natural Earth" is the owner's choice.
 

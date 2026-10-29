@@ -5,6 +5,7 @@
 // places as text, and its buttons drive the map (highlight, zoom to a place).
 import { getCollection } from "astro:content";
 import placesFile from "../../content/places.json";
+import admin from "../../content/provinces.json";
 import topo from "../assets/map/region.topo.json";
 import { t, type Locale } from "../lib/i18n";
 import { inFileOrder } from "../lib/ledger";
@@ -24,7 +25,21 @@ const places = inFileOrder(
 const map = buildMap(
   topo as unknown as Topology,
   places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon, text: p.label[locale] })),
+  admin,
 );
+// Two modes of the province layer (owner request 2026-10-29): the 63 provinces before the 2025
+// merger, the 34 after (default, as today). Names come from content/provinces.json.
+const before = new Map(admin.before.map((b) => [b.code, b[locale]]));
+const after = new Map(admin.after.map((a) => [a.id, a[locale]]));
+const era = { label: await t("mapEraLabel", locale), before: await t("mapEraBefore", locale), after: await t("mapEraAfter", locale) };
+const capital = await t("mapCapital", locale);
+// Five-pointed star, outer radius 6.5, point up.
+const star =
+  Array.from({ length: 10 }, (_, i) => {
+    const r = i % 2 ? 2.7 : 6.5;
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    return `${i ? "L" : "M"}${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
+  }).join("") + "Z";
 const heading = await t("mapHeading", locale);
 const title = await t("mapTitle", locale);
 const roles = {
@@ -45,11 +60,16 @@ const seas = [
 ];
 ---
 
-<section class="map sheet sheet--block" aria-labelledby="map-title" data-map>
+<section class="map sheet sheet--block" aria-labelledby="map-title" data-map data-era="after">
   <PageMark locale={locale} page="map" />
   <p class="map__kicker">{heading}</p>
   <h2 id="map-title" class="map__title">{title}</h2>
   <div class="map__body">
+    <div class="map__side">
+    <div class="map__era" role="group" aria-label={era.label} data-map-era hidden>
+      <button type="button" data-era-btn="before" aria-pressed="false">{era.before}</button>
+      <button type="button" data-era-btn="after" aria-pressed="true">{era.after}</button>
+    </div>
     <ul class="map__legend" data-map-list>
       {
         places.map((p) => (
@@ -68,14 +88,35 @@ const seas = [
           </li>
         ))
       }
+      <li class="map__key">
+        <span class="map__key-star" aria-hidden="true"></span>
+        {capital}
+      </li>
       <li class="map__sea">{hoangSa}</li>
       <li class="map__sea">{truongSa}</li>
     </ul>
+    </div>
     <div class="map__frame brackets" data-map-frame>
       <svg class="map__svg" viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} aria-hidden="true" focusable="false" data-map-svg>
         <g class="map__land">{others.map((c) => <path d={c.d} />)}</g>
+        {/* Fills per former province, stepped by brightness (sea, other countries, Viet Nam, next to
+            home, home); the step and the hover name follow the mode. */}
+        <g class="map__provinces" data-map-provinces>
+          {
+            map.provinces.map((p) => (
+              <path d={p.d} data-code={p.code} data-unit={p.after} data-tb={p.tier.before} data-ta={p.tier.after} data-name={before.get(p.code)} data-unit-name={after.get(p.after)} />
+            ))
+          }
+        </g>
+        <path class="map__border map__border--merged" d={map.borders.merged} />
+        <path class="map__border" d={map.borders.kept} />
         <path class="map__vn" d={vn.d} pathLength="1" />
         <g class="map__islands">
+          {
+            [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
+              <circle class="map__isle-pad" cx={x} cy={y} r="3.4" />
+            ))
+          }
           {
             [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
               <circle cx={x} cy={y} r="1.6" />
@@ -118,7 +159,12 @@ const seas = [
             })
           }
         </g>
+        {/* On top of the points: 18 km from Thuong Tin, it would hide under that ring at full view. */}
+        <g class="map__capital" transform={`translate(${map.capital[0]} ${map.capital[1]})`}>
+          <path class="map__fixed" d={star} />
+        </g>
       </svg>
+      <p class="map__readout" data-map-readout aria-hidden="true" hidden><span data-readout-name></span><span class="map__readout-sub" data-readout-sub></span></p>
       <div class="map__zoom" data-map-zoom hidden>
         <button type="button" data-zoom="in" aria-label={zoom.in} title={zoom.in}>+</button>
         <button type="button" data-zoom="out" aria-label={zoom.out} title={zoom.out}>−</button>
@@ -161,7 +207,7 @@ const seas = [
       align-items: start;
     }
     /* The legend comes first in the source (read before the map controls), right of the map here. */
-    .map__legend {
+    .map__side {
       grid-column: 2;
       grid-row: 1;
     }
@@ -169,8 +215,20 @@ const seas = [
 
   /* The map's own frame: hairline border, accent corners, ruler ticks on the edges. It is cut off
      from the page grid (solid ground) and clips the zoomed drawing. */
+  .map {
+    /* Terraced brightness (owner's idea after the Cao Bang rice terraces, 2026-10-29): five flat
+       steps from the sea up to the home provinces, all mixed from this mode's accent and paper.
+       Giai mat: brightest is the white sheet. */
+    --t-sea: color-mix(in oklab, var(--accent) 24%, var(--bg));
+    --t-world: color-mix(in oklab, var(--accent) 14%, var(--bg));
+    --t-base: color-mix(in oklab, var(--accent) 6%, var(--bg));
+    --t-near: color-mix(in oklab, var(--bg) 45%, var(--surface));
+    --t-home: var(--surface);
+    --t-hot: color-mix(in oklab, var(--accent) 22%, var(--surface));
+    --t-border: color-mix(in oklab, var(--accent) 45%, transparent);
+  }
   .map__frame {
-    background-color: var(--bg);
+    background-color: var(--t-sea);
     border: 1px solid var(--line);
   }
   .map__frame::after {
@@ -196,6 +254,65 @@ const seas = [
   }
   .map.is-dragging .map__svg {
     cursor: grabbing;
+  }
+  /* Mode of the province layer: two pressed-or-not buttons (shown with JS only). */
+  .map__era {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-block-end: var(--space);
+  }
+  .map__era[hidden] {
+    display: none;
+  }
+  .map__era button {
+    min-height: var(--target);
+    padding: 4px var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .map__era button:hover {
+    border-color: var(--accent);
+  }
+  .map__era button[aria-pressed="true"] {
+    color: var(--ink);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  /* Name of the province under the pointer, in the frame's top corner. */
+  .map__readout {
+    position: absolute;
+    inset-block-start: calc(var(--space) * 1.5);
+    inset-inline-start: calc(var(--space) * 1.5);
+    z-index: 2;
+    display: grid;
+    max-width: 60%;
+    margin: 0;
+    padding: 4px var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .map__readout[hidden] {
+    display: none;
+  }
+  .map__readout-sub {
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+  .map__readout-sub:empty {
+    display: none;
   }
   .map__zoom {
     position: absolute;
@@ -285,6 +402,27 @@ const seas = [
       0 0 0 2px var(--bg),
       0 0 0 3px var(--accent);
   }
+  .map__key {
+    display: flex;
+    align-items: center;
+    gap: var(--space);
+    padding-inline-start: calc(var(--space) * 1.5);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink);
+  }
+  /* Same star as on the map (outer radius 6.5, inner 2.7 of 7), cut from a square. */
+  .map__key-star {
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    clip-path: polygon(50% 3.6%, 61.3% 34.4%, 94.2% 35.7%, 68.3% 56%, 77.3% 87.6%, 50% 69.3%, 22.7% 87.6%, 31.7% 56%, 5.8% 35.7%, 38.7% 34.4%);
+  }
+  @media (forced-colors: active) {
+    .map__key-star {
+      background: CanvasText;
+    }
+  }
   .map__sea {
     padding-inline-start: calc(var(--space) * 1.5);
     font-family: var(--font-mono);
@@ -311,12 +449,45 @@ const seas = [
   /* Drawing. --k is the zoom factor (set by map-view.ts): strokes, dots and labels are divided by
      it so they keep their screen size while the land gets bigger. */
   .map__land path {
-    fill: var(--surface);
+    fill: var(--t-world);
     stroke: var(--line);
     stroke-width: calc(0.6px / var(--k, 1));
   }
+  /* Each fill strokes in its own colour too, so no hairline gap shows between two provinces. */
+  .map__provinces path {
+    color: var(--t-base);
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: calc(0.5px / var(--k, 1));
+  }
+  .map[data-era="before"] [data-tb="near"],
+  .map[data-era="after"] [data-ta="near"] {
+    color: var(--t-near);
+  }
+  .map[data-era="before"] [data-tb="home"],
+  .map[data-era="after"] [data-ta="home"] {
+    color: var(--t-home);
+  }
+  .map__provinces path.is-hot {
+    color: var(--t-hot);
+  }
+  .map__border {
+    fill: none;
+    stroke: var(--t-border);
+    stroke-width: calc(0.6px / var(--k, 1));
+    stroke-linejoin: round;
+  }
+  .map[data-era="after"] .map__border--merged {
+    display: none;
+  }
+  .map__border,
+  .map__vn,
+  .map__islands,
+  .map__capital {
+    pointer-events: none;
+  }
   .map__vn {
-    fill: var(--surface);
+    fill: none;
     stroke: var(--accent);
     stroke-width: calc(1px / var(--k, 1));
     stroke-linejoin: round;
@@ -324,10 +495,22 @@ const seas = [
   .map__islands circle {
     r: calc(1.6px / var(--k, 1));
   }
+  /* The islands sit on the same step as the provinces next to home (owner's order). */
+  .map__islands .map__isle-pad {
+    r: calc(3.4px / var(--k, 1));
+    fill: var(--t-near);
+  }
+  .map__capital {
+    fill: var(--accent);
+    stroke: var(--bg);
+    stroke-width: 2.5px;
+    paint-order: stroke;
+    stroke-linejoin: round;
+  }
   .map__fixed {
     transform: scale(calc(1 / var(--k, 1)));
   }
-  .map__islands circle,
+  .map__islands circle:not(.map__isle-pad),
   .map__dot {
     fill: var(--accent);
   }
@@ -385,10 +568,6 @@ const seas = [
   .map__point text {
     fill: var(--ink);
   }
-  /* Giai mat (ROADMAP 20.4): neighbours a shade darker, so Viet Nam reads as the subject. */
-  :global(:root[data-mode="giai-mat"]) .map__land path {
-    fill: var(--line);
-  }
 
   /* Mat: the map is the console's tactical display (owner feedback 2026-10-28). Static only, no
      motion of its own: brass frame and ruler, a faint plotting grid, Viet Nam lit in brass, a
@@ -396,6 +575,16 @@ const seas = [
   @media not print {
     :global(:root[data-mode="mat"]) .map {
       --ink-muted: var(--ink-hud);
+    }
+    /* Mat: the steps climb from the black sea to brass-lit home provinces. */
+    :global(:root[data-mode="mat"]) .map {
+      --t-sea: var(--bg);
+      --t-world: var(--surface);
+      --t-base: color-mix(in oklab, var(--accent) 10%, var(--surface));
+      --t-near: color-mix(in oklab, var(--accent) 24%, var(--surface));
+      --t-home: color-mix(in oklab, var(--accent) 44%, var(--surface));
+      --t-hot: color-mix(in oklab, var(--accent) 60%, var(--surface));
+      --t-border: color-mix(in oklab, var(--accent) 38%, transparent);
     }
     :global(:root[data-mode="mat"]) .map__frame {
       border-color: color-mix(in srgb, var(--accent) 55%, transparent);
@@ -412,11 +601,7 @@ const seas = [
         repeating-linear-gradient(var(--tick) 0 1px, transparent 1px 32px) left / 6px 100% no-repeat,
         repeating-linear-gradient(var(--tick) 0 1px, transparent 1px 32px) right / 6px 100% no-repeat;
     }
-    :global(:root[data-mode="mat"]) .map__land path {
-      fill: color-mix(in srgb, var(--surface) 85%, transparent);
-    }
     :global(:root[data-mode="mat"]) .map__vn {
-      fill: color-mix(in srgb, var(--accent) 14%, var(--surface));
       stroke-width: calc(1.5px / var(--k, 1));
     }
     :global(:root[data-mode="mat"]) .map__reticle {

@@ -120,3 +120,13 @@ Bằng chứng T2 là "cung cấp khi có yêu cầu"; nút này là kênh để
 - Ảnh 375px và 1280px, hai chế độ, vi và en, bốn hồ sơ chữ.
 - Bàn phím đi hết trang; reduced-motion; tắt JS vẫn đọc được; cổng bỏ qua được bằng một thao tác.
 - Chủ dự án và 3 người lạ trả lời bài thử 5 giây.
+
+## 10. Nhạc nền
+Nhạc nền tăng chiều sâu cảm xúc, nhưng âm thanh bất ngờ là lý do thường gặp nhất khiến người xem đóng tab (họ có thể đang ở văn phòng hoặc họp). Vì vậy:
+- **Mặc định tắt tiếng**, người xem tự bật bằng công tắc "Âm thanh: TẮT/BẬT" ở cổng và ở bảng "Aa". Trình duyệt vốn chặn phát tiếng khi chưa có thao tác người dùng, và quy chuẩn trợ năng yêu cầu âm thanh tự phát có cách dừng.
+- Bấm lens trên cổng **không** tự bật nhạc.
+- **Một bài, hai tông:** Mật lọc thông thấp (nghe như qua tường), Declassify mở bộ lọc trong ~500 ms. Âm thanh "giải mật" cùng lúc với giao diện. Đóng lại khi về Mật.
+- Âm lượng mặc định thấp (~30%), mờ vào/ra ~800 ms, tạm dừng khi tab ẩn. Không tải trước, không tải khi bật chế độ tiết kiệm dữ liệu.
+- Đoạn lặp 60–90 giây, ≤ 2 MB mỗi định dạng, kiểm tra khe hở khi lặp.
+- **Giấy phép là điều kiện bắt buộc.** Bản production chỉ có nhạc khi `content/audio.json` có số giấy phép. Không có thì ẩn công tắc. File tải từ YouTube không bao giờ vào bản phát hành.
+- Danh sách cắt thêm: nhạc tự phát khi vào trang, nhạc có lời, hiệu ứng âm thanh lặt vặt (tiếng con dấu, tiếng bấm), ảnh bìa album, bất cứ bài nào chưa có giấy phép.

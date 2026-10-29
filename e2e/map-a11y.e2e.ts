@@ -23,6 +23,7 @@ for (const locale of ["vi", "en"] as const) {
         const name = p.region ? `${p.label[locale]}, ${p.region[locale]}` : p.label[locale];
         return `${name} — ${ui[{ origin: "placeRoleOrigin", current: "placeRoleCurrent", home: "placeRoleHome" }[p.role]][locale]}`;
       }),
+      ui.mapCapital[locale],
       ui.hoangSaLabel[locale],
       ui.truongSaLabel[locale],
     ]);

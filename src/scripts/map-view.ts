@@ -127,4 +127,50 @@ export function initMapView(): void {
   svg.addEventListener("pointercancel", end);
 
   render();
+  initProvinces(map);
+}
+
+/**
+ * Province layer (owner request 2026-10-29): the mode buttons switch between the 63 provinces
+ * before the 2025 merger and the 34 after; the province under the pointer lights up (after the
+ * merger: the whole current unit) and its name shows in the frame's corner, with the former
+ * provinces it took in.
+ */
+function initProvinces(map: HTMLElement): void {
+  const group = map.querySelector<SVGGElement>("[data-map-provinces]");
+  const control = map.querySelector<HTMLElement>("[data-map-era]");
+  const readout = map.querySelector<HTMLElement>("[data-map-readout]");
+  if (!group || !control || !readout) return;
+  control.hidden = false;
+  const shapes = [...group.querySelectorAll<SVGPathElement>("path")];
+  const name = readout.querySelector<HTMLElement>("[data-readout-name]")!;
+  const sub = readout.querySelector<HTMLElement>("[data-readout-sub]")!;
+  let hot: SVGPathElement | null = null;
+
+  const show = (): void => {
+    for (const p of shapes) p.classList.remove("is-hot");
+    readout.hidden = !hot;
+    if (!hot) return;
+    const after = map.dataset["era"] === "after";
+    const lit = after ? shapes.filter((p) => p.dataset["unit"] === hot!.dataset["unit"]) : [hot];
+    for (const p of lit) p.classList.add("is-hot");
+    name.textContent = (after ? hot.dataset["unitName"] : hot.dataset["name"]) ?? "";
+    sub.textContent = after && lit.length > 1 ? lit.map((p) => p.dataset["name"]).join(" + ") : "";
+  };
+
+  control.addEventListener("click", (e) => {
+    const era = (e.target as Element).closest<HTMLButtonElement>("[data-era-btn]")?.dataset["eraBtn"];
+    if (!era) return;
+    map.dataset["era"] = era;
+    for (const b of control.querySelectorAll<HTMLButtonElement>("[data-era-btn]")) b.setAttribute("aria-pressed", String(b.dataset["eraBtn"] === era));
+    show();
+  });
+  group.addEventListener("pointerover", (e) => {
+    hot = (e.target as Element).closest<SVGPathElement>("path[data-code]");
+    show();
+  });
+  group.addEventListener("pointerleave", () => {
+    hot = null;
+    show();
+  });
 }

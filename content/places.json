@@ -4,31 +4,31 @@
     "role": "origin",
     "label": { "vi": "Thường Tín", "en": "Thuong Tin" },
     "region": { "vi": "Hà Nội", "en": "Hanoi" },
-    "approx": { "lat": 20.87, "lon": 105.87 },
-    "notes": "Quê gốc. Toạ độ xấp xỉ, phải kiểm tra lại với nguồn đáng tin. Tên hành chính đã đổi sau sáp nhập 2025: chủ dự án chọn cách ghi cũ hay mới."
+    "approx": { "lat": 20.869, "lon": 105.862 },
+    "notes": "Quê gốc. Toạ độ: trung tâm xã Thường Tín (Hà Nội, sau sáp nhập 2025), theo vi.wikipedia.org, kiểm tra 29/10/2026. Tên hành chính đã đổi sau sáp nhập 2025: chủ dự án chọn cách ghi cũ hay mới."
   },
   {
     "id": "thai-nguyen",
     "role": "home",
     "label": { "vi": "Thái Nguyên", "en": "Thai Nguyen" },
     "region": null,
-    "approx": { "lat": 21.59, "lon": 105.85 },
-    "notes": "Toạ độ xấp xỉ, cần kiểm tra lại."
+    "approx": { "lat": 21.46, "lon": 105.979 },
+    "notes": "Chủ dự án (29/10/2026): Nhã Lộng, Phú Bình. Toạ độ: trung tâm xã Phú Bình mới (gồm Nhã Lộng cũ), theo vi.wikipedia.org, kiểm tra 29/10/2026; cách TP Thái Nguyên khoảng 20 km về phía nam - đông nam."
   },
   {
     "id": "da-nang",
     "role": "current",
     "label": { "vi": "Đà Nẵng", "en": "Da Nang" },
     "region": null,
-    "approx": { "lat": 16.05, "lon": 108.2 },
-    "notes": "Toạ độ xấp xỉ, cần kiểm tra lại. Chủ dự án (26/10/2026): nơi sinh ra, lớn lên và đang sống."
+    "approx": { "lat": 16.064, "lon": 108.223 },
+    "notes": "Chủ dự án (26/10/2026): nơi sinh ra, lớn lên và đang sống. Toạ độ: phường Hải Châu, trung tâm Đà Nẵng (chủ dự án chọn 29/10/2026), theo vi.wikipedia.org."
   },
   {
     "id": "dien-ban",
     "role": "home",
     "label": { "vi": "Điện Bàn", "en": "Dien Ban" },
     "region": { "vi": "Quảng Nam (cũ)", "en": "Quang Nam (former)" },
-    "approx": { "lat": 15.9, "lon": 108.25 },
-    "notes": "Toạ độ xấp xỉ, cần kiểm tra lại. Cách ghi 'cũ' theo lời chủ dự án."
+    "approx": { "lat": 15.889, "lon": 108.256 },
+    "notes": "Cách ghi 'cũ' theo lời chủ dự án. Toạ độ: trung tâm Điện Bàn cũ (Vĩnh Điện, nay là phường Điện Bàn), chủ dự án chọn 29/10/2026, theo vi.wikipedia.org."
   }
 ]

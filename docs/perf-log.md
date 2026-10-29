@@ -3,6 +3,37 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-29 · Map: provinces before/after the 2025 merger, terraced steps, capital star
+
+Owner request (2026-10-29). Adds 63 province fills and two border meshes to the inline map SVG, a
+mode switch and a hover readout (in `map-view`). Sizes from `build:prod` (gzip -9); Lighthouse from
+`node scripts/lighthouse.mjs` (mobile, default throttling).
+
+| Item | Before | After |
+|---|---|---|
+| `/vi/` HTML | 122 969 B (24 049 B gzip) | 153 640 B (29 491 B gzip, +5 442) |
+| `/en/` HTML | 116 527 B (22 729 B gzip) | 146 883 B (28 041 B gzip, +5 312) |
+| CSS total (gzip) | 12 837 B | 13 415 B (+578) |
+| `map-view` JS (gzip) | 1 305 B | 1 594 B (+289) |
+| Lighthouse `/vi/` | 99, LCP 2.0 s, TBT 0 ms | 99, LCP 2.0 / 1.9 s, TBT 30 / 40 ms (2 runs) |
+| Lighthouse `/en/` | 99, LCP 2.0 s, TBT 0 ms | 99 / 100, LCP 2.0 / 1.7 s, TBT 10 ms |
+
+Hover sweep (1280 px, `/vi/`, mode "before", 121 mouse moves down Viet Nam and back, rAF frame
+times; 3 runs each). Giai mat, same sweep, after: p95 16.8 ms at 1x and 4x in both modes of the layer.
+
+| Mat | CPU | Before (no provinces) p95 / max | After p95 / max |
+|---|---|---|---|
+| JS cursor layer on | 1x | 33.4 / 50.0–83.3 ms (3 of 3) | 33.4–50.0 / 50.0–66.7 ms |
+| JS cursor layer on | 4x | 33.4–50.1 / 50.0–83.3 ms | 49.9–50.0 / 50.0–66.7 ms |
+| system cursors | 1x | 16.8 / 16.8 ms | 16.8 / 33.3–33.4 ms |
+| system cursors | 4x | 16.7–16.8 / 16.8 ms | 16.8–33.3 / 33.3–33.4 ms |
+
+**Reading.** The province layer alone stays within the playbook (p95 ≤ 20 ms at 1x, ≤ 40 ms at 4x).
+Mat with the JS cursor layer was already over the 1x threshold before this change (known P30 item:
+the sight lines repaint the page under them); over the map the larger drawing makes those repaints
+dearer, 1x p95 rising from 33 to 50 ms in 2 of 3 runs. Left for the P30 trim with the existing
+sight-line item; not fixed here.
+
 ## 2026-10-29 · P29 · The real portrait
 
 The Mat photo is now the page's LCP element (before P29 it was text, next to the placeholder).

@@ -1,8 +1,8 @@
 // Build-time map geometry (SPEC section 8): Natural Earth (Viet Nam point of view) projected with
 // d3-geo into SVG path strings. Runs during the build only; the page ships plain SVG.
-import { geoCentroid, geoMercator, geoPath } from "d3-geo";
+import { geoCentroid, geoContains, geoMercator, geoPath } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
-import { feature } from "topojson-client";
+import { feature, mesh, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 
 export const VIEW = { width: 600, height: 780 };
@@ -21,6 +21,14 @@ const ARCHIPELAGOS = {
 type Box = { west: number; east: number; south: number; north: number };
 /** `text` is the label as shown (it sets the label's width for the placement). */
 type Point = { id: string; lat: number; lon: number; text: string };
+/** content/provinces.json: each of the 63 units (ISO code) and the unit it belongs to since 2025. */
+export type Admin = { capital: { lat: number; lon: number }; before: { code: string; after: string }[] };
+/**
+ * Brightness step of a province (owner's "terraced fields" idea, 2026-10-29), per mode: the
+ * provinces holding the four places, the provinces next to them, then the rest of Viet Nam.
+ */
+export type Tier = "home" | "near" | "base";
+export type Province = { code: string; after: string; d: string; tier: { before: Tier; after: Tier } };
 /** Where a point's label goes, relative to its dot (SVG units, text anchor). */
 export type LabelSpot = { dx: number; dy: number; anchor: "start" | "end" };
 export type MapGeometry = {
@@ -30,6 +38,10 @@ export type MapGeometry = {
     { dots: [number, number][]; label: [number, number]; anchor: "start" | "end" }
   >;
   points: { id: string; x: number; y: number; label: LabelSpot }[];
+  provinces: Province[];
+  /** Inner province borders: `kept` runs between units in both modes, `merged` only before 2025. */
+  borders: { kept: string; merged: string };
+  capital: [number, number];
 };
 
 /** Label metrics at the map's 11px monospace: about 0.6em per character. */
@@ -38,7 +50,7 @@ export const LABEL = { size: 11, char: 6.6, dot: 7, pad: 2 } as const;
 const inside = ([lon, lat]: [number, number], b: Box) => lon >= b.west && lon <= b.east && lat >= b.south && lat <= b.north;
 const round = (n: number) => Math.round(n * 10) / 10;
 
-export function buildMap(topo: Topology, points: Point[]): MapGeometry {
+export function buildMap(topo: Topology, points: Point[], admin: Admin): MapGeometry {
   const object = topo.objects["countries"] as GeometryCollection<{ code: string }>;
   const countries = feature(topo, object) as FeatureCollection<Polygon | MultiPolygon, { code: string }>;
 
@@ -84,7 +96,41 @@ export function buildMap(topo: Topology, points: Point[]): MapGeometry {
     return { dots, label, anchor };
   };
 
+  // Provinces: 63 shapes; after the merger a unit is the union of its former ones, so the fills
+  // stay per former province and only the borders and the brightness steps change.
+  const units = topo.objects["provinces"] as GeometryCollection<{ code: string }>;
+  const shapes = (feature(topo, units) as FeatureCollection<Polygon | MultiPolygon, { code: string }>).features;
+  const afterOf = new Map(admin.before.map((b) => [b.code, b.after]));
+  const codes = shapes.map((f) => f.properties.code);
+  const unit = (code: string) => {
+    const a = afterOf.get(code);
+    if (!a) throw new Error(`map: province ${code} missing from content/provinces.json`);
+    return a;
+  };
+  const home = new Set(
+    points.map((p) => {
+      const at = shapes.find((f) => geoContains(f, [p.lon, p.lat])) ?? closest(shapes, [p.lon, p.lat]);
+      if (!at) throw new Error(`map: ${p.id} lies in no province`);
+      return at.properties.code;
+    }),
+  );
+  const near = neighbors(units.geometries);
+  const tiers = (inHome: (code: string) => boolean, isNext: (a: string, b: string) => boolean): Tier[] =>
+    codes.map((c, i) => (inHome(c) ? "home" : codes.some((o, j) => inHome(o) && (near[i]!.includes(j) || isNext(c, o))) ? "near" : "base"));
+  const before = tiers((c) => home.has(c), () => false);
+  const homeUnits = new Set([...home].map(unit));
+  // After: a unit is next to home when any of its former provinces touched a home unit's.
+  const nextUnit = (a: string, b: string) =>
+    codes.some((x, i) => unit(x) === unit(a) && near[i]!.some((j) => unit(codes[j]!) === unit(b)));
+  const after = tiers((c) => homeUnits.has(unit(c)), nextUnit);
+  const codeOf = (g: { properties?: object | undefined }) => (g.properties as { code: string }).code;
+  const border = (keep: boolean) =>
+    path(mesh(topo, units, (a, b) => a !== b && (unit(codeOf(a)) !== unit(codeOf(b))) === keep)) ?? "";
+
   return {
+    provinces: shapes.map((f, i) => ({ code: codes[i]!, after: unit(codes[i]!), d: path(f) ?? "", tier: { before: before[i]!, after: after[i]! } })),
+    borders: { kept: border(true), merged: border(false) },
+    capital: project(admin.capital.lon, admin.capital.lat),
     countries: countries.features
       .map((f) => ({ code: f.properties.code, d: path(f) ?? "" }))
       .filter((c) => c.d !== ""),
@@ -97,8 +143,32 @@ export function buildMap(topo: Topology, points: Point[]): MapGeometry {
         const [x, y] = project(p.lon, p.lat);
         return { id: p.id, x, y, text: p.text };
       }),
+      [project(admin.capital.lon, admin.capital.lat)],
     ),
   };
+}
+
+/**
+ * A place on the coast can fall just outside the simplified shoreline (Hai Chau, Da Nang: about
+ * 1 km, under a pixel at full view). Then it belongs to the province with the nearest edge, if that
+ * edge is within ~2 km (0.02 degrees, planar: fine at this scale).
+ */
+function closest<T extends Feature<Polygon | MultiPolygon>>(shapes: T[], [x, y]: [number, number]): T | undefined {
+  const toSegment = ([ax, ay]: number[], [bx, by]: number[]) => {
+    const [dx, dy] = [bx! - ax!, by! - ay!];
+    const t = Math.max(0, Math.min(1, ((x - ax!) * dx + (y - ay!) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(x - (ax! + t * dx), y - (ay! + t * dy));
+  };
+  let best: { shape?: T; d: number } = { d: 0.02 };
+  for (const shape of shapes) {
+    const polygons = shape.geometry.type === "MultiPolygon" ? shape.geometry.coordinates : [shape.geometry.coordinates];
+    for (const ring of polygons.flat())
+      for (let i = 1; i < ring.length; i++) {
+        const d = toSegment(ring[i - 1]!, ring[i]!);
+        if (d < best.d) best = { shape, d };
+      }
+  }
+  return best.shape;
 }
 
 export type Rect = { x0: number; y0: number; x1: number; y1: number };
@@ -127,14 +197,17 @@ const SPOTS: LabelSpot[] = [
  * (Da Nang / Dien Ban, Thai Nguyen / Thuong Tin are close). First free spot wins; if none is free,
  * the spot with the least overlap is kept.
  */
-function placeLabels(points: { id: string; x: number; y: number; text: string }[]) {
-  const dots: Rect[] = points.map((p) => ({ x0: p.x - LABEL.dot, y0: p.y - LABEL.dot, x1: p.x + LABEL.dot, y1: p.y + LABEL.dot }));
+function placeLabels(points: { id: string; x: number; y: number; text: string }[], marks: [number, number][]) {
+  const box = (x: number, y: number): Rect => ({ x0: x - LABEL.dot, y0: y - LABEL.dot, x1: x + LABEL.dot, y1: y + LABEL.dot });
+  const dots: Rect[] = points.map((p) => box(p.x, p.y));
+  // Other marks (the capital's star) are covered by no label either.
+  const fixed = marks.map(([x, y]) => box(x, y));
   const taken: Rect[] = [];
   return points.map((p, i) => {
     const others = dots.filter((_, j) => j !== i);
     const cost = (s: LabelSpot) => {
       const r = labelRect(p, s);
-      return [...taken, ...others].filter((o) => overlaps(r, o)).length;
+      return [...taken, ...others, ...fixed].filter((o) => overlaps(r, o)).length;
     };
     const label = SPOTS.find((s) => cost(s) === 0) ?? [...SPOTS].sort((a, b) => cost(a) - cost(b))[0]!;
     taken.push(labelRect(p, label));
