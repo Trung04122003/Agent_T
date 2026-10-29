@@ -14,6 +14,7 @@ const codename = codenameFor(identity, locale);
 const codenameLabel = await t("codenameLabel", locale);
 const scrollHint = await t("gateScrollHint", locale);
 const legalNameLabel = await t("legalNameRedacted", locale);
+const seal = await t("sealDeclassified", locale);
 const lensLines = getLenses().flatMap((l) => (l.positioning ? [{ id: l.id, positioning: l.positioning, mat: l.positioningMat }] : []));
 ---
 
@@ -21,6 +22,8 @@ const lensLines = getLenses().flatMap((l) => (l.positioning ? [{ id: l.id, posit
 <section class="gate" data-level0 aria-labelledby="gate-codename">
   <div class="gate__id sheet">
     <PageMark locale={locale} page="gate" />
+    {/* Giai mat seal (ROADMAP 28.5): decorative, the mode switch already announces the level. */}
+    <p class="gate__seal only-giai-mat" aria-hidden="true" data-seal>{seal}</p>
     <p class="gate__label">{codenameLabel}</p>
     <h1 id="gate-codename" class="gate__codename">{codename.name}</h1>
     {codename.positioning && <p class="gate__codename-line">{codename.positioning}</p>}
@@ -67,6 +70,24 @@ const lensLines = getLenses().flatMap((l) => (l.positioning ? [{ id: l.id, posit
 </section>
 
 <style>
+  .gate__seal {
+    position: absolute;
+    inset-block-start: calc(var(--space) * 2.5);
+    inset-inline-end: calc(var(--space) * 2.5);
+    margin: 0;
+    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    transform: rotate(-8deg);
+    opacity: 0.85;
+    pointer-events: none;
+  }
   .gate {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

@@ -6,6 +6,8 @@ import { readCursorFx, setCursorFx } from "./cursor";
 
 export const FONT_KEY = "fontProfile";
 export const SIZE_KEY = "fontSize";
+/** Mat night vision (ROADMAP 28.1): "off" when the reader turned it off; on by default. */
+export const NIGHT_KEY = "nightFx";
 export const PROFILES = ["ho-so", "bien-ban", "de-doc", "may-chu"] as const;
 export const SIZES = ["sm", "md", "lg"] as const;
 export type Profile = (typeof PROFILES)[number];
@@ -52,6 +54,15 @@ export async function setProfile(id: Profile): Promise<void> {
   else html().dataset["font"] = id;
 }
 
+export function nightOn(): boolean {
+  return html().dataset["night"] !== "off";
+}
+export function setNight(on: boolean): void {
+  store(NIGHT_KEY, on ? null : "off");
+  if (on) delete html().dataset["night"];
+  else html().dataset["night"] = "off";
+}
+
 export function setSize(size: Size): void {
   store(SIZE_KEY, size === "md" ? null : size);
   if (size === "md") delete html().dataset["size"];
@@ -65,10 +76,12 @@ export function initReading(): void {
   if (!toggle || !panel) return;
   const radios = (name: string) => [...panel.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)];
   const cursor = panel.querySelector<HTMLInputElement>("[data-reading-cursor]")!;
+  const night = panel.querySelector<HTMLInputElement>("[data-reading-night]")!;
   const sync = (): void => {
     for (const r of radios("reading-font")) r.checked = r.value === currentProfile();
     for (const r of radios("reading-size")) r.checked = r.value === currentSize();
     cursor.checked = readCursorFx() === "custom";
+    night.checked = nightOn();
   };
   const open = (on: boolean, focusBack = false): void => {
     panel.hidden = !on;
@@ -81,10 +94,12 @@ export function initReading(): void {
   for (const r of radios("reading-font")) r.addEventListener("change", () => void setProfile(r.value as Profile));
   for (const r of radios("reading-size")) r.addEventListener("change", () => setSize(r.value as Size));
   cursor.addEventListener("change", () => setCursorFx(cursor.checked ? "custom" : "system"));
+  night.addEventListener("change", () => setNight(night.checked));
   panel.querySelector("[data-reading-reset]")?.addEventListener("click", () => {
     void setProfile("ho-so");
     setSize("md");
     setCursorFx("custom");
+    setNight(true);
     sync();
   });
   // Esc closes and gives focus back to "Aa"; so does a click outside the panel.

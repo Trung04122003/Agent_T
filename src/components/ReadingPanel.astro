@@ -20,9 +20,10 @@ const keys = [
   "sizeMd",
   "sizeLg",
   "readingCursor",
+  "readingNight",
   "readingReset",
 ];
-const [button, typeface, hoSo, bienBan, deDoc, mayChu, size, sm, md, lg, cursor, reset] = await Promise.all(keys.map((k) => t(k, locale)));
+const [button, typeface, hoSo, bienBan, deDoc, mayChu, size, sm, md, lg, cursor, night, reset] = await Promise.all(keys.map((k) => t(k, locale)));
 // The name of each profile is set in that profile's face (the default one in the dossier's).
 const profiles = [
   { id: "ho-so", name: hoSo, face: "var(--font-figure)" },
@@ -78,6 +79,11 @@ const sizes = [
     <label class="reading__option reading__check">
       <input type="checkbox" data-reading-cursor />
       <span>{cursor}</span>
+    </label>
+    {/* Mat night vision (ROADMAP 28.1): with the custom cursor, on a pointer screen. */}
+    <label class="reading__option reading__check">
+      <input type="checkbox" data-reading-night />
+      <span>{night}</span>
     </label>
     <button type="button" class="reading__reset" data-reading-reset>{reset}</button>
   </div>

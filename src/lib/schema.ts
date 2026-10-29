@@ -90,6 +90,16 @@ export const evidence = z
     note: localized,
     /** reference only: the referee agreed to be named (makes the entry T3). */
     consent: z.boolean().optional(),
+    /**
+     * Optional preview of the document (ROADMAP 28.7): an image under public/ that the owner has
+     * already redacted before it enters the repo. Never a handwritten signature.
+     */
+    preview: z
+      .strictObject({
+        src: z.string().regex(/^\/[\w./-]+\.(png|jpe?g|webp|avif)$/),
+        alt: localized,
+      })
+      .optional(),
   })
   .superRefine((e, ctx) => {
     if (e.consent !== undefined && e.type !== "reference") {

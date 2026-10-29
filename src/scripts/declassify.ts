@@ -26,6 +26,10 @@ export const TIMING = {
   banner: 95, // classification strip types its new level in (clip-path)
   chartAt: 370,
   chart: 200, // chart line drawn left to right (clip-path), opening only
+  sealAt: 570,
+  // "Declassified" seal lands on the identity card (ROADMAP 28.5), opening only: with the last
+  // bars, after the chart line, so still two effects at most, and done at 720.
+  seal: 150,
   barsAt: 265,
   bar: 280,
   barStagger: 25,
@@ -124,6 +128,8 @@ export function switchMode(next: Mode, origin?: Element | null, onSwitch?: () =>
     "banner-dur": TIMING.banner,
     "chart-at": TIMING.chartAt,
     "chart-dur": TIMING.chart,
+    "seal-at": TIMING.sealAt,
+    "seal-dur": TIMING.seal,
     "bars-at": TIMING.barsAt,
     "bar-dur": TIMING.bar,
   };

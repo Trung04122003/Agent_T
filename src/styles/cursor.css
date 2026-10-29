@@ -53,6 +53,29 @@
 .cfx.is-on {
   visibility: visible;
 }
+/* Night vision (ROADMAP 28.1), Mat only: the screen dims by 12% outside a clear circle around the
+   pointer. The roadmap allows 25%, but text stays AA only up to 12% (scripts/check-contrast.mjs).
+   A 512 px tile with a fixed gradient, scaled and moved by cursor-fx.ts with transform only. Off
+   from the "Aa" panel. */
+.cfx__night {
+  position: absolute;
+  top: -256px;
+  left: -256px;
+  width: 512px;
+  height: 512px;
+  transform-origin: center;
+  will-change: transform;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    transparent 0 var(--night-clear, 17px),
+    color-mix(in srgb, var(--bg) 12%, transparent) var(--night-full, 42px)
+  );
+}
+:root[data-mode="giai-mat"] .cfx__night,
+:root[data-night="off"] .cfx__night {
+  display: none;
+}
 .cfx__ring {
   position: absolute;
   /* Centred on the hotspot: translate() then moves its centre to the mouse. */

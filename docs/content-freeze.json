@@ -1,5 +1,5 @@
 {
-  "frozenOn": "2026-10-28",
+  "frozenOn": "2026-10-29",
   "files": {
     "claims.json": "58e4f2c3464bc7dd4c92f469b7a419d0bcf7cab2d16c9065ad52ae328d7696ec",
     "identity.json": "1611a74de8f9cd879ad678d2767da606552f2d8c1348bc7c1b3f1b5f5fedce60",
@@ -8,6 +8,6 @@
     "places.json": "f5f6a3f3100faeb364b60cd0ab76011838308bb213434156ccd8c73cbb7ded76",
     "print.json": "0a62fa9e1d783ce551a8d2acea194bc551c3b50cda5806642f4844ac1d5476d5",
     "risks.json": "6d20554822ab7e5952c8215f54b0625d54cf1b0e7b6d2b4b5b12933db8a23c50",
-    "ui.json": "8f1076587e04c06e02f57b6953eca9e7687ffae4398eaeb0b19746c5d365b674"
+    "ui.json": "6c10d5040848f75e9c28cb11d6c3e19b70f0ec34199ad5cbebd2de237a7c850f"
   }
 }

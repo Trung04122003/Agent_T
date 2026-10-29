@@ -8,3 +8,11 @@ export function tierOf(evidence: readonly Evidence[]): Tier {
   if (evidence.some((e) => e.type === "document-on-request")) return "T2";
   return "T1";
 }
+
+/**
+ * The evidence's name for the Giai mat "Source" line (ROADMAP 28.6): its note from content/, less
+ * a trailing "available on request", which the tier already says.
+ */
+export function evidenceName(note: string): string {
+  return note.replace(/,\s*(cung cấp khi có yêu cầu|available on request)\s*$/iu, "").trim();
+}

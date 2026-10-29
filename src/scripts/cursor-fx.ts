@@ -12,7 +12,7 @@
 // ring is never covered). Mouse input only (pointerType "mouse").
 import { cursorFxAllowed, CURSOR_FX_QUERY } from "./cursor-loader";
 
-export const CFX = { lerp: 0.3, idleMs: 600, settle: 0.5, ring: 36, corner: 10, pad: 4, spread: 28, inset: 14 } as const;
+export const CFX = { lerp: 0.3, idleMs: 600, settle: 0.5, ring: 36, corner: 10, pad: 4, spread: 28, inset: 14, nightTile: 512, nightClear: 150, nightRamp: 2.4 } as const;
 export const TARGETS = 'a[href], button, [role="button"], summary, [data-cursor-target], [data-chart-plot]';
 
 const RING_SVG =
@@ -27,6 +27,8 @@ export function startCursorFx(): void {
   layer.dataset["cfx"] = "";
   layer.setAttribute("aria-hidden", "true");
   layer.innerHTML =
+    // Night vision (ROADMAP 28.1), under the ring: a small gradient tile scaled up to cover the screen.
+    '<div class="cfx__night" data-cfx-night></div>' +
     // Four dashed hairlines run from the ring to the screen edges, like the map's sight lines; they
     // sit inside the lock, so locking turns them 45 degrees with the ring (owner idea, P22).
     `<div class="cfx__ring" data-cfx-ring><div class="cfx__lock" data-cfx-lock>${RING_SVG}` +
@@ -35,6 +37,7 @@ export function startCursorFx(): void {
     '<div class="cfx__frame" data-cfx-frame><i data-c="tl"></i><i data-c="tr"></i><i data-c="bl"></i><i data-c="br"></i></div>';
   document.body.append(layer);
   const ring = layer.querySelector<HTMLElement>("[data-cfx-ring]")!;
+  const night = layer.querySelector<HTMLElement>("[data-cfx-night]")!;
   const lock = layer.querySelector<HTMLElement>("[data-cfx-lock]")!;
   const frame = layer.querySelector<HTMLElement>("[data-cfx-frame]")!;
   const corners = [...frame.querySelectorAll<HTMLElement>("i")];
@@ -55,6 +58,20 @@ export function startCursorFx(): void {
     requestAnimationFrame(() => frame.classList.remove("is-jump"));
   });
 
+  // Night vision (ROADMAP 28.1): a dim of at most 25% around a clear circle that follows the ring.
+  // The element is a 512 px tile with a fixed radial gradient; scaled (GPU, transform only) until
+  // it covers the screen from any point, and moved in the ring's own frame: no second loop, no
+  // background change per frame. The gradient and the scale change only on resize.
+  let nightScale = 1;
+  const fitNight = (): void => {
+    nightScale = (2 * Math.hypot(innerWidth, innerHeight)) / CFX.nightTile;
+    // Radii in the tile's own pixels, so that once scaled they are nightClear px on screen.
+    night.style.setProperty("--night-clear", `${(CFX.nightClear / nightScale).toFixed(2)}px`);
+    night.style.setProperty("--night-full", `${((CFX.nightClear * CFX.nightRamp) / nightScale).toFixed(2)}px`);
+  };
+  fitNight();
+  addEventListener("resize", fitNight, { passive: true });
+
   const mat = (): boolean => root.dataset["mode"] !== "giai-mat";
   const show = (on: boolean): void => {
     layer.classList.toggle("is-on", on);
@@ -66,6 +83,7 @@ export function startCursorFx(): void {
     pos.x += (aim.x - pos.x) * CFX.lerp;
     pos.y += (aim.y - pos.y) * CFX.lerp;
     ring.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
+    night.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${nightScale})`;
     const settled = Math.abs(aim.x - pos.x) < CFX.settle && Math.abs(aim.y - pos.y) < CFX.settle;
     raf = settled && now - lastMove > CFX.idleMs ? 0 : requestAnimationFrame(tick);
   };

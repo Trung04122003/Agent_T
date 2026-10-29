@@ -3,6 +3,43 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-29 · P28 · Night vision, grain, stirring bars, Giai mat sheet
+
+Tool: `node tools/perf/cursor-frames.mjs` (the P22 pointer sweep over ledger, chart and map, then a
+scroll). "Before" is the P27 commit. Each cell is p95 / max / frames > 33 ms.
+
+| Mode | CPU | Before (P27) | First build | Final (grain in background), run 1 | Final, run 2 |
+|---|---|---|---|---|---|
+| Mat | 1x | 33.3 / 50 / 5 | 33.4 / 66.7 / 13–15 | 33.3 / 49.9 / 3 | 33.2 / 50 / 6 |
+| Mat | 4x | 33.3 / 50 / 7 | **49.9** / 83.3 / 25–35 | 33.3 / 66.6 / 11 | 33.4 / 66.6 / 9 |
+| Giai mat | 1x | 16.7 / 33.3 / 0 | 16.8 / 33.4 / 1 | unchanged | unchanged |
+| Giai mat | 4x | 16.8 / 33.4 / 1 | 16.8 / 50 / 3 | unchanged | unchanged |
+
+The first build failed at Mat 4x: p95 49.9 ms against a 40 ms limit, and long frames tripled.
+Isolated by experiment, with temporary copies of the tool that turned one part off:
+
+| Mat, long frames (1x / 4x) | |
+|---|---|
+| Night vision off (grain on) | 5 / 7, back to P27 |
+| Grain off (night vision on) | 4 / 13 |
+
+So night vision was the main cost and the grain made it worse. The grain was a fixed full-screen
+overlay at 3% opacity, re-composited under the moving dim and on every scroll. It is now a plain
+background layer of `body`. Its 3% lives in the PNG's alpha (grey + alpha, 8/255), so it needs no
+layer and no opacity.
+
+What remains is night vision itself. It is a 512 px tile with a fixed gradient, scaled by the GPU
+and moved in the ring's own frame, which leaves 2–4 extra long frames per sweep at 4x. Mat 1x p95
+still flips at 33.3 ms, as since P22 (the sight lines).
+
+Night vision dims by **12%**, not the 25% the roadmap allows. At 15%, muted text on a grid line
+falls to 4.44:1; 12% keeps every Mat text pair AA (worst 4.68:1). `scripts/check-contrast.mjs` now
+checks the dimmed pairs too.
+
+Size (`build:prod`, gzip, P27 → P28): `/vi/` HTML 23 680 → 23 971 B (+291: balance, source lines,
+seal); all JS 13 496 → 14 237 B (+741); all CSS 12 505 → 12 973 B (+468). New file
+`public/noise.png`: 5 386 B (budget 8 KB).
+
 ## 2026-10-28 · P27 · Reading profiles, "Aa" panel
 
 **Fonts fetched by `/vi/`** (woff2 files as served, 400 + 700, measured by `e2e/reading.e2e.ts` in

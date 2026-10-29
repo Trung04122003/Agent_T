@@ -62,6 +62,26 @@ for (const mode of ["mat", "giai-mat"]) {
     console.log(`  ${tag} --${fg} on --${bg}: ${r.toFixed(2)}:1 (min ${min})`);
   }
 }
+// Mat night vision (ROADMAP 28.1): outside the clear circle the screen is covered by --bg, which
+// darkens text and background alike. The roadmap allows up to 25%, but at 15% muted text on a grid
+// line already falls to 4.44:1; 12% keeps every Mat text pair AA (worst 4.68:1). Keep this in step
+// with the 12% in src/styles/cursor.css (.cfx__night).
+const NIGHT = 0.12;
+const mix = (hex, over) => {
+  const ch = (h, i) => parseInt(h.slice(i, i + 2), 16);
+  return `#${[1, 3, 5].map((i) => Math.round(ch(hex, i) * (1 - NIGHT) + ch(over, i) * NIGHT).toString(16).padStart(2, "0")).join("")}`;
+};
+{
+  const t = tokens("mat");
+  console.log(`[mat, night vision at ${NIGHT * 100}%]`);
+  for (const [fg, bg, min] of PAIRS.filter(([, , m, required]) => required && m >= 4.5)) {
+    const r = ratio(mix(t[fg], t["bg"]), mix(t[bg], t["bg"]));
+    const ok = r >= min;
+    if (!ok) failed++;
+    console.log(`  ${ok ? "ok  " : "FAIL"} --${fg} on --${bg}: ${r.toFixed(2)}:1 (min ${min})`);
+  }
+}
+
 if (failed) {
   console.error(`check-contrast: ${failed} required pair(s) below WCAG AA.`);
   process.exit(1);

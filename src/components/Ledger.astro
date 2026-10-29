@@ -3,13 +3,13 @@
 // title and period of open entries; Mat adds teaser + redaction, Giai mat adds summary + evidence.
 // Classified entries only ever carry their category label.
 import { t, type Locale } from "../lib/i18n";
-import { tierOf, type Tier } from "../lib/evidence";
+import { evidenceName, tierOf, type Tier } from "../lib/evidence";
 import { fileCode, formatPeriod, publicClaims } from "../lib/ledger";
 import { hasTearSheet, type Claim } from "../lib/schema";
 import { BUILT, fileNumber } from "../lib/dossier";
 import { codenameFor, getIdentity } from "../lib/identity";
 import { requestDocs } from "../lib/request";
-import { durationMonths } from "../lib/stats";
+import { durationMonths, experienceBalance } from "../lib/stats";
 import RequestDocs from "./RequestDocs.astro";
 import TearSheet from "./TearSheet.astro";
 import TierMeter from "./TierMeter.astro";
@@ -44,6 +44,11 @@ const fileNo = fileNumber(codenameFor(await getIdentity(), locale).name, BUILT);
 const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
   ["colCode", "colPeriod", "colEntry", "durationUnit", "pausedLabel"].map((k) => t(k, locale)),
 );
+// Giai mat "truer" (ROADMAP 28.4, 28.6): the experience balance and the source of each entry.
+const balance = experienceBalance(claims, BUILT);
+const [balanceLabel, balanceNote, sourceLabel, sourceSelf] = await Promise.all(
+  ["balanceLabel", "balanceNote", "sourceLabel", "sourceSelf"].map((k) => t(k, locale)),
+);
 ---
 
 <section class="ledger sheet sheet--block" aria-labelledby="ledger-heading" data-ledger>
@@ -59,6 +64,7 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
       ))
     }
   </ul>
+  <p class="ledger__note only-giai-mat" data-balance-note>{balanceNote}</p>
   <div class="ledger__cols only-giai-mat" aria-hidden="true">
     <span>{colCode}</span>
     <span>{colPeriod}</span>
@@ -110,12 +116,21 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
               {period}
               {months !== null && <span class="row__dur only-giai-mat">{months} {unit}</span>}
               {c.paused && <span class="row__dur only-giai-mat" data-paused>{pausedLabel}</span>}
+              {balance.has(c.id) && (
+                <span class="row__balance only-giai-mat" data-balance={balance.get(c.id)}>
+                  {balanceLabel} {balance.get(c.id)} {unit}
+                </span>
+              )}
             </span>
             <span class="row__main">
               {c.org && <span class="row__org">{c.org[locale]}</span>}
               {c.title && <span class="row__title">{c.title[locale]}</span>}
               {/* Bottom line up front (ROADMAP 11.2): both modes, only when the owner wrote one. */}
               {bluf && <span class="row__bluf">{bluf}</span>}
+              {/* Source line (ROADMAP 28.6): the evidence by name and its tier, Giai mat only. */}
+              <span class="row__source only-giai-mat" data-source>
+                {sourceLabel} · {tier}: {c.evidence.length ? c.evidence.map((e) => evidenceName(e.note[locale])).join(" · ") : sourceSelf}
+              </span>
             </span>
             <span class="row__tier" data-tier={tier}>
               <span class="row__tier-word">{labels.evidence}</span>{" "}
@@ -164,7 +179,15 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
                       <p class="row__evidence-heading">{labels.evidence}</p>
                       <ul>
                         {c.evidence.map((e) => (
-                          <li>{e.type === "link" && e.url ? <a href={e.url}>{e.note[locale]}</a> : e.note[locale]}</li>
+                          <li>
+                            {e.type === "link" && e.url ? <a href={e.url}>{e.note[locale]}</a> : e.note[locale]}
+                            {/* ROADMAP 28.7: the owner's redacted preview, only when there is one. */}
+                            {e.preview && (
+                              <figure class="row__preview" data-preview>
+                                <img src={e.preview.src} alt={e.preview.alt[locale]} loading="lazy" decoding="async" />
+                              </figure>
+                            )}
+                          </li>
                         ))}
                       </ul>
                       {onRequest.length > 0 && <RequestDocs locale={locale} fileRef={`${fileNo}-${code}`} docs={onRequest} />}
@@ -352,6 +375,40 @@ const [colCode, colPeriod, colEntry, unit, pausedLabel] = await Promise.all(
     :global(:root[data-js][data-mode="mat"]) .ledger__cols {
       display: none;
     }
+  }
+  /* ROADMAP 28.4/28.6: the running balance under the length, the source under the entry. */
+  .row__balance {
+    display: block;
+    margin-block-start: 2px;
+    font-size: 0.75rem; /* as .row__dur, just above it */
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+  .row__source {
+    display: block;
+    margin-block-start: calc(var(--space) * 0.75);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .row__preview {
+    margin: var(--space) 0 0;
+    padding: var(--space);
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .row__preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+  }
+  .ledger__note {
+    margin: 0 0 calc(var(--space) * 2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
   }
   .row__dur {
     display: block;

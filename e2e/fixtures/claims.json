@@ -11,7 +11,7 @@
     "teaser": { "vi": "Câu mở đầu thử nghiệm.", "en": "A test teaser." },
     "summary": { "vi": "Tóm tắt thử nghiệm số một, chỉ hiện ở Giải mật.", "en": "Test summary one, Declassified only." },
     "evidence": [
-      { "type": "link", "url": "https://example.com/evidence", "note": { "vi": "Bằng chứng thử", "en": "Test evidence" } },
+      { "type": "link", "url": "https://example.com/evidence", "note": { "vi": "Bằng chứng thử", "en": "Test evidence" }, "preview": { "src": "/og.png", "alt": { "vi": "Bản xem trước thử", "en": "Test preview" } } },
       { "type": "reference", "note": { "vi": "Tham chiếu thử", "en": "Test reference" } }
     ],
     "notes": "NOTES-SENTINEL-ONE"

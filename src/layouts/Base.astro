@@ -17,7 +17,7 @@ import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
 import { CURSOR_KEY } from "../scripts/cursor";
 import { GATE_KEY } from "../scripts/entry";
-import { FONT_KEY, SIZE_KEY } from "../scripts/reading";
+import { FONT_KEY, NIGHT_KEY, SIZE_KEY } from "../scripts/reading";
 import ReadingPanel from "../components/ReadingPanel.astro";
 import EntryGate from "../components/EntryGate.astro";
 import { MODE_KEY } from "../scripts/mode";
@@ -54,7 +54,7 @@ const published = LOCALES.filter((l) => complete.has(l));
 // Blocked storage means no gate (we could not keep it to once a session).
 const gateScript = `var g="skip";try{if(!sessionStorage.getItem(${JSON.stringify(GATE_KEY)})&&!location.hash&&!/[?&]skip(=|&|$)/.test(location.search)&&!matchMedia("print").matches){sessionStorage.setItem(${JSON.stringify(GATE_KEY)},"1");g="show"}}catch(e){}document.documentElement.dataset.gate=g;`;
 // Reading settings (ROADMAP 27.5), before the first paint too: no flash of the default face/size.
-const readingScript = `try{var f=localStorage.getItem(${JSON.stringify(FONT_KEY)});if(f==="bien-ban"||f==="de-doc"||f==="may-chu")document.documentElement.dataset.font=f;var z=localStorage.getItem(${JSON.stringify(SIZE_KEY)});if(z==="sm"||z==="lg")document.documentElement.dataset.size=z}catch(e){}`;
+const readingScript = `try{var f=localStorage.getItem(${JSON.stringify(FONT_KEY)});if(f==="bien-ban"||f==="de-doc"||f==="may-chu")document.documentElement.dataset.font=f;var z=localStorage.getItem(${JSON.stringify(SIZE_KEY)});if(z==="sm"||z==="lg")document.documentElement.dataset.size=z;if(localStorage.getItem(${JSON.stringify(NIGHT_KEY)})==="off")document.documentElement.dataset.night="off"}catch(e){}`;
 const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
 ---
 
@@ -100,8 +100,10 @@ const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentEl
       // Cursor layer (ROADMAP P22): the gate decides; the layer's code is fetched only if allowed.
       import { initCursorFx } from "../scripts/cursor-loader";
       import { initRequest } from "../scripts/request";
+      import { initStir } from "../scripts/stir";
       initCursorFx();
       initRequest();
+      initStir();
     </script>
   </body>
 </html>

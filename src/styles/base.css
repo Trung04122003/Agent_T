@@ -76,6 +76,37 @@ body {
     padding: calc(var(--space) * 3);
   }
 }
+/* Mat redaction stir (ROADMAP 28.2): the block-character overlay src/scripts/stir.ts lays over the
+   bars for 200 ms. Its text is only ▓▒░, made in the browser. */
+.redaction,
+.redact {
+  position: relative;
+}
+.stir {
+  position: absolute;
+  inset: 0 0 auto 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: 0;
+  white-space: pre;
+  color: var(--redact);
+  background: var(--bg);
+  pointer-events: none;
+}
+/* Giai mat "file sheet" (ROADMAP 28.5): faint ruled lines and a very soft shadow on the edge of
+   each sheet. Static; screen only (print has its own one-page file). */
+@media not print {
+  :root[data-mode="giai-mat"] .sheet {
+    background-image: repeating-linear-gradient(
+      transparent 0 calc(2rem - 1px),
+      color-mix(in srgb, var(--line) 55%, transparent) calc(2rem - 1px) 2rem
+    );
+    box-shadow:
+      0 1px 0 color-mix(in srgb, var(--ink) 5%, transparent),
+      0 12px 28px -18px color-mix(in srgb, var(--ink) 30%, transparent);
+  }
+}
 /* A page-level sheet: same column as before (--wide), inset from the screen edge on phones. */
 .sheet--block {
   width: min(100% - 2 * var(--gutter), var(--wide) - 2 * var(--gutter));

@@ -57,7 +57,9 @@
 
 @media not print {
   :root[data-mode="mat"] {
-    --grid-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    /* Grid in both directions, over the still grain (ROADMAP 28.3: public/noise.png, its 3%
+       strength baked into the file's alpha, 64 px like the grid). */
+    --grid-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px), url("/noise.png");
   }
 }
 

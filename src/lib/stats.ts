@@ -1,5 +1,6 @@
 // Figures for the Giai mat "data floor" (ROADMAP 14.1, 14.3). Every number is computed from
 // content/claims.json (public entries only, so `hold` never counts) and the build date.
+import { chartEntries } from "./commitments";
 import { tierOf, type Tier } from "./evidence";
 import { publicClaims } from "./ledger";
 import type { Claim } from "./schema";
@@ -36,4 +37,33 @@ export function tierSpread(claims: Claim[]): Record<Tier, number> {
   const tiers: Record<Tier, number> = { T1: 0, T2: 0, T3: 0 };
   for (const c of publicClaims(claims)) if (c.kind !== "classified") tiers[tierOf(c.evidence)]++;
   return tiers;
+}
+
+/**
+ * Experience balance (ROADMAP 28.4), read like a ledger balance: for each entry, the months up to
+ * its end in which at least one commitment ran, counted once however many ran together. The
+ * commitments are the chart's (public, with a period, not paused); every month counts as the
+ * owner counts a period, start month up to the end month (06/2023 - 02/2024 is 8), so a lone
+ * entry's balance is its own length. Entries end at their end month, ongoing ones at the build
+ * month. Paused entries add nothing but still show the balance at their end. No month, no balance.
+ */
+export function experienceBalance(claims: Claim[], built: Date): Map<string, number> {
+  const now = builtIndex(built);
+  const endOf = (p: Period): number | null => (p.ongoing ? now : p.end ? monthIndex(p.end) : null);
+  const covered = new Set<number>();
+  for (const c of chartEntries(claims)) {
+    const a = monthIndex(c.period!.start);
+    const b = endOf(c.period!);
+    if (a !== null && b !== null) for (let m = a; m < b; m++) covered.add(m);
+  }
+  const balance = new Map<string, number>();
+  for (const c of publicClaims(claims)) {
+    if (c.kind === "classified" || !c.period) continue;
+    const end = endOf(c.period);
+    if (end === null || monthIndex(c.period.start) === null) continue;
+    let n = 0;
+    for (const m of covered) if (m < end) n++;
+    balance.set(c.id, n);
+  }
+  return balance;
 }
