@@ -42,6 +42,9 @@ test("Tab then Enter/Space switch mode, announce it, keep focus, and persist", a
   await expect(page.locator("[data-lang-switch=\"vi\"]")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator("[data-lang-switch=\"en\"]")).toBeFocused();
+  // Then "Aa" (reading settings, P27), right before the mode switch.
+  await page.keyboard.press("Tab");
+  await expect(page.locator("[data-reading-toggle]")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(toggle(page)).toBeFocused();
 
@@ -54,6 +57,7 @@ test("Tab then Enter/Space switch mode, announce it, keep focus, and persist", a
   await page.reload();
   await expect(html(page)).toHaveAttribute("data-mode", "giai-mat");
 
+  await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");

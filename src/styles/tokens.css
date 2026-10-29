@@ -35,6 +35,8 @@
   --font-body: "Be Vietnam Pro", system-ui, sans-serif;
   --font-heading: "Be Vietnam Pro", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Figures keep the dossier's face in every reading profile (ROADMAP 27.2). */
+  --font-figure: "Be Vietnam Pro", system-ui, sans-serif;
 
   --space: 8px;
   --gutter: 16px;
@@ -56,5 +58,29 @@
 @media not print {
   :root[data-mode="mat"] {
     --grid-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  }
+}
+
+/* Reading profiles and text size (ROADMAP P27): set on <html> by the head script from the "Aa"
+   panel's choice. Body text and headings only; mono labels, the classification strips and figures
+   keep their faces. Print and PDF always use the default profile at 100% (27.5). */
+@media not print {
+  :root[data-font="bien-ban"] {
+    --font-body: "Source Serif 4", "Source Serif 4 fallback", Georgia, serif;
+    --font-heading: "Source Serif 4", "Source Serif 4 fallback", Georgia, serif;
+  }
+  :root[data-font="de-doc"] {
+    --font-body: "Lexend", "Lexend fallback", system-ui, sans-serif;
+    --font-heading: "Lexend", "Lexend fallback", system-ui, sans-serif;
+  }
+  :root[data-font="may-chu"] {
+    --font-body: "IBM Plex Mono", "IBM Plex Mono fallback", ui-monospace, monospace;
+    --font-heading: "IBM Plex Mono", "IBM Plex Mono fallback", ui-monospace, monospace;
+  }
+  :root[data-size="sm"] {
+    font-size: 90%;
+  }
+  :root[data-size="lg"] {
+    font-size: 115%;
   }
 }

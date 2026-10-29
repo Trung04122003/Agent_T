@@ -3,6 +3,37 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-28 · P27 · Reading profiles, "Aa" panel
+
+**Fonts fetched by `/vi/`** (woff2 files as served, 400 + 700, measured by `e2e/reading.e2e.ts` in
+a fresh browser context; budget 70 KB per profile):
+
+| Profile | Before | After |
+|---|---|---|
+| Hồ sơ (default, Be Vietnam Pro) | 94 228 B, 6 files | **67 320 B, 4 files** |
+| Biên bản (Source Serif 4) | none | 54 508 B, 4 files |
+| Dễ đọc (Lexend) | none | 66 912 B, 6 files |
+| Máy chữ (IBM Plex Mono) | loads with every page (the labels' face) | same, plus its 700 weight |
+
+The default face was over budget before P27, and it was not alone. Fontsource's latin-ext range
+overlaps its vietnamese one (Ă, Ỳ...), so a Vietnamese page fetches latin-ext as well. The default
+and Source Serif 4 are now declared with latin + vietnamese only, which is everything content/
+uses (checked). Lexend fits within budget with Fontsource's own CSS. The three extra faces load
+only when a profile is chosen, or when the "Aa" panel shows their names.
+
+**Lighthouse, mobile** (`node scripts/lighthouse.mjs`), before the default-face change → after:
+
+| Page | Before | After, run 1 | After, run 2 |
+|---|---|---|---|
+| `/vi/` | 100, LCP 1.4 s, TBT 40 ms | 100, LCP 1.4 s, TBT 0 ms | 99, LCP 1.6 s, TBT 30 ms |
+| `/en/` | 98, LCP 2.2 s, TBT 30 ms | 99, LCP 2.2 s, TBT 0 ms | 98, LCP 2.2 s, TBT 10 ms |
+
+No measurable change; CLS 0 throughout. Switching profile moves nothing: the face loads first, and
+the test counts every layout shift, including those CLS would forgive.
+
+**Size** (`build:prod`, gzip, P26 → P27): `/vi/` HTML 23 072 → 23 691 B (+619, the panel); all JS
+12 421 → 13 496 B (+1 075); all CSS 11 528 → 12 505 B (+977). The gate's JS is unchanged.
+
 ## 2026-10-28 · P26 · Into the file: aperture, fade, guards
 
 Tool: `node tools/perf/gate-inp.mjs` (new; raw results in `.perf/gate-inp-*.json`). It measures INP

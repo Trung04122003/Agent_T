@@ -113,6 +113,12 @@ body {
   border-bottom: 1px solid var(--line);
   background: var(--bg);
 }
+/* "Aa" (P27) next to the mode switch. */
+.controls__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
 
 @media (max-width: 767px) {
   .controls {

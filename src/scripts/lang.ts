@@ -9,6 +9,7 @@ import { initChart } from "./chart";
 import { initMap } from "./map-reveal";
 import { initMapView } from "./map-view";
 import { initEntry } from "./entry";
+import { initReading } from "./reading";
 import { LANG_KEY } from "../lib/locales";
 
 const REGIONS = ["[data-banner=\"top\"]", "header.controls", "main", "footer", "[data-banner=\"bottom\"]", "[data-entry]"];
@@ -47,6 +48,7 @@ async function show(url: string, push: boolean): Promise<void> {
   shownPath = new URL(url, location.href).pathname;
 
   initModeToggle();
+  initReading();
   initLedger();
   initLens();
   // Everything inside the swapped regions needs its listeners again (the map was missed in P12).

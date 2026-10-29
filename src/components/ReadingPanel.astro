@@ -1,0 +1,188 @@
+---
+// "Aa" (ROADMAP 27.4): a disclosure next to the mode switch. Four fixed reading profiles, each name
+// shown in its own face; text size in three steps; the custom cursor on or off; "Default".
+// Hidden until its script runs: without JavaScript the page reads in the default settings.
+import { t, type Locale } from "../lib/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const keys = [
+  "readingButton",
+  "readingTypeface",
+  "fontHoSo",
+  "fontBienBan",
+  "fontDeDoc",
+  "fontMayChu",
+  "readingSize",
+  "sizeSm",
+  "sizeMd",
+  "sizeLg",
+  "readingCursor",
+  "readingReset",
+];
+const [button, typeface, hoSo, bienBan, deDoc, mayChu, size, sm, md, lg, cursor, reset] = await Promise.all(keys.map((k) => t(k, locale)));
+// The name of each profile is set in that profile's face (the default one in the dossier's).
+const profiles = [
+  { id: "ho-so", name: hoSo, face: "var(--font-figure)" },
+  { id: "bien-ban", name: bienBan, face: '"Source Serif 4", "Source Serif 4 fallback", Georgia, serif' },
+  { id: "de-doc", name: deDoc, face: '"Lexend", "Lexend fallback", system-ui, sans-serif' },
+  { id: "may-chu", name: mayChu, face: '"IBM Plex Mono", "IBM Plex Mono fallback", ui-monospace, monospace' },
+];
+const sizes = [
+  { id: "sm", mark: "A−", name: sm },
+  { id: "md", mark: "A", name: md },
+  { id: "lg", mark: "A+", name: lg },
+];
+---
+
+<div class="reading">
+  <button
+    type="button"
+    class="reading__toggle"
+    aria-expanded="false"
+    aria-controls="reading-panel"
+    aria-label={button}
+    data-reading-toggle
+    hidden
+  >
+    <span aria-hidden="true">Aa</span>
+  </button>
+  <div class="reading__panel" id="reading-panel" data-reading-panel hidden>
+    <fieldset>
+      <legend>{typeface}</legend>
+      {
+        profiles.map((p) => (
+          <label class="reading__option">
+            <input type="radio" name="reading-font" value={p.id} />
+            <span style={`font-family: ${p.face}`}>{p.name}</span>
+          </label>
+        ))
+      }
+    </fieldset>
+    <fieldset>
+      <legend>{size}</legend>
+      <div class="reading__sizes">
+        {
+          sizes.map((s) => (
+            <label class="reading__option reading__option--size">
+              <input type="radio" name="reading-size" value={s.id} />
+              <span aria-hidden="true">{s.mark}</span>
+              <span class="visually-hidden">{s.name}</span>
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+    <label class="reading__option reading__check">
+      <input type="checkbox" data-reading-cursor />
+      <span>{cursor}</span>
+    </label>
+    <button type="button" class="reading__reset" data-reading-reset>{reset}</button>
+  </div>
+</div>
+
+<script>
+  import { initReading } from "../scripts/reading";
+  initReading();
+</script>
+
+<style>
+  .reading {
+    position: relative;
+  }
+  .reading__toggle,
+  .reading__reset {
+    min-width: var(--target);
+    min-height: var(--target);
+    padding: 0 calc(var(--space) * 1.5);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .reading__toggle[aria-expanded="true"] {
+    border-color: var(--accent);
+  }
+  /* Opens below the bar on desktop, above it on phones (the bar sits at the bottom there). */
+  .reading__panel {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + var(--space));
+    z-index: 20;
+    display: grid;
+    gap: calc(var(--space) * 1.5);
+    width: min(18rem, calc(100vw - 2 * var(--gutter)));
+    padding: calc(var(--space) * 2);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+  }
+  .reading__panel[hidden] {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .reading__panel {
+      position: fixed;
+      inset-inline: var(--gutter);
+      top: auto;
+      bottom: calc(var(--bar-height) + env(safe-area-inset-bottom) + var(--space));
+      width: auto;
+      max-height: calc(100svh - var(--bar-height) - 4 * var(--space));
+      overflow-y: auto;
+    }
+  }
+  fieldset {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  legend {
+    margin-bottom: var(--space);
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .reading__option {
+    display: flex;
+    align-items: center;
+    gap: var(--space);
+    min-height: var(--target);
+    padding: 0 var(--space);
+    color: var(--ink);
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .reading__option:has(input:checked) {
+    border-color: var(--accent);
+  }
+  .reading__option input {
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+  }
+  .reading__sizes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .reading__option--size {
+    justify-content: center;
+    font-weight: 700;
+  }
+  .reading__reset {
+    justify-self: start;
+  }
+</style>

@@ -17,6 +17,8 @@ import { NOINDEX } from "../lib/site";
 import { updatedStamp } from "../lib/updated";
 import { CURSOR_KEY } from "../scripts/cursor";
 import { GATE_KEY } from "../scripts/entry";
+import { FONT_KEY, SIZE_KEY } from "../scripts/reading";
+import ReadingPanel from "../components/ReadingPanel.astro";
 import EntryGate from "../components/EntryGate.astro";
 import { MODE_KEY } from "../scripts/mode";
 
@@ -51,7 +53,9 @@ const published = LOCALES.filter((l) => complete.has(l));
 // session, without a deep link (#...) or ?skip, and not when the page is opened for printing.
 // Blocked storage means no gate (we could not keep it to once a session).
 const gateScript = `var g="skip";try{if(!sessionStorage.getItem(${JSON.stringify(GATE_KEY)})&&!location.hash&&!/[?&]skip(=|&|$)/.test(location.search)&&!matchMedia("print").matches){sessionStorage.setItem(${JSON.stringify(GATE_KEY)},"1");g="show"}}catch(e){}document.documentElement.dataset.gate=g;`;
-const modeScript = `${gate ? gateScript : ""}document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
+// Reading settings (ROADMAP 27.5), before the first paint too: no flash of the default face/size.
+const readingScript = `try{var f=localStorage.getItem(${JSON.stringify(FONT_KEY)});if(f==="bien-ban"||f==="de-doc"||f==="may-chu")document.documentElement.dataset.font=f;var z=localStorage.getItem(${JSON.stringify(SIZE_KEY)});if(z==="sm"||z==="lg")document.documentElement.dataset.size=z}catch(e){}`;
+const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
 ---
 
 <!doctype html>
@@ -77,6 +81,7 @@ const modeScript = `${gate ? gateScript : ""}document.documentElement.dataset.js
     <header class="controls">
       <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} locales={published} />}<slot name="controls-start" /></div>
       <div class="controls__end">
+        <ReadingPanel locale={locale} />
         <ModeToggle locale={locale} />
       </div>
     </header>

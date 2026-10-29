@@ -2,7 +2,7 @@
 // localStorage, mirrored on <html data-cursor>, which the head script sets before first paint so
 // the cursor never flashes. Storage may be blocked (private mode, policies): reading then falls
 // back to "custom" and saving is skipped, the page works either way. The switch lives in the
-// "Aa" panel from P27; for now only on the dev page.
+// "Aa" panel (P27, src/components/ReadingPanel.astro) and on the dev page.
 export type CursorFx = "custom" | "system";
 export const CURSOR_KEY = "cursorFx";
 
