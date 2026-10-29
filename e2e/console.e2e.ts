@@ -108,7 +108,7 @@ test("13.3 reduced motion: the stamp is there at once, no animation", async ({ p
   await expect(row.locator("[data-stamp]")).toBeVisible();
 });
 
-test("13.4 / 20.5 viewfinder: vector only; map reticle Mat only; the portrait placeholder keeps it in both modes", async ({ page }) => {
+test("13.4 / 29 viewfinder: vector only, over the Mat photo only; map reticle Mat only", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await setMode(page, "mat");
   await page.goto("/vi/");
@@ -120,9 +120,9 @@ test("13.4 / 20.5 viewfinder: vector only; map reticle Mat only; the portrait pl
 
   await page.locator("[data-mode-toggle]").click();
   await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
-  // No real photo yet: the Giai mat frame shows the viewfinder, not an empty grey box (ROADMAP 20.5).
-  await expect(page.locator("[data-portrait] [data-placeholder]")).toHaveCount(1);
-  await expect(page.locator("[data-finder]")).toBeVisible();
+  // With the real photos (P29) the viewfinder is a Mat device: Giai mat shows the photo bare.
+  await expect(page.locator("[data-portrait] .portrait__pic--giai-mat")).toBeVisible();
+  await expect(page.locator("[data-finder]")).toBeHidden();
   await expect(page.locator('[data-place="da-nang"] .map__reticle')).toHaveCSS("opacity", "0");
 });
 

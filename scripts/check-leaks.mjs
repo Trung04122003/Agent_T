@@ -3,6 +3,7 @@
 // Also rejects source maps, image metadata (EXIF, GPS, XMP) and, while NOINDEX is on
 // (src/lib/site.ts), any HTML page without <meta name="robots" content="noindex">.
 // Prints file:line and rule only, never the matched text. Exit 1 on any violation.
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -120,11 +121,26 @@ if (!existsSync(target)) {
   process.exit(2);
 }
 
+// ROADMAP 29.8: nothing from private/ (the portrait originals and previews) may reach the site,
+// renamed or not: a file under a "private" folder, or with the same bytes as a private file.
+const privateDir = join(root, "private");
+const privateHashes = new Set(
+  existsSync(privateDir)
+    ? readdirSync(privateDir, { recursive: true, withFileTypes: true })
+        .filter((d) => d.isFile())
+        .map((d) => createHash("sha256").update(readFileSync(join(d.parentPath, d.name))).digest("hex"))
+    : [],
+);
+
 const violations = [];
 const files = readdirSync(target, { recursive: true, withFileTypes: true }).filter((d) => d.isFile());
 for (const d of files) {
   const path = join(d.parentPath, d.name);
   const rel = relative(target, path);
+  if (rel.split(/[\\/]/).includes("private")) violations.push(`${rel}: file from a private folder`);
+  if (privateHashes.size && privateHashes.has(createHash("sha256").update(readFileSync(path)).digest("hex"))) {
+    violations.push(`${rel}: same bytes as a file in private/`);
+  }
   if (d.name.endsWith(".map")) {
     violations.push(`${rel}: source map file`);
     continue;

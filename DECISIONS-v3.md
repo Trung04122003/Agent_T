@@ -39,4 +39,10 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 ## Buổi chụp ảnh (P29)
 - Ảnh gốc để ngoài git (`private/portrait-raw/`), chỉ bản đã xóa EXIF/GPS vào repo.
 - Chụp hai độ sáng cùng tư thế, cùng đồ, dùng chân máy: bản tối cho Mật, bản sáng hơn cho Giải mật.
+- **Chủ dự án chốt ở Checkpoint P29 (29/10/2026):**
+  - Mật dùng ảnh nghiêm (`calm`); Giải mật dùng **phương án B**, ảnh cười (`smile`), căn mắt để lúc giải mật chỉ nét mặt thay đổi.
+  - **Có làm mờ nền.** Đây là cách duy nhất để tên quán phía sau đầu không còn đọc được, vì khung cắt nào đủ rộng cũng chứa nó.
+  - Nhãn trên khung ảnh: "Agent T" (Mật) và "Lê Thái Trung" (Giải mật).
+  - Alt mô tả ảnh, không ghi địa điểm.
+  - Cả hai nằm trong `content/portrait.json`; toạ độ cắt nằm trong `tools/portrait/crops.json`.
 - Không logo công ty (nhất là Prudential), không đồ mang hơi hướng quân đội, không địa điểm nhận ra được.

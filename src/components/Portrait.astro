@@ -1,64 +1,88 @@
 ---
 // Portrait frame (UX section 5): one image per mode. Built only when both images exist and both
-// have alt text in vi and en; until then a neutral, decorative placeholder is shown.
-// Images go through astro:assets, which re-encodes them and drops EXIF/GPS (check-leaks verifies).
-import type { ImageMetadata } from "astro";
-import { Picture } from "astro:assets";
-import placeholder from "../assets/portrait/placeholder.jpg";
+// have alt text in vi and en; until then the empty frame with its viewfinder is shown.
+// The photos (ROADMAP P29) are the owner's one session, processed by tools/portrait/build.mjs into
+// public/portrait/ (AVIF, WebP, JPEG; 480, 720 and 960 wide; no metadata, check-leaks verifies): "low"
+// for Mat, "high-b" for Giai mat. Labels and alt text: content/portrait.json.
+import { existsSync } from "node:fs";
+import portraitJson from "../../content/portrait.json";
 import { t, type Locale } from "../lib/i18n";
-import { usePhotos, type PortraitAlt } from "../lib/portrait";
+import { usePhotos } from "../lib/portrait";
 
 interface Props {
   locale: Locale;
-  mat?: ImageMetadata;
-  giaiMat?: ImageMetadata;
-  alt?: PortraitAlt;
 }
-const { locale, mat, giaiMat, alt } = Astro.props;
+const { locale } = Astro.props;
 
-const hasPhotos = usePhotos(mat, giaiMat, alt);
+const PHOTOS = { mat: "low", giaiMat: "high-b" } as const;
+const have = (name: string) => existsSync(`public/portrait/${name}-960.jpg`);
+const hasPhotos = usePhotos(have(PHOTOS.mat) || undefined, have(PHOTOS.giaiMat) || undefined, portraitJson.alt);
 const label = await t("portraitLabel", locale);
+/** srcset for one variant and format: 480, 720 and 960 wide (tools/portrait/build.mjs). */
+const set = (name: string, ext: string) => [480, 720, 960].map((w) => `/portrait/${name}-${w}.${ext} ${w}w`).join(", ");
 
 // Viewfinder (ROADMAP 13.4), Mat only: vector lines over the frame, in a 400 x 500 box (4:5).
 const W = 400;
 const H = 500;
 const ticks = (len: number, step: number) => Array.from({ length: Math.floor(len / step) - 1 }, (_, i) => (i + 1) * step);
 
-const picture = {
-  formats: ["avif", "webp"] as ("avif" | "webp")[],
-  fallbackFormat: "webp" as const,
-  widths: [480, 800, 1200],
-  sizes: "(min-width: 900px) 40vw, 100vw",
-};
+// The frame is 40vw from 900 px (473 px at 1280), the full column below.
+const picture = { sizes: "(min-width: 900px) 40vw, 100vw" };
 ---
 
 <div class="portrait brackets" data-portrait>
-  <p class="portrait__label">{label}</p>
   {
-    hasPhotos && mat && giaiMat && alt ? (
-      <>
-        <Picture
-          {...picture}
-          src={mat}
-          alt={alt.mat[locale]}
-          class="portrait__img"
-          pictureAttributes={{ class: "portrait__pic--mat" }}
-          loading="eager"
-        />
-        <Picture
-          {...picture}
-          src={giaiMat}
-          alt={alt.giaiMat[locale]}
-          class="portrait__img"
-          pictureAttributes={{ class: "portrait__pic--giai-mat" }}
-          loading="lazy"
-        />
-      </>
+    hasPhotos ? (
+      <p class="portrait__label">
+        <span class="only-mat">{portraitJson.label.mat[locale]}</span>
+        <span class="only-giai-mat">{portraitJson.label.giaiMat[locale]}</span>
+      </p>
     ) : (
-      <Picture {...picture} src={placeholder} alt="" class="portrait__img" loading="eager" data-placeholder />
+      <p class="portrait__label">{label}</p>
     )
   }
-  {/* Mat only over a real photo; until there is one it is the placeholder in both modes (ROADMAP 20.5). */}
+  {
+    hasPhotos ? (
+      <>
+        {/* Mat: the first image the reader sees, so the one fetched first (ROADMAP 29.7). */}
+        <picture class="portrait__pic--mat">
+          <source type="image/avif" srcset={set(PHOTOS.mat, "avif")} sizes={picture.sizes} />
+          <source type="image/webp" srcset={set(PHOTOS.mat, "webp")} sizes={picture.sizes} />
+          <img
+            class="portrait__img"
+            src={`/portrait/${PHOTOS.mat}-960.jpg`}
+            srcset={set(PHOTOS.mat, "jpg")}
+            sizes={picture.sizes}
+            alt={portraitJson.alt.mat[locale]}
+            width="960"
+            height="1200"
+            decoding="async"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </picture>
+        {/* Giai mat: lazy, then fetched when the browser is idle (script below), ready for Declassify. */}
+        <picture class="portrait__pic--giai-mat">
+          <source type="image/avif" srcset={set(PHOTOS.giaiMat, "avif")} sizes={picture.sizes} />
+          <source type="image/webp" srcset={set(PHOTOS.giaiMat, "webp")} sizes={picture.sizes} />
+          <img
+            class="portrait__img"
+            src={`/portrait/${PHOTOS.giaiMat}-960.jpg`}
+            srcset={set(PHOTOS.giaiMat, "jpg")}
+            sizes={picture.sizes}
+            alt={portraitJson.alt.giaiMat[locale]}
+            width="960"
+            height="1200"
+            decoding="async"
+            loading="lazy"
+            fetchpriority="low"
+            data-portrait-later
+          />
+        </picture>
+      </>
+    ) : null
+  }
+  {/* Mat only over a real photo; without photos it fills the empty frame in both modes (ROADMAP 20.5). */}
   <svg class:list={["portrait__finder", hasPhotos && "only-mat"]} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false" data-finder>
     <!-- Edge rulers: short ticks every 20, long every 100. -->
     <g class="finder__ticks">
@@ -83,6 +107,17 @@ const picture = {
     </g>
   </svg>
 </div>
+
+<script>
+  // ROADMAP 29.7: the Giai mat photo waits until the page is idle, then is fetched, so the switch
+  // to Giai mat never waits for it. (Without JS it stays lazy: shown when its mode is.)
+  const later = () => {
+    for (const img of document.querySelectorAll<HTMLImageElement>("img[data-portrait-later]")) img.loading = "eager";
+  };
+  const idle = () => ("requestIdleCallback" in window ? requestIdleCallback(later, { timeout: 3000 }) : setTimeout(later, 1500));
+  if (document.readyState === "complete") idle();
+  else addEventListener("load", idle, { once: true });
+</script>
 
 <style>
   .portrait {
@@ -125,9 +160,6 @@ const picture = {
   }
   .finder__dot {
     fill: var(--accent);
-  }
-  .portrait :global(img[data-placeholder]) {
-    opacity: 0.25;
   }
   .portrait :global(picture),
   .portrait :global(.portrait__img) {

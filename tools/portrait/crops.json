@@ -1,0 +1,29 @@
+{
+  "_comment": "ROADMAP 29.2-29.5, read by tools/portrait/build.mjs. crop and eyes in the original's pixels (1920 x 2560); mask and face in output pixels (960 x 1200). smile has no crop: build.mjs derives it from the eyes, so the eyes sit where they sit in calm, at the same scale. Measured 29/10/2026 on the owner's originals; the owner may adjust any value.",
+  "calm": {
+    "crop": { "left": 586, "top": 637, "width": 960, "height": 1200 },
+    "eyes": { "left": [1017, 1068], "right": [1115, 1070] },
+    "mask": {
+      "feather": 14,
+      "sigma": 18,
+      "shapes": [
+        { "cx": 484, "cy": 440, "rx": 128, "ry": 188 },
+        { "cx": 500, "cy": 1160, "rx": 440, "ry": 520 }
+      ]
+    }
+  },
+  "smile": {
+    "eyes": { "left": [1072, 990], "right": [1172, 991] },
+    "mask": {
+      "feather": 14,
+      "sigma": 18,
+      "shapes": [
+        { "cx": 484, "cy": 440, "rx": 128, "ry": 188 },
+        { "cx": 500, "cy": 1160, "rx": 440, "ry": 520 }
+      ]
+    }
+  },
+  "face": { "left": 400, "top": 360, "width": 160, "height": 240 },
+  "ship": { "mat": "low", "giaiMat": "high-b" },
+  "_ship": "Owner's choice at Checkpoint P29 (29/10/2026): option B (the smile) for Giai mat, background blur on."
+}

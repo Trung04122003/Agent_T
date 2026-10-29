@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -54,6 +54,23 @@ describe("check-leaks", () => {
     const other = run("allow-other", { "index.html": page(`${allowed[0]} lethaitrung.work@gmail.com`) });
     expect(other.code).toBe(1);
     expect(other.out).toContain("index.html:1: email address");
+  });
+
+  it("29.8 fails on a file in a private folder", () => {
+    const dir = join(base, "private-path");
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(join(dir, "private"), { recursive: true });
+    writeFileSync(join(dir, "index.html"), page("ok"));
+    writeFileSync(join(dir, "private", "note.txt"), "x");
+    const r = spawnSync(process.execPath, ["scripts/check-leaks.mjs", dir], { encoding: "utf8" });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/private[\\/]note\.txt: file from a private folder/);
+  });
+
+  it.skipIf(!existsSync("private/portrait-raw/calm.jpg"))("29.8 fails on a portrait original copied under another name", () => {
+    const r = run("private-copy", { "index.html": page("ok"), "photo.jpg": readFileSync("private/portrait-raw/calm.jpg") });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain("photo.jpg: same bytes as a file in private/");
   });
 
   it("24.1 refuses an allowlist with more than one address", () => {

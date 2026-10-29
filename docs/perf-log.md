@@ -3,6 +3,29 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-10-29 · P29 · The real portrait
+
+The Mat photo is now the page's LCP element (before P29 it was text, next to the placeholder).
+Lighthouse mobile (`node scripts/lighthouse.mjs`), `/vi/`, run by run:
+
+| Build | Performance | LCP | Note |
+|---|---|---|---|
+| Before (P28, placeholder) | 74, 99 | 2.2, 1.7 s | first run cold, as usual |
+| Photos, 480 + 960 wide | 98, 96, 95 | 2.1, **2.6**, **2.9** s | median over the 2.5 s target |
+| Photos, 480 + 720 + 960 wide, `decoding="async"` (kept) | 86, 99, 99 | 2.0, 1.8, 2.0 s | 86: cold first run, TBT 510 ms |
+
+Why the first build missed: Lighthouse's phone shows the 380 px frame at DPR 1.75, which needs
+about 665 px, so it fetched the 960 px AVIF (33 KB). A 720 px variant (20.7 KB AVIF) now serves
+most phones. The report confirms the photo is found in the first HTML with `fetchpriority=high`,
+starts loading at 70 ms, and is not lazy. The Giai mat photo loads at about 420 ms, at low
+priority, after the LCP. A `<link rel=preload>` was not needed.
+
+`/en/` with the first photo build: 95–98, LCP 2.3–2.5 s.
+
+Files (`public/portrait/`, from `tools/portrait/build.mjs`): 18 files, 2 variants × 3 widths × 3
+formats. The largest is `high-b-960.jpg` at 67.6 KB (budget 120 KB). The AVIF a browser normally
+gets weighs 11–35 KB.
+
 ## 2026-10-29 · P28 · Night vision, grain, stirring bars, Giai mat sheet
 
 Tool: `node tools/perf/cursor-frames.mjs` (the P22 pointer sweep over ledger, chart and map, then a

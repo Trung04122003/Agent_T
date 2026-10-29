@@ -109,6 +109,8 @@ for (const [mode, start, what] of [["mat", -28, "start wide and close in on"], [
 test(`22.1 ${mode}: the corners ${what} the new target (transform only)`, async ({ page }) => {
   await setMode(page, mode);
   await page.goto("/vi/");
+  // The layer's code loads on demand: move only once it is listening, or the moves go unheard.
+  await expect(page.locator("[data-cfx]")).toHaveCount(1);
   await page.mouse.move(300, 300);
   await page.mouse.move(320, 310, { steps: 3 });
   await expect(page.locator("[data-cfx]")).toHaveClass(/is-on/);

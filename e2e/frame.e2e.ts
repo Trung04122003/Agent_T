@@ -3,6 +3,7 @@ import { expect, test } from "./test";
 
 // ROADMAP 2.3 / 12.4: corner brackets on the frame, monospace label, build-date stamp.
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
+const portraitJson = JSON.parse(readFileSync("content/portrait.json", "utf8"));
 
 test("portrait frame has accent corner brackets just outside it, and a monospace label", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -16,8 +17,9 @@ test("portrait frame has accent corner brackets just outside it, and a monospace
   });
   expect(before).toMatchObject({ content: '""', inset: "-6px", layers: 8 });
   expect(before.image).toContain("rgb(184, 151, 90)"); // Mat accent #b8975a
+  // The owner's label over the real photo (P29): "Agent T" in Mat, the default mode.
   const label = page.locator(".portrait__label");
-  await expect(label).toHaveText(ui.portraitLabel.vi);
+  await expect(label.locator("span:visible")).toHaveText(portraitJson.label.mat.vi);
   expect(await label.evaluate((el) => getComputedStyle(el).fontFamily)).toContain("IBM Plex Mono");
 });
 

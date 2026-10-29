@@ -1,15 +1,12 @@
 ---
-// Dev-only: exercises the two-photo path of Portrait before real photos exist (ROADMAP 2.2).
-// The placeholder stands in for both images; alt texts here are test labels, not content.
-import placeholder from "../assets/portrait/placeholder.jpg";
+// Dev-only: the portrait frame on its own, for the mode-change tests (e2e/motion, e2e/portrait).
+// Since P29 it shows the real photos (content/portrait.json, public/portrait/).
 import Portrait from "../components/Portrait.astro";
 import Base from "../layouts/Base.astro";
-
-const alt = { mat: { vi: "thử mat", en: "test mat" }, giaiMat: { vi: "thử giải mật", en: "test giai mat" } };
 ---
 
 <Base locale="vi" title="Portrait (dev)">
   <div class="page" style="max-width: 420px">
-    <Portrait locale="vi" mat={placeholder} giaiMat={placeholder} alt={alt} />
+    <Portrait locale="vi" />
   </div>
 </Base>

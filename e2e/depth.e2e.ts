@@ -57,7 +57,9 @@ test("28.2 Mat bars stir with block characters for 200 ms, never real text; not 
   const res = await page.goto("/vi/");
   expect(await res!.text()).not.toMatch(/[▓▒░]/); // nothing of it in the page source
   const bar = page.locator(".gate__legal .redact");
-  await bar.hover();
+  // force: the mouse still really moves there (pointerover fires); what is under test is the stir,
+  // not Playwright's actionability wait, which timed out once on a busy machine.
+  await bar.hover({ force: true });
   const cover = bar.locator(".stir");
   await expect(cover).toHaveCount(1);
   const text = (await cover.textContent()) ?? "";
@@ -68,7 +70,7 @@ test("28.2 Mat bars stir with block characters for 200 ms, never real text; not 
   // A ledger redaction stirs over its bars only, its category label stays readable.
   const red = page.locator("[data-kind=\"classified\"] .row__head .redaction").first(); // always on screen
   await red.scrollIntoViewIfNeeded();
-  await red.locator("svg").hover();
+  await red.locator("svg").hover({ force: true });
   const ledgerCover = red.locator(".stir");
   await expect(ledgerCover).toHaveCount(1);
   const [svgBox, coverBox] = [await red.locator("svg").boundingBox(), await ledgerCover.boundingBox()];

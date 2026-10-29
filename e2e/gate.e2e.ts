@@ -18,6 +18,7 @@ function allowedStrings(): Set<string> {
   walk(identity);
   walk(ui);
   walk(JSON.parse(readFileSync("content/lenses.json", "utf8"))); // the readers' own lines (P25)
+  walk(JSON.parse(readFileSync("content/portrait.json", "utf8"))); // portrait labels and alt (P29)
   return out;
 }
 
@@ -76,6 +77,7 @@ test("Gate contains no text that is missing from content/", async ({ page }) => 
     const found: string[] = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.parentElement?.closest("script, style")) continue; // code, not text on the page
       const s = n.textContent?.trim();
       if (s) found.push(s);
     }

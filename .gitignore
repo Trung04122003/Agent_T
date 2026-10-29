@@ -14,3 +14,7 @@ data/
 
 # Performance measurements (docs/performance-playbook.md)
 .perf/
+
+# Portrait originals and previews (ROADMAP P29): never committed; only the processed, metadata-free
+# images go into the repo
+private/

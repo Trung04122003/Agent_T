@@ -1,0 +1,11 @@
+{
+  "label": {
+    "mat": { "vi": "Agent T", "en": "Agent T" },
+    "giaiMat": { "vi": "Lê Thái Trung", "en": "Lê Thái Trung" }
+  },
+  "alt": {
+    "mat": { "vi": "Chân dung Lê Thái Trung, áo vest đen, đeo kính", "en": "Portrait of Lê Thái Trung in a black blazer and glasses" },
+    "giaiMat": { "vi": "Chân dung Lê Thái Trung, áo vest đen, đeo kính, đang cười", "en": "Portrait of Lê Thái Trung in a black blazer and glasses, smiling" }
+  },
+  "notes": "Owner, Checkpoint P29 (29/10/2026): frame labels 'Agent T' (Mat) and 'Lê Thái Trung' (Giai mat); alt describes the photo, no place (ROADMAP 29.8). Images: public/portrait/ from tools/portrait/build.mjs (low = calm, high-b = smile, background blurred)."
+}
