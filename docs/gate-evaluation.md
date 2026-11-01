@@ -18,14 +18,14 @@ Công cụ: `node tools/gate-eval.mjs [--build]`, chạy trên bản `build:prod
 - Cổng không bắt chờ. Mọi nút bấm được ngay khi trang vừa hiện ra: "Bỏ qua" hiện ngay lần vẽ đầu, các nút lens bấm được trong lúc chúng còn đang trượt vào. Không có hẹn giờ nào giữ người xem lại.
 - Một thao tác là vào, ở cả ba cách dùng. Sau thao tác đó, trang chính và tiêu điểm ở `<h1>` có ngay, trong 50–220 ms.
 - Phần trình diễn (giải mã chữ, các nút trượt vào, dòng của lens gõ ra) kéo dài khoảng 1,5 s trên máy bàn và 2 s trên điện thoại chậm. Người xem không phải xem hết mới được vào.
-- Không quá 2 hiệu ứng chạy cùng lúc, kể cả khi đổi ngôn ngữ (`e2e/entry.e2e.ts`). Không thêm yêu cầu mạng. JS của cổng là 2 373 B gzip, giới hạn là 3 KB.
+- Không quá 2 hiệu ứng chạy cùng lúc, kể cả khi đổi ngôn ngữ (`e2e/entry.e2e.ts`). Không thêm yêu cầu mạng. JS của cổng là 3 078 B gzip (kể cả màn chờ sau khi chọn lens), giới hạn là 3,2 KB (nới từ 3 KB ngày 01/11/2026).
 
 ## 2. Đối chiếu với yêu cầu thiết kế
 
 | Yêu cầu (UX-v3, chủ dự án) | Hiện trạng |
 |---|---|
-| Không giả vờ tải: không thanh %, không chữ "loading" | Đạt, có test |
-| Bỏ qua được bằng một thao tác, "Bỏ qua" hiện từ giây 0 | Đạt. Nếu script lỗi, "Bỏ qua" vẫn là liên kết thật (`?skip=1`) nên người xem không bị kẹt |
+| Màn cổng không giả vờ tải: không số %, không chữ "loading". Sau khi chọn lens có màn chờ đặc nhiệm 1,68 giây (chủ dự án chọn 01/11/2026, thay 25.2), bỏ qua được | Đạt, có test |
+| Bỏ qua được bằng một thao tác, "Bỏ qua" hiện từ giây 0 | Đạt. Nếu script lỗi, "Bỏ qua" vẫn là liên kết thật (`?skip=1`) nên người xem không bị kẹt. Từ 01/11/2026 "Bỏ qua"/Esc chạy màn chờ rồi vào hồ sơ không có lens (dòng định vị chung); `enter` ghi `lens: null` |
 | Hiện ở mọi lần tải trang, kể cả tải lại (chủ dự án đổi 01/11/2026, thay cho "tối đa một lần mỗi phiên"); không hiện với liên kết sâu, `?skip`, khi in, khi tắt JS | Đạt, mỗi trường hợp có test |
 | Trợ năng: dialog, `inert`, tiêu điểm vào và trả về `<h1>` | Đạt, axe không báo lỗi |
 | Chủ dự án: đập vào mắt nhưng không rối | Đạt: một nhịp mở (dải, mật danh giải mã, câu hỏi, ba lens), một vòng ngắm tĩnh làm nền, và dòng của phân khúc chỉ hiện khi người xem trỏ vào |

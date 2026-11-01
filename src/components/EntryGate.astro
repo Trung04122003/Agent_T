@@ -1,9 +1,11 @@
 ---
-// Entry gate (ROADMAP P25, UX-v3 section 2): a functional splash, not a fake loader. It identifies
-// the reader: the lens buttons enter at once, the flags pick the language, "Skip" (shown from the
-// first moment) enters with the default lens. No timer, no percentage, no "loading".
-// Hidden unless the head script in Base.astro set data-gate="show" (JS on, first view this
-// session, no deep link, no ?skip, not printing). Without JS the page simply reads as before.
+// Entry gate (ROADMAP P25, UX-v3 section 2): a functional splash that identifies the reader: the
+// flags pick the language, "Skip" (shown from the first moment) enters with no lens. Entering
+// either way plays the "special-ops" opening (owner's choice, 2026-11-01, replacing 25.2's "no
+// loader"): three steps of about half a second, a bar and a scan that lights the background grid,
+// then the aperture. It can be skipped; reduced motion goes straight in.
+// Hidden unless the head script in Base.astro set data-gate="show" (JS on, every load, no deep
+// link, no ?skip, not printing). Without JS the page simply reads as before.
 // Owner request (28/10/2026): it should catch the eye without clutter. The screen decodes as it
 // opens (and again on a language change), the lenses come in one by one, and pointing at a lens
 // types out that reader's own line (content/lenses.json) under the buttons.
@@ -23,6 +25,12 @@ const codename = codenameFor(await getIdentity(), locale);
 const lenses = getLenses();
 const keys = ["portraitLabel", "classLevelLabel", "modeMat", "modeGiaiMat", "codenameLabel", "entryTitle", "entrySkip"];
 const [file, level, mat, giaiMat, codenameLabel, title, skip] = await Promise.all(keys.map((k) => t(k, locale)));
+const load = {
+  kicker: await t("entryLoadKicker", locale),
+  unknown: await t("entryLoadUnknown", locale),
+  steps: await Promise.all(["entryLoadVerify", "entryLoadDecrypt", "entryLoadUnlock"].map((k) => t(k, locale))),
+  granted: await t("entryLoadGranted", locale),
+};
 ---
 
 <div class="entry" role="dialog" aria-modal="true" aria-labelledby="entry-title" data-entry>
@@ -84,6 +92,36 @@ const [file, level, mat, giaiMat, codenameLabel, title, skip] = await Promise.al
       <a class="entry__skip" href="?skip=1" data-entry-skip><span data-entry-decode>{skip}</span> <span aria-hidden="true">›</span></a>
     </div>
   </div>
+  {/* The opening after a lens is chosen (entry.ts shows it). The steps read out once as a status;
+      the bar and the scan are decoration. */}
+  <div class="entry__load" role="status" data-entry-load>
+    <div class="entry__legs" aria-hidden="true">
+      {[0, 1, 2].map((n) => (
+        <span class="entry__leg"><span class="entry__scan" style={`--n:${n}`} /></span>
+      ))}
+    </div>
+    <div class="entry__load-body">
+      <p class="entry__label">{load.kicker}</p>
+      {/* Skip and Esc enter with no lens: this stays. A chosen lens writes its name over it. */}
+      <p class="entry__load-lens" data-entry-load-lens>{load.unknown}</p>
+      <ol class="entry__load-steps">
+        {load.steps.map((s, n) => (
+          <li style={`--n:${n}`}>
+            <span aria-hidden="true">0{n + 1}</span>
+            {s}
+            <b aria-hidden="true">[ OK ]</b>
+          </li>
+        ))}
+      </ol>
+      <div class="entry__load-bar" aria-hidden="true">
+        {[0, 1, 2].map((n) => (
+          <span class="entry__load-third"><span class="entry__load-fill" style={`--n:${n}`} /></span>
+        ))}
+      </div>
+      <p class="entry__load-granted">{load.granted}</p>
+      <button type="button" class="entry__skip" data-entry-load-skip>{skip} <span aria-hidden="true">›</span></button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -135,6 +173,9 @@ const [file, level, mat, giaiMat, codenameLabel, title, skip] = await Promise.al
     }
   }
   .entry__body {
+    /* Row 2 named outright: the opening shares it (it would push this into a new row otherwise). */
+    grid-row: 2;
+    grid-column: 1;
     position: relative;
     align-self: center;
     justify-self: center;
@@ -254,6 +295,172 @@ const [file, level, mat, giaiMat, codenameLabel, title, skip] = await Promise.al
     .entry.is-relang .entry__strip,
     .entry.is-relang .entry__title {
       animation: none;
+    }
+  }
+  /* The opening (owner, 2026-11-01). Three steps, each 480 ms, 60 ms apart (LOAD in entry.ts): the
+     bar fills a third and a scan sweeps a third of the screen, lighting the grid behind it. Two
+     things move at a time (the motion budget); the step marks switch at once. */
+  .entry__load {
+    --step: 480ms;
+    --pitch: 540ms;
+    grid-row: 2;
+    grid-column: 1;
+    position: relative;
+    display: none;
+    place-items: center;
+  }
+  .entry.is-loading > .entry__load {
+    display: grid;
+  }
+  .entry.is-loading > .entry__body {
+    visibility: hidden;
+  }
+  .entry__legs {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    pointer-events: none;
+  }
+  .entry__leg {
+    overflow: hidden;
+  }
+  /* Lit grid, brass, with a bright leading edge: the scan. */
+  .entry__scan {
+    display: block;
+    height: 100%;
+    transform: translateX(-101%);
+    background:
+      linear-gradient(to left, var(--accent) 0 2px, color-mix(in oklab, var(--accent) 30%, transparent) 2px, transparent 56px),
+      repeating-linear-gradient(0deg, color-mix(in oklab, var(--accent) 30%, transparent) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, color-mix(in oklab, var(--accent) 30%, transparent) 0 1px, transparent 1px 32px),
+      color-mix(in oklab, var(--accent) 10%, transparent);
+  }
+  .entry.is-loading .entry__scan {
+    animation: entry-scan var(--step) cubic-bezier(0.4, 0, 0.2, 1) calc(var(--n) * var(--pitch)) both;
+  }
+  :global(:root[dir="rtl"]) .entry.is-loading .entry__scan {
+    animation-name: entry-scan-rtl;
+  }
+  .entry__load-body {
+    position: relative;
+    width: min(100% - 2 * var(--gutter), 34rem);
+    padding: calc(var(--space) * 3);
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+    border: 1px solid var(--accent);
+  }
+  .entry__load-lens {
+    margin: var(--space) 0 calc(var(--space) * 3);
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .entry__load-steps {
+    display: grid;
+    gap: var(--space);
+    margin: 0 0 calc(var(--space) * 2);
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .entry__load-steps li {
+    display: grid;
+    grid-template-columns: 2.5ch 1fr auto;
+    gap: var(--space);
+  }
+  .entry__load-steps b {
+    font-weight: 500;
+    color: var(--accent);
+  }
+  /* A step lights when it starts; its mark shows when it ends: 0 s switches, never "moving". */
+  .entry.is-loading .entry__load-steps li {
+    animation: entry-on 0s step-start calc(var(--n) * var(--pitch)) both;
+  }
+  .entry.is-loading .entry__load-steps b,
+  .entry.is-loading .entry__load-granted {
+    animation: entry-show 0s step-start calc(var(--n, 3) * var(--pitch) + var(--step)) both;
+  }
+  .entry.is-loading .entry__load-granted {
+    --n: 2;
+  }
+  .entry__load-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    height: 10px;
+    margin-bottom: calc(var(--space) * 2);
+  }
+  .entry__load-third {
+    overflow: hidden;
+    background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 8px);
+  }
+  .entry__load-fill {
+    display: block;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 8px);
+  }
+  :global(:root[dir="rtl"]) .entry__load-fill {
+    transform-origin: right;
+  }
+  .entry.is-loading .entry__load-fill {
+    animation: entry-fill var(--step) linear calc(var(--n) * var(--pitch)) both;
+  }
+  /* The same Skip, as a button: no browser box. */
+  .entry__load .entry__skip {
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .entry__load-granted {
+    margin: 0 0 var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  @keyframes entry-scan {
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes entry-scan-rtl {
+    from {
+      transform: translateX(101%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes entry-fill {
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes entry-on {
+    from {
+      opacity: 0.45;
+    }
+    to {
+      opacity: 1;
+      color: var(--ink);
+    }
+  }
+  @keyframes entry-show {
+    from {
+      visibility: hidden;
+    }
+    to {
+      visibility: visible;
     }
   }
   @keyframes entry-sweep {

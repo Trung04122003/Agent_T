@@ -212,14 +212,20 @@ test("25.3 one action enters: a lens button enters with that lens", async ({ pag
   await expect(page.locator("main")).not.toHaveAttribute("inert", /.*/);
 });
 
+// Owner, 2026-11-01: Skip and Esc enter with no lens (they used to pick Partner): the common
+// positioning line, no lens pressed, no ?lens=, even when a lens is remembered from before.
 for (const how of ["Skip", "Esc"] as const) {
-  test(`25.3 ${how} enters with the default lens (Partner)`, async ({ page }) => {
+  test(`25.3 ${how} enters with no lens: the common positioning line`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("lens", "client")); // remembered, not applied
     await page.goto("/vi/");
     if (how === "Skip") await gateOf(page).locator("[data-entry-skip]").click();
     else await page.keyboard.press("Escape");
-    await expect(gateOf(page)).toBeHidden();
-    expect(new URL(page.url()).searchParams.get("lens")).toBe("partner");
-    await expect(page.locator('[data-lens="partner"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(gateOf(page)).toBeHidden({ timeout: 4000 });
+    expect(new URL(page.url()).searchParams.get("lens")).toBeNull();
+    for (const id of ["partner", "client", "curious"]) await expect(page.locator(`[data-lens="${id}"]`)).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("[data-positioning]:visible")).toHaveCount(1);
+    await expect(page.locator("[data-positioning-lens]:visible")).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem("lens"))).toBe("client"); // kept for later
   });
 }
 
@@ -235,13 +241,16 @@ test("25.4 lens and language are remembered for later visits; the lens can still
   await expect(gateOf(first)).toBeHidden();
   await first.close();
 
-  // A later visit (new tab = new session): the gate shows again; Skip uses the remembered lens.
+  // A later visit (new tab = new session): the gate shows again, in English. Skip enters with no
+  // lens (owner, 2026-11-01); the remembered one is kept for later.
   const later = await context.newPage();
   await later.goto("/");
   await expect(later).toHaveURL(/\/en\/$/);
   await expect(gateOf(later)).toBeVisible();
   await gateOf(later).locator("[data-entry-skip]").click();
-  await expect(later.locator('[data-lens="curious"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(gateOf(later)).toBeHidden({ timeout: 4000 });
+  await expect(later.locator('[data-lens="curious"]')).toHaveAttribute("aria-pressed", "false");
+  expect(await later.evaluate(() => localStorage.getItem("lens"))).toBe("curious");
   // "In what capacity are you here?" still changes it, and that is remembered too.
   await later.locator('[data-lens="client"]').click();
   expect(await later.evaluate(() => localStorage.getItem("lens"))).toBe("client");
@@ -291,7 +300,7 @@ test("25.5 dialog semantics, inert page, focus in and back; axe passes", async (
   await expect(page.locator("#gate-codename")).toBeFocused();
 });
 
-test("25.6 no extra request; the gate's JS is at most 3 KB gzip", async ({ page, browser }) => {
+test("25.6 no extra request; the gate's JS is at most 3.2 KB gzip", async ({ page, browser }) => {
   const urls = async (p: Page, path: string) => {
     const seen: string[] = [];
     p.on("request", (r) => seen.push(new URL(r.url()).pathname));
@@ -318,7 +327,8 @@ test("25.6 no extra request; the gate's JS is at most 3 KB gzip", async ({ page,
   expect(bodies.some((b) => b.includes("data-entry-lens")), "gate module found").toBe(true);
   const size = gzipSync(head).length + bodies.reduce((n, b) => n + gzipSync(b).length, 0);
   test.info().annotations.push({ type: "size", description: `gate JS ${size} B gzip` });
-  expect(size).toBeLessThanOrEqual(3 * 1024);
+  // 3 KB until the opening after a lens (owner, 2026-11-01): 3.2 KB since.
+  expect(size).toBeLessThanOrEqual(3.2 * 1024);
 });
 
 test("25.7 a lens line replaces the common line only where the owner wrote one", async ({ page }) => {
@@ -341,4 +351,129 @@ test("25.7 a lens line replaces the common line only where the owner wrote one",
   await page.locator('[data-lens="partner"]').click();
   await expect(page.locator('[data-positioning-lens="client"]')).toBeHidden();
   await expect(page.locator("[data-positioning]:visible")).toHaveCount(1);
+});
+
+// Owner request 2026-11-01: after a lens is chosen, a "special-ops" opening (three ~half-second
+// steps, a bar and a scan that lights the grid), then the aperture. Replaces 25.2's "no loader".
+test.describe("the opening after a lens is chosen", () => {
+  const lensesIn = (page: Page) => page.waitForFunction(() => performance.getEntriesByName("gate:lenses-in").length > 0);
+  const enteredAt = (page: Page, timeout = 4000) =>
+    page.waitForFunction(() => performance.getEntriesByName("gate:entered")[0]?.startTime ?? 0, null, { timeout }).then((h) => h.jsonValue());
+
+  test("names the lens, runs three steps, then opens the file; transform only, each step <= 600 ms", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/vi/");
+    await lensesIn(page);
+    const load = gateOf(page).locator("[data-entry-load]");
+    await expect(load).toBeHidden();
+    // Watch, frame by frame, when the last mark and "access granted" show (they are up for a
+    // moment only, before the aperture takes the gate away).
+    await page.evaluate(() => {
+      const w = window as unknown as { __seen: Record<string, boolean> };
+      w.__seen = {};
+      const tick = () => {
+        const shown = (sel: string) => {
+          const el = document.querySelector(sel);
+          return !!el && getComputedStyle(el).visibility === "visible" && el.getClientRects().length > 0;
+        };
+        if (shown(".entry__load-steps li:last-child b")) w.__seen["last"] = true;
+        if (shown(".entry__load-granted")) w.__seen["granted"] = true;
+        if (document.documentElement.dataset["gate"] === "show") requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const clickedAt = await page.evaluate(() => performance.now());
+    await gateOf(page).locator('[data-entry-lens="client"]').click();
+    await expect(load).toBeVisible();
+    await expect(load).toHaveAttribute("role", "status");
+    await expect(load.locator("[data-entry-load-lens]")).toHaveText(lenses.find((l) => l.id === "client")!.label.vi);
+    await expect(load.locator("[data-entry-load-skip]")).toBeFocused();
+    await expect(load.locator(".entry__load-steps li")).toHaveText([ui.entryLoadVerify.vi, ui.entryLoadDecrypt.vi, ui.entryLoadUnlock.vi].map((s) => new RegExp(s)));
+    // What moves: the bar and the scan, by transform, each part at most 600 ms.
+    const moves = await load.evaluate((l) =>
+      l.getAnimations({ subtree: true }).map((a) => ({
+        name: (a as CSSAnimation).animationName,
+        duration: Number(a.effect!.getComputedTiming().duration),
+        props: Object.keys((a.effect as KeyframeEffect).getKeyframes()[1] ?? {}).filter((k) => !["offset", "easing", "composite", "computedOffset"].includes(k)),
+      })),
+    );
+    for (const m of moves) expect(m.duration, m.name).toBeLessThanOrEqual(600);
+    for (const m of moves.filter((x) => x.name === "entry-scan" || x.name === "entry-fill")) expect(m.props).toEqual(["transform"]);
+    expect(moves.filter((m) => m.name === "entry-scan")).toHaveLength(3);
+    expect(moves.filter((m) => m.name === "entry-fill")).toHaveLength(3);
+    const at = (await enteredAt(page)) as number;
+    // All three marks and "access granted" showed before it went on.
+    expect(await page.evaluate(() => (window as unknown as { __seen: Record<string, boolean> }).__seen)).toEqual({ last: true, granted: true });
+    expect(at - clickedAt).toBeGreaterThanOrEqual(1600); // the owner's longer wait, really waited
+    await expect(gateOf(page)).toBeHidden();
+    await expect(page.locator("#gate-codename")).toBeFocused();
+    expect(new URL(page.url()).searchParams.get("lens")).toBe("client");
+  });
+
+  test("at most 2 things move at once during the opening", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/vi/");
+    await lensesIn(page);
+    await gateOf(page).locator('[data-entry-lens="partner"]').click();
+    const { max, groups } = await page.evaluate(
+      () =>
+        new Promise<{ max: number; groups: string[] }>((done) => {
+          let max = 0;
+          let groups: string[] = [];
+          const start = performance.now();
+          const tick = () => {
+            const moving = document.getAnimations().filter((a) => {
+              if (a.playState !== "running") return false;
+              const t = (a.effect as KeyframeEffect).getComputedTiming();
+              const local = Number(t.localTime);
+              return local >= Number(t.delay) && local < Number(t.delay) + Number(t.activeDuration);
+            });
+            const g = new Set(moving.map((a) => `${((a.effect as KeyframeEffect).target as Element | null)?.tagName}.${((a.effect as KeyframeEffect).target as Element | null)?.getAttribute("class") ?? ""}`));
+            if (g.size > max) (max = g.size), (groups = [...g]);
+            if (performance.now() - start < 1700) requestAnimationFrame(tick);
+            else done({ max, groups });
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+    expect(max, groups.join(" | ")).toBeLessThanOrEqual(2);
+  });
+
+  test("its Skip goes straight on", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/vi/");
+    await lensesIn(page);
+    await gateOf(page).locator('[data-entry-lens="curious"]').click();
+    const skippedAt = await page.evaluate(() => performance.now());
+    await gateOf(page).locator("[data-entry-load-skip]").click();
+    const at = (await enteredAt(page)) as number;
+    expect(at - skippedAt).toBeLessThan(1300); // the aperture only (guard 1200 ms)
+    expect(new URL(page.url()).searchParams.get("lens")).toBe("curious");
+  });
+
+  test("Skip and Esc on the gate play the opening too, for an unidentified reader", async ({ page }) => {
+    for (const how of ["Skip", "Esc"] as const) {
+      await page.goto("/vi/"); // the gate shows on every load
+      await lensesIn(page);
+      if (how === "Skip") await gateOf(page).locator("[data-entry-skip]").click();
+      else await page.keyboard.press("Escape");
+      const load = gateOf(page).locator("[data-entry-load]");
+      await expect(load).toBeVisible();
+      await expect(load.locator("[data-entry-load-lens]")).toHaveText(ui.entryLoadUnknown.vi);
+      await expect(load.locator("[data-entry-load-skip]")).toBeFocused();
+      expect((await enteredAt(page)) as number).toBeGreaterThan(0);
+      expect(new URL(page.url()).searchParams.get("lens")).toBeNull();
+    }
+  });
+
+  test("reduced motion: no opening", async ({ page }) => {
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/vi/");
+    const after = await gateOf(page).locator('[data-entry-lens="partner"]').evaluate((b) => {
+      (b as HTMLElement).click();
+      return { gate: document.documentElement.dataset["gate"], loading: document.querySelector("[data-entry]")!.classList.contains("is-loading") };
+    });
+    expect(after).toEqual({ gate: "skip", loading: false });
+  });
 });

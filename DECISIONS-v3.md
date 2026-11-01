@@ -39,7 +39,9 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 
 ## Ý tưởng sau phát hành bản đồ (chủ dự án, 01/11/2026)
 - **Bản đồ 3D:** CSS/SVG, không thư viện mới; các bậc sáng thành bậc cao kiểu ruộng bậc thang. Từ 1280 px đặt **cạnh** bản đồ 2D; hẹp hơn thì nút 2D/3D. Làm trước tiên.
-- **Thanh loading đặc nhiệm:** chủ dự án chọn **màn chờ dài hơn** (khoảng 1,5–2 giây), tức là bỏ quy tắc ROADMAP 25.2 ("không thanh phần trăm giả, không chữ loading"). Claude Code đã nêu rủi ro (người xem phải chờ). Làm ở phiên sau.
+- **Thanh loading đặc nhiệm:** chủ dự án chọn **màn chờ dài hơn** (khoảng 1,5–2 giây), tức là bỏ quy tắc ROADMAP 25.2 ("không thanh phần trăm giả, không chữ loading"). Claude Code đã nêu rủi ro (người xem phải chờ). **Đã làm (01/11/2026):** sau khi chọn lens, màn "Đang mở hồ sơ cho [lens]" chạy ba bước (Xác minh người xem, Giải mã hồ sơ, Mở khóa truy cập), mỗi bước 480 ms cách nhau 60 ms, rồi "Truy cập được cấp" 120 ms: tổng 1,68 giây, sau đó khẩu độ như cũ. Thanh 3 đoạn và một vạch quét làm sáng lưới nền theo từng phần ba màn hình; tối đa 2 chuyển động cùng lúc, chỉ `transform`. Vẫn không có số phần trăm. Nút "Bỏ qua" trên màn chờ đi tiếp ngay; "Bỏ qua"/Esc ở cổng và chế độ giảm chuyển động thì không có màn chờ.
+- **"Bỏ qua"/Esc (chủ dự án chỉnh 01/11/2026):** cũng chạy màn chờ, với dòng "Người xem chưa xác định" thay tên lens; vào hồ sơ **không áp lens nào** (thay ROADMAP 25.3 "vào với lens mặc định"): dòng định vị chung, sổ cái theo thứ tự gốc, không có `?lens=`. Lens đã nhớ từ lần trước vẫn giữ trong bộ nhớ, chỉ không áp ở lần bỏ qua này. Sự kiện đo `enter` ghi `lens: null`.
+- **Trần JS của cổng nới từ 3 KB lên 3,2 KB** (chủ dự án duyệt 01/11/2026): màn chờ cần thêm khoảng 180 B, trần cũ vượt 6 B.
 - **Biểu đồ:** cả ba: dòng chảy bằng chứng (dữ liệu có sẵn), liên kết bản đồ–sổ cái (cần chủ dự án gắn mỗi mục với một nơi chốn), ma trận năng lực (cần chủ dự án gắn nhãn lĩnh vực, chỉ có/không, không chấm điểm). Làm ở phiên sau.
 
 ### Chỉnh sửa sau khi xem bản đồ 3D (chủ dự án, 01/11/2026)

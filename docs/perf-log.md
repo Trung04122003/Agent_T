@@ -3,6 +3,38 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-01 (4) · Gate: Skip and Esc play the opening too, and enter with no lens
+
+Owner request. Behaviour only: the same CSS opening, now also after Skip and Esc, which no longer
+apply a lens. Gate JS (gzip, as e2e 25.6 counts it): 3 078 B → 3 081 B (cap 3.2 KB). Page HTML
++3 B per locale (the "unidentified reader" line). No new motion, so no frame or INP change to measure.
+
+## 2026-11-01 (3) · Gate: the "special-ops" opening after a lens is chosen
+
+Owner request (2026-11-01). Three steps of 480 ms, 60 ms apart, then 120 ms on "access granted"
+(1.68 s), drawn in CSS (bar and scan by transform only, two at a time); entry.ts only starts it and
+waits. Sizes from `build:prod` (gzip -9; the gate figure as e2e 25.6 counts it: head script, gate
+script and its imports). INP and closing time from `node tools/perf/gate-inp.mjs` (first view of
+`/vi/`, click "Client", median of 3).
+
+| Item | Before (d421086) | After |
+|---|---|---|
+| `/vi/` HTML | 168 190 B (31 537 B gzip) | 170 146 B (31 788 B gzip, +251) |
+| `/en/` HTML | 160 493 B (29 930 B gzip) | 162 424 B (30 179 B gzip, +249) |
+| CSS total (gzip) | 13 947 B | 14 531 B (+584) |
+| Gate JS (gzip) | 2 900 B (cap 3 KB) | 3 078 B (cap raised to 3.2 KB, owner 2026-11-01) |
+| INP entering, desktop 1x / 4x | 72 / 176 ms | 56 / 144 ms |
+| INP entering, phone 1x / 4x | 40 / 136 ms | 40 / 88 ms |
+| Click to file open, desktop 1x / 4x | 669 / 933 ms | 2 403 / 2 695 ms (the 1.68 s wait, on purpose) |
+| Click to file open, phone 1x / 4x | 318 / 510 ms | 2 040 / 2 192 ms |
+| Lighthouse `/vi/` (2 runs) | 99 / 99, LCP 2.1 / 2.0 s | 98 / 99, LCP 2.1 / 1.8 s |
+| Lighthouse `/en/` (2 runs) | 99 / 99, LCP 1.8 / 1.9 s | 99 / 99, LCP 1.9 / 2.0 s |
+
+**Reading.** INP is lower than before: the click now only starts the opening; the costly capture of
+the page for the aperture comes 1.68 s later, outside the interaction. The reader waits about 1.7 s
+longer by design (owner's choice); the opening's Skip goes straight on. Lighthouse does not click
+the gate, so its figures do not change.
+
 ## 2026-11-01 (2) · Map: 3D zoom/pan, terrace ripple, land borders and neighbours' names; gate on every load
 
 Owner requests (2026-11-01). Zoom and pan moved into `map-zoom.ts`, shared by both maps; the 3D view

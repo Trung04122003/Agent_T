@@ -4,14 +4,23 @@ import { expect, test, type Page } from "@playwright/test";
 // narrow ones or without View Transitions, instant with reduced motion; never stuck, never on top
 // of Declassify. Like e2e/entry.e2e.ts, this meets the gate as a first-time reader.
 const gateOf = (page: Page) => page.locator("[data-entry]");
-const entered = (page: Page, timeout = 3000) =>
+const entered = (page: Page, timeout = 4000) =>
   page.waitForFunction(() => performance.getEntriesByName("gate:entered").length > 0, null, { timeout });
+/** When the last press happened: the lens click, or the Enter that skips the opening after it. */
 const clickClock = (page: Page) =>
   page.addInitScript(() => {
-    addEventListener("pointerdown", () => ((window as unknown as { __clickAt: number }).__clickAt = performance.now()), { capture: true });
+    const at = () => ((window as unknown as { __clickAt: number }).__clickAt = performance.now());
+    addEventListener("pointerdown", at, { capture: true });
+    addEventListener("keydown", at, { capture: true });
   });
 const closedAfter = (page: Page) =>
   page.evaluate(() => performance.getEntriesByName("gate:entered")[0]!.startTime - (window as unknown as { __clickAt: number }).__clickAt);
+/**
+ * A chosen lens first plays the "special-ops" opening (owner, 2026-11-01; e2e/entry.e2e.ts tests it).
+ * These tests are about what follows: its Skip button has the focus, so Enter goes on at once, and
+ * the aperture still starts where the lens was clicked.
+ */
+const skipOpening = (page: Page) => page.keyboard.press("Enter");
 /** The gate's opening is over (lenses in), so a click lands on a settled screen. */
 const settled = (page: Page) => page.waitForFunction(() => performance.getEntriesByName("gate:lenses-in").length > 0);
 /** The aperture's animation, once the View Transition is ready (a frame or two after the click). */
@@ -35,6 +44,7 @@ test.describe("P26 aperture (wide screen)", () => {
     const box = (await gateOf(page).locator('[data-entry-lens="client"]').boundingBox())!;
     const at = { x: Math.round(box.x + 30), y: Math.round(box.y + 20) };
     await page.mouse.click(at.x, at.y);
+    await skipOpening(page);
     const vt = await aperture(page);
     expect(vt).not.toBeNull();
     expect(vt!.vt).toBe("gate");
@@ -62,6 +72,7 @@ test.describe("P26 aperture (wide screen)", () => {
     await settled(page);
     const box = (await gateOf(page).locator('[data-entry-lens="partner"]').boundingBox())!;
     await page.keyboard.press("Enter"); // focus starts on the first lens
+    await skipOpening(page);
     const { from } = (await aperture(page))!;
     const [x, y] = from.match(/at ([\d.]+)px ([\d.]+)px/)!.slice(1).map(Number);
     expect(Math.abs(x! - (box.x + box.width / 2))).toBeLessThanOrEqual(1);
@@ -92,6 +103,7 @@ test.describe("P26 aperture (wide screen)", () => {
     await page.goto("/vi/");
     await settled(page);
     await gateOf(page).locator('[data-entry-lens="partner"]').click();
+    await skipOpening(page);
     // A scripted click (a real one cannot reach the inert page) while the aperture runs.
     const during = await page.evaluate(() => {
       (document.querySelector("[data-mode-toggle]") as HTMLElement).click();
@@ -134,6 +146,7 @@ test.describe("P26 aperture (wide screen)", () => {
       await page.goto("/vi/");
       await settled(page);
       await gateOf(page).locator('[data-entry-lens="client"]').click();
+      await skipOpening(page);
       await entered(page);
       expect(await closedAfter(page)).toBeLessThanOrEqual(1300); // the 1200 ms guard at most
       await expect(gateOf(page)).toBeHidden();
@@ -151,6 +164,7 @@ test.describe("P26 aperture (wide screen)", () => {
     await page.goto("/vi/");
     await settled(page);
     await gateOf(page).locator('[data-entry-lens="client"]').click();
+    await skipOpening(page);
     await entered(page, 1000);
     await expect(page.locator("#gate-codename")).toBeFocused();
   });
@@ -163,6 +177,7 @@ test.describe("26.2 fallbacks", () => {
     await page.goto("/vi/");
     await settled(page);
     await gateOf(page).locator('[data-entry-lens="client"]').click();
+    await skipOpening(page);
     const fade = await gateOf(page).evaluate((g) =>
       g.getAnimations().map((a) => ({ d: Number(a.effect!.getComputedTiming().duration), opacity: "opacity" in (a.effect as KeyframeEffect).getKeyframes()[0]! })),
     );
@@ -179,6 +194,7 @@ test.describe("26.2 fallbacks", () => {
       await page.goto("/vi/");
       await settled(page);
       await gateOf(page).locator('[data-entry-lens="curious"]').click();
+      await skipOpening(page);
       const state = await page.evaluate(() => ({
         vt: document.documentElement.dataset["vt"] ?? null,
         fades: document.querySelector("[data-entry]")!.getAnimations().length,

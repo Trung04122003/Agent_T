@@ -6,7 +6,8 @@ export type GateEvent =
   | { type: "shown"; lang: string }
   | { type: "preview"; lens: string }
   | { type: "lang"; lang: string }
-  | { type: "enter"; via: "lens" | "skip" | "esc"; lens: string; ms: number }
+  /** lens null: entered with Skip or Esc, no lens applied (owner, 2026-11-01). */
+  | { type: "enter"; via: "lens" | "skip" | "esc"; lens: string | null; ms: number }
   | { type: "leave"; ms: number };
 
 export const METRICS_KEY = "gateMetrics";

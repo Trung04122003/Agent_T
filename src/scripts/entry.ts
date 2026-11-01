@@ -1,17 +1,17 @@
 // Entry gate (ROADMAP P25, UX-v3 section 2): a functional splash that identifies the reader. The
 // head script in Base.astro decides data-gate="show|skip" before the first paint; this only runs
 // the gate when it shows. One action enters: a lens button enters with that lens; "Skip" or Esc
-// enters with the remembered lens (or Partner). No timer: the gate never closes by itself.
+// enters with no lens (owner, 2026-11-01: the common positioning line, the ledger in file order;
+// the remembered lens is kept for later). No timer: the gate never closes by itself.
 // The opening (strip, question, lenses: CSS in EntryGate.astro, so it starts with the first paint
 // and replays when a language change swaps the gate in) runs while every short label decodes here.
 // Pointing at a lens types out its reader's line, once the lenses are in (at most 2 effects at once).
 import { revealGate, revealName } from "./decode";
-import { readLens, saveLens } from "./lens";
+import { saveLens } from "./lens";
 import { track } from "./gate-metrics";
 
 /** Read-only session flag: set by the test and measuring tools to skip the gate, never by the site. */
 export const GATE_KEY = "gateSeen";
-const DEFAULT_LENS = "partner";
 /** Everything but the gate: inert while it is open (25.5). */
 const OUTSIDE = ['[data-banner="top"]', "header.controls", "main", "footer", '[data-banner="bottom"]'];
 export const ENTRY_FX = { line: 480 } as const;
@@ -50,6 +50,13 @@ function sweep(el: Element, duration: number, delay = 0, steps = 0): void {
 // 250 ms fade of the gate instead; reduced motion closes it at once. Whatever happens, the gate is
 // closed and focus is on the page heading within 1200 ms (26.3).
 export const ENTER_FX = { aperture: 520, fade: 250, guard: 1200, narrow: 768 } as const;
+/**
+ * The opening played on entering (owner, 2026-11-01; EntryGate.astro draws it), by a lens, Skip or
+ * Esc: three steps of 480 ms, 60 ms apart, and 120 ms on "access granted". Its own Skip button
+ * (focused, so Enter or Space works too) cuts it short; reduced motion goes straight in. The 1200 ms
+ * guard counts from its end.
+ */
+export const LOAD = { total: 1680 } as const;
 let leaving = false;
 
 /** Resolves when `p` does, rejects if it fails or takes longer than the guard. */
@@ -57,20 +64,23 @@ function guarded(p: Promise<unknown>): Promise<unknown> {
   return Promise.race([p, new Promise((_, fail) => setTimeout(() => fail(new Error("gate: transition timed out")), ENTER_FX.guard))]);
 }
 
-function enter(via: "lens" | "skip" | "esc", lens: string, at?: { x: number; y: number }): void {
+function enter(via: "lens" | "skip" | "esc", lens: string | null, at?: { x: number; y: number }): void {
   const gate = document.querySelector<HTMLElement>("[data-entry]");
   if (leaving || !gate || !isOpen()) return;
   leaving = true;
-  gate.inert = true; // no second choice while it closes
+  const body = gate.querySelector<HTMLElement>(".entry__body")!;
+  body.inert = true; // no second choice while it closes
+  const load = still() ? null : gate.querySelector<HTMLElement>("[data-entry-load]");
   const root = document.documentElement;
   // Bookkeeping after the next paint, so the click answers at once (INP, 26.5).
   const ms = Math.round(performance.now() - shownAt);
   setTimeout(() => {
     track({ type: "enter", via, lens, ms });
-    saveLens(lens);
+    if (lens) saveLens(lens);
   });
   const url = new URL(location.href);
-  url.searchParams.set("lens", lens);
+  if (lens) url.searchParams.set("lens", lens);
+  else url.searchParams.delete("lens");
   history.replaceState(history.state, "", url);
   if (onKey) removeEventListener("keydown", onKey);
   onKey = null;
@@ -85,6 +95,8 @@ function enter(via: "lens" | "skip" | "esc", lens: string, at?: { x: number; y: 
     done = true;
     root.dataset["gate"] = "skip";
     delete root.dataset["vt"];
+    gate.classList.remove("is-loading");
+    body.inert = false;
     // The page (mode button included) stays inert until here: no Declassify on top of the
     // aperture (26.4).
     setInert(false);
@@ -100,6 +112,8 @@ function enter(via: "lens" | "skip" | "esc", lens: string, at?: { x: number; y: 
     void revealGate(root.dir);
   };
 
+  const open = (): void => {
+  gate.inert = true;
   if (still()) {
     applyLens();
     return finish();
@@ -131,6 +145,23 @@ function enter(via: "lens" | "skip" | "esc", lens: string, at?: { x: number; y: 
     applyLens();
     finish();
   }
+  };
+  if (!load) return open();
+  // The opening: the chosen lens named, the steps run in CSS; then the aperture as before.
+  if (lens) load.querySelector("[data-entry-load-lens]")!.textContent = gate.querySelector(`[data-entry-lens="${lens}"]`)!.textContent;
+  gate.classList.add("is-loading"); // shows it (CSS)
+  // The hidden gate stops moving (a reader's line may still be typing): two effects at most.
+  for (const a of body.getAnimations({ subtree: true })) a.cancel();
+  const skip = load.querySelector<HTMLElement>("[data-entry-load-skip]")!;
+  // Once only: the timer or Skip, whichever comes first.
+  const go = (): void => {
+    clearTimeout(timer);
+    skip.onclick = null;
+    open();
+  };
+  const timer = setTimeout(go, LOAD.total);
+  skip.onclick = go;
+  skip.focus();
 }
 
 /** Where a click started the aperture: the pointer, or the control's centre from the keyboard. */
@@ -153,7 +184,6 @@ export function initEntry(afterLangSwap = false): void {
     addEventListener("pagehide", () => isOpen() && track({ type: "leave", ms: Math.round(performance.now() - shownAt) }), { once: true });
   }
 
-  const fallback = readLens() ?? DEFAULT_LENS;
   const lensButtons = [...gate.querySelectorAll<HTMLButtonElement>("[data-entry-lens]")];
   const line = gate.querySelector<HTMLElement>("[data-entry-line]")!;
   const point = (id: string, animate: boolean): void => {
@@ -179,10 +209,10 @@ export function initEntry(afterLangSwap = false): void {
   }
   gate.querySelector<HTMLElement>("[data-entry-skip]")?.addEventListener("click", (e) => {
     e.preventDefault();
-    enter("skip", fallback, origin(e));
+    enter("skip", null, origin(e));
   });
   if (onKey) removeEventListener("keydown", onKey);
-  onKey = (e) => e.key === "Escape" && isOpen() && enter("esc", fallback);
+  onKey = (e) => e.key === "Escape" && isOpen() && enter("esc", null);
   addEventListener("keydown", onKey);
 
   // The opening sequence: the whole screen decodes (owner request: on a language change too).
