@@ -42,6 +42,8 @@ export type MapGeometry = {
   /** Inner province borders: `kept` runs between units in both modes, `merged` only before 2025. */
   borders: { kept: string; merged: string };
   capital: [number, number];
+  /** Box (x, y, width, height) around the provinces and both archipelagos: the 3D view's frame. */
+  focus: [number, number, number, number];
 };
 
 /** Label metrics at the map's 11px monospace: about 0.6em per character. */
@@ -127,7 +129,16 @@ export function buildMap(topo: Topology, points: Point[], admin: Admin): MapGeom
   const border = (keep: boolean) =>
     path(mesh(topo, units, (a, b) => a !== b && (unit(codeOf(a)) !== unit(codeOf(b))) === keep)) ?? "";
 
+  const [[x0, y0], [x1, y1]] = path.bounds({ type: "FeatureCollection", features: shapes });
+  const isles = [...archipelago(ARCHIPELAGOS.hoangSa, "start").dots, ...archipelago(ARCHIPELAGOS.truongSa, "end").dots];
+  const fx0 = Math.min(x0, ...isles.map((d) => d[0]));
+  const fy0 = Math.min(y0, ...isles.map((d) => d[1]));
+  const fx1 = Math.max(x1, ...isles.map((d) => d[0]));
+  const fy1 = Math.max(y1, ...isles.map((d) => d[1]));
+  const focus = [fx0, fy0, fx1 - fx0, fy1 - fy0].map(round) as [number, number, number, number];
+
   return {
+    focus,
     provinces: shapes.map((f, i) => ({ code: codes[i]!, after: unit(codes[i]!), d: path(f) ?? "", tier: { before: before[i]!, after: after[i]! } })),
     borders: { kept: border(true), merged: border(false) },
     capital: project(admin.capital.lon, admin.capital.lat),

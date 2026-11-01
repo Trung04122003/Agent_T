@@ -14,7 +14,7 @@ for (const locale of ["vi", "en"] as const) {
   test(`map text alternative lists every place and both archipelagos (${locale})`, async ({ page }) => {
     await page.goto(`/${locale}/`);
     const map = page.locator("[data-map]");
-    await expect(map.locator("svg")).toHaveAttribute("aria-hidden", "true");
+    for (const svg of await map.locator("svg").all()) await expect(svg).toHaveAttribute("aria-hidden", "true"); // flat and 3D
     await expect(map.getByRole("heading", { level: 2 })).toHaveText(ui.mapTitle[locale]);
     // What a screen reader reads: the accessible list, in order.
     const items = map.getByRole("list").getByRole("listitem");

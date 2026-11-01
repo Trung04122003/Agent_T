@@ -33,6 +33,11 @@ const before = new Map(admin.before.map((b) => [b.code, b[locale]]));
 const after = new Map(admin.after.map((a) => [a.id, a[locale]]));
 const era = { label: await t("mapEraLabel", locale), before: await t("mapEraBefore", locale), after: await t("mapEraAfter", locale) };
 const capital = await t("mapCapital", locale);
+const stepIds = ["sea", "world", "base", "near", "home"] as const;
+const steps = {
+  items: await Promise.all(stepIds.map(async (id) => ({ id, text: await t(`mapStep${id[0]!.toUpperCase()}${id.slice(1)}`, locale) }))),
+};
+const view = { label: await t("mapViewLabel", locale), flat: await t("mapViewFlat", locale), terraced: await t("mapViewTerraced", locale) };
 // Five-pointed star, outer radius 6.5, point up.
 const star =
   Array.from({ length: 10 }, (_, i) => {
@@ -60,7 +65,7 @@ const seas = [
 ];
 ---
 
-<section class="map sheet sheet--block" aria-labelledby="map-title" data-map data-era="after">
+<section class="map sheet sheet--block" aria-labelledby="map-title" data-map data-era="after" data-view="2d">
   <PageMark locale={locale} page="map" />
   <p class="map__kicker">{heading}</p>
   <h2 id="map-title" class="map__title">{title}</h2>
@@ -69,6 +74,11 @@ const seas = [
     <div class="map__era" role="group" aria-label={era.label} data-map-era hidden>
       <button type="button" data-era-btn="before" aria-pressed="false">{era.before}</button>
       <button type="button" data-era-btn="after" aria-pressed="true">{era.after}</button>
+    </div>
+    {/* Narrow screens: one map at a time. From 1280 px both stand side by side and this hides. */}
+    <div class="map__era map__view" role="group" aria-label={view.label} data-map-view hidden>
+      <button type="button" data-view-btn="2d" aria-pressed="true">{view.flat}</button>
+      <button type="button" data-view-btn="3d" aria-pressed="false">{view.terraced}</button>
     </div>
     <ul class="map__legend" data-map-list>
       {
@@ -171,6 +181,20 @@ const seas = [
         <button type="button" data-zoom="reset" aria-label={zoom.reset} title={zoom.reset}>⟲</button>
       </div>
     </div>
+    {/* Terraced 3D view (owner request 2026-11-01): built by map-3d.ts from the drawing above, with JS only. */}
+    <div class="map__terraced" data-map-3d data-focus={map.focus.join(" ")} hidden>
+      <div class="map__frame map__frame--3d brackets">
+        <svg class="map__svg map__svg--3d" aria-hidden="true" focusable="false" data-map-3d-svg></svg>
+        <p class="map__readout" data-map-readout aria-hidden="true" hidden><span data-readout-name></span><span class="map__readout-sub" data-readout-sub></span></p>
+      </div>
+      {/* The steps, low to high: what the heights (and the 2D brightness) mean. It explains the
+          drawings, which screen readers skip, so it is skipped too (the legend list carries the places). */}
+      <ol class="map__steps" aria-hidden="true">
+        {steps.items.map((s) => (
+          <li><span class={`map__step map__step--${s.id}`} aria-hidden="true" />{s.text}</li>
+        ))}
+      </ol>
+    </div>
   </div>
   <p class="map__credit" lang="en"><a href="https://www.naturalearthdata.com/">{credit}</a></p>
 </section>
@@ -210,6 +234,87 @@ const seas = [
     .map__side {
       grid-column: 2;
       grid-row: 1;
+    }
+  }
+  /* Narrow screens: one map at a time (the 2D/3D buttons). */
+  .map[data-view="2d"] .map__terraced,
+  .map[data-view="3d"] [data-map-frame] {
+    display: none;
+  }
+  .map__terraced:not([hidden]) {
+    display: grid;
+    align-content: start;
+    gap: calc(var(--space) * 2);
+  }
+  /* Step key: five swatches, darkest to brightest, in this mode's colours. */
+  .map__steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space) calc(var(--space) * 2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  .map__steps li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .map__step {
+    width: 14px;
+    height: 10px;
+    border: 1px solid var(--line);
+    background: var(--t-base);
+  }
+  .map__step--sea {
+    background: var(--t-sea);
+  }
+  .map__step--world {
+    background: var(--t-world);
+  }
+  .map__step--near {
+    background: var(--t-near);
+  }
+  .map__step--home {
+    background: var(--t-home);
+  }
+  /* From 1280 px the flat and the terraced map stand side by side (owner's choice, 2026-11-01);
+     the controls and the legend run across the top. */
+  @media (min-width: 1280px) {
+    .map__body {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: stretch;
+    }
+    .map__side {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--space) calc(var(--space) * 3);
+    }
+    .map__legend {
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    .map .map__view {
+      display: none;
+    }
+    .map[data-view] [data-map-frame] {
+      display: block;
+    }
+    .map[data-view] .map__terraced:not([hidden]) {
+      display: grid;
+    }
+  }
+  @media print {
+    .map .map__terraced {
+      display: none;
+    }
+    .map[data-view] [data-map-frame] {
+      display: block;
     }
   }
 
@@ -460,15 +565,15 @@ const seas = [
     stroke: currentColor;
     stroke-width: calc(0.5px / var(--k, 1));
   }
-  .map[data-era="before"] [data-tb="near"],
-  .map[data-era="after"] [data-ta="near"] {
+  .map[data-era="before"] :global([data-tb="near"]),
+  .map[data-era="after"] :global([data-ta="near"]) {
     color: var(--t-near);
   }
-  .map[data-era="before"] [data-tb="home"],
-  .map[data-era="after"] [data-ta="home"] {
+  .map[data-era="before"] :global([data-tb="home"]),
+  .map[data-era="after"] :global([data-ta="home"]) {
     color: var(--t-home);
   }
-  .map__provinces path.is-hot {
+  .map .map__provinces path.is-hot {
     color: var(--t-hot);
   }
   .map__border {
@@ -485,6 +590,56 @@ const seas = [
   .map__islands,
   .map__capital {
     pointer-events: none;
+  }
+  /* Terraced 3D view (map-3d.ts). Tops take the step colours of the 2D map (same data-tb/data-ta);
+     risers are the same colour sunk towards the sea, so each step reads as a wall. */
+  .map__svg--3d :global(.map3d__top) {
+    color: var(--t-base);
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 0.5px;
+  }
+  .map__svg--3d :global(.map3d__wall) {
+    color: var(--t-base);
+    fill: color-mix(in oklab, currentColor calc(20% + var(--lift, 0) * 45%), var(--t-sea));
+    pointer-events: none;
+  }
+  .map__svg--3d :global(.map3d__world) {
+    fill: var(--t-world);
+    stroke: var(--line);
+    stroke-width: 0.5px;
+  }
+  .map__svg--3d :global(.map3d__wall--world) {
+    fill: color-mix(in oklab, var(--t-world) 55%, var(--t-sea));
+  }
+  .map__svg--3d :global(.map3d__border) {
+    fill: none;
+    stroke: var(--t-border);
+    stroke-width: 0.6px;
+    pointer-events: none;
+  }
+  .map[data-era="after"] :global(.map3d__border--merged) {
+    display: none;
+  }
+  .map svg :global(.map3d__top.is-hot) {
+    color: var(--t-hot);
+  }
+  .map__svg--3d :global(.map3d__marks) {
+    pointer-events: none;
+  }
+  .map__svg--3d :global(.map3d__isle) {
+    fill: var(--accent);
+  }
+  /* The marks copied into the 3D view stand still: the 2D map's draw-in is the only reveal, so the
+     motion budget (two effects at once) holds. */
+  /* Doubled class: outranks the draw-in rule (.map.is-revealed .map__point). */
+  .map .map__svg--3d :global(.map__point.map__point),
+  .map .map__svg--3d :global(.map__halo.map__halo) {
+    animation: none;
+    opacity: 1;
+  }
+  .map .map__svg--3d :global(.map__halo) {
+    opacity: 0;
   }
   .map__vn {
     fill: none;

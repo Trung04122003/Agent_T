@@ -128,6 +128,35 @@ export function initMapView(): void {
 
   render();
   initProvinces(map);
+  initTerraced(map);
+}
+
+/**
+ * Terraced 3D view (owner request 2026-11-01). Its code is fetched only once its frame is on
+ * screen: from 1280 px it stands beside the flat map; narrower, the 2D/3D buttons swap the two.
+ */
+function initTerraced(map: HTMLElement): void {
+  const frame = map.querySelector<HTMLElement>("[data-map-3d]");
+  const control = map.querySelector<HTMLElement>("[data-map-view]");
+  if (!frame || !control || !("IntersectionObserver" in window)) return;
+  frame.hidden = false;
+  control.hidden = false;
+  control.addEventListener("click", (e) => {
+    const view = (e.target as Element).closest<HTMLButtonElement>("[data-view-btn]")?.dataset["viewBtn"];
+    if (!view) return;
+    map.dataset["view"] = view;
+    for (const b of control.querySelectorAll<HTMLButtonElement>("[data-view-btn]")) b.setAttribute("aria-pressed", String(b.dataset["viewBtn"] === view));
+  });
+  // A frame that is not displayed never intersects, so a hidden 3D view costs nothing.
+  const seen = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      seen.disconnect();
+      void import("./map-3d").then((m) => m.initMap3d(map));
+    },
+    { rootMargin: "200px" },
+  );
+  seen.observe(frame);
 }
 
 /**

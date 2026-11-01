@@ -37,6 +37,11 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 - Prudential và DFL24 chỉ lên site khi có `approval`.
   - **Prudential đã bật (chủ dự án yêu cầu 29/10/2026):** trưởng văn phòng/đại lý Prudential (văn phòng Ngũ Hành Sơn) duyệt ngày 01/07/2026, đúng câu chữ hiện có trong `claims.json`. Chủ dự án chọn mức duyệt này thay cho bộ phận tuân thủ. `approval` ghi chức vụ, không ghi tên người. DFL24 vẫn `hold`.
 
+## Ý tưởng sau phát hành bản đồ (chủ dự án, 01/11/2026)
+- **Bản đồ 3D:** CSS/SVG, không thư viện mới; các bậc sáng thành bậc cao kiểu ruộng bậc thang. Từ 1280 px đặt **cạnh** bản đồ 2D; hẹp hơn thì nút 2D/3D. Làm trước tiên.
+- **Thanh loading đặc nhiệm:** chủ dự án chọn **màn chờ dài hơn** (khoảng 1,5–2 giây), tức là bỏ quy tắc ROADMAP 25.2 ("không thanh phần trăm giả, không chữ loading"). Claude Code đã nêu rủi ro (người xem phải chờ). Làm ở phiên sau.
+- **Biểu đồ:** cả ba: dòng chảy bằng chứng (dữ liệu có sẵn), liên kết bản đồ–sổ cái (cần chủ dự án gắn mỗi mục với một nơi chốn), ma trận năng lực (cần chủ dự án gắn nhãn lĩnh vực, chỉ có/không, không chấm điểm). Làm ở phiên sau.
+
 ## Buổi chụp ảnh (P29)
 - Ảnh gốc để ngoài git (`private/portrait-raw/`), chỉ bản đã xóa EXIF/GPS vào repo.
 - Chụp hai độ sáng cùng tư thế, cùng đồ, dùng chân máy: bản tối cho Mật, bản sáng hơn cho Giải mật.

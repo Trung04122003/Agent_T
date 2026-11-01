@@ -1,5 +1,5 @@
 {
-  "frozenOn": "2026-10-29",
+  "frozenOn": "2026-11-01",
   "files": {
     "claims.json": "f22b893547560192c45454265091b477cce328294b052e41b217a5e5054d7316",
     "identity.json": "1611a74de8f9cd879ad678d2767da606552f2d8c1348bc7c1b3f1b5f5fedce60",
@@ -10,6 +10,6 @@
     "print.json": "0a62fa9e1d783ce551a8d2acea194bc551c3b50cda5806642f4844ac1d5476d5",
     "provinces.json": "a1fe194f2ddb4ff74ce9bb526e3b40ff06b06e817c012db7373419adba23f399",
     "risks.json": "6d20554822ab7e5952c8215f54b0625d54cf1b0e7b6d2b4b5b12933db8a23c50",
-    "ui.json": "b6c2378692d8d28522aab6faf8b85be1e2b243a8279b6d79d2c3d00ab4fbce65"
+    "ui.json": "1e53a0a7cd1ae6e2c696da5607f0f27910b656473a4474b3e3bbf23189af4d37"
   }
 }

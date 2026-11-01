@@ -17,7 +17,7 @@ for (const locale of ["vi", "en"] as const) {
       await expect(label).toHaveText(ui[key][locale]);
       await expect(label).toBeVisible();
       const box = (await label.boundingBox())!;
-      const svg = (await map.locator("svg").boundingBox())!;
+      const svg = (await map.locator("[data-map-svg]").boundingBox())!;
       expect(box.x + box.width).toBeLessThanOrEqual(svg.x + svg.width + 1); // not clipped
     }
     await expect(map.locator(".map__islands circle")).not.toHaveCount(0);

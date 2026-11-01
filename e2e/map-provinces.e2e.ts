@@ -7,7 +7,7 @@ import { expect, test, type Page } from "./test";
 const admin = JSON.parse(readFileSync("content/provinces.json", "utf8"));
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
 const setMode = (page: Page, mode: string) => page.addInitScript((m) => localStorage.setItem("mode", m), mode);
-const fill = (page: Page, code: string) => page.locator(`path[data-code="${code}"]`).evaluate((e) => getComputedStyle(e).fill);
+const fill = (page: Page, code: string) => page.locator(`[data-map-provinces] path[data-code="${code}"]`).evaluate((e) => getComputedStyle(e).fill);
 /** Relative lightness of any CSS colour (rgb, oklab, color()), read back from a 1px canvas. */
 const light = (page: Page, css: string) =>
   page.evaluate((c) => {
@@ -55,25 +55,25 @@ test("hover names the province; after the merger, the whole unit and what it too
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/vi/");
   await page.locator("[data-map]").scrollIntoViewIfNeeded();
-  const readout = page.locator("[data-map-readout]");
+  const readout = page.locator("[data-map-frame] [data-map-readout]");
   await expect(readout).toBeHidden();
-  const quangNam = page.locator('path[data-code="VN-27"]');
+  const quangNam = page.locator('[data-map-provinces] path[data-code="VN-27"]');
   const b = (await quangNam.boundingBox())!;
   await page.mouse.move(b.x + b.width * 0.35, b.y + b.height * 0.6);
   await expect(readout).toBeVisible();
   await expect(readout.locator("[data-readout-name]")).toHaveText("Đà Nẵng");
   await expect(readout.locator("[data-readout-sub]")).toHaveText("Quảng Nam + Đà Nẵng");
-  await expect(page.locator("path.is-hot")).toHaveCount(2);
+  await expect(page.locator("[data-map-provinces] path.is-hot")).toHaveCount(2);
 
   await page.locator('[data-era-btn="before"]').click();
   await page.mouse.move(b.x + b.width * 0.35 + 1, b.y + b.height * 0.6);
   await expect(readout.locator("[data-readout-name]")).toHaveText("Quảng Nam");
   await expect(readout.locator("[data-readout-sub]")).toBeEmpty();
-  await expect(page.locator("path.is-hot")).toHaveCount(1);
+  await expect(page.locator("[data-map-provinces] path.is-hot")).toHaveCount(1);
 
   await page.mouse.move(5, 5);
   await expect(readout).toBeHidden();
-  await expect(page.locator("path.is-hot")).toHaveCount(0);
+  await expect(page.locator("[data-map-provinces] path.is-hot")).toHaveCount(0);
 });
 
 test("63 provinces drawn, 34 units, names from content/; the capital star at Ha Noi, on top", async ({ page }) => {
@@ -82,7 +82,7 @@ test("63 provinces drawn, 34 units, names from content/; the capital star at Ha 
   await expect(shapes).toHaveCount(63);
   const units = await shapes.evaluateAll((ps) => new Set(ps.map((p) => p.getAttribute("data-unit"))).size);
   expect(units).toBe(admin.after.length);
-  await expect(page.locator('path[data-code="VN-26"]')).toHaveAttribute("data-unit-name", "Hue");
+  await expect(page.locator('[data-map-provinces] path[data-code="VN-26"]')).toHaveAttribute("data-unit-name", "Hue");
   // Drawn last in the SVG, so the Thuong Tin ring never covers it.
   const last = await page.locator("[data-map-svg]").evaluate((s) => s.lastElementChild?.getAttribute("class"));
   expect(last).toBe("map__capital");

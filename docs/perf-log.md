@@ -3,6 +3,31 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-01 · Map: terraced 3D view beside the flat map
+
+Owner request (2026-11-01). `map-3d.ts` builds a tilted SVG from the 2D drawing in the browser
+(no extra HTML, no library), fetched only once its frame is on screen (from 1280 px beside the flat
+map; narrower, behind a 2D/3D button). About 730 SVG nodes. Sizes from `build:prod` (gzip -9);
+interactions at 1280 px, `/vi/`, system cursors, median of 3 runs.
+
+| Item | Before | After |
+|---|---|---|
+| `/vi/` HTML | 161 224 B (30 085 B gzip) | 162 871 B (30 346 B gzip, +261) |
+| `/en/` HTML | 153 595 B (28 548 B gzip) | 155 223 B (28 769 B gzip, +221) |
+| CSS total (gzip) | 13 414 B | 13 824 B (+410) |
+| `map-view` JS (gzip) | 1 594 B | 1 784 B (+190) |
+| `map-3d` JS (gzip, on demand) | — | 1 770 B |
+| Lighthouse `/vi/` (2 runs) | 98 / 99, LCP 2.0 / 1.9 s, TBT 100 / 50 ms | 99 / 99, LCP 2.0 / 1.9 s, TBT 30 / 0 ms |
+| Lighthouse `/en/` (2 runs) | 99 / 98, LCP 1.9 / 2.3 s | 99 / 100, LCP 1.9 / 1.7 s |
+| Building the 3D view: longest task | — | no long task (> 50 ms) at 1x or 4x |
+| Mode switch 63 ↔ 34, click to paint, 1x | 6.8 ms (Mat), 5.9 ms (Giai mat) | 16.5 ms, 16.0 ms |
+| Mode switch, 4x CPU | 21.0 ms, 18.8 ms | 61.0 ms, 75.2 ms |
+| Hover sweep p95, 1x | 16.8 ms (2D) | 16.8 ms (3D) |
+| Hover sweep p95, 4x | 33.2 ms Mat, 16.8 ms Giai mat (2D) | 16.8 ms both (3D) |
+
+**Reading.** All within the playbook (INP ≤ 200 ms, p95 ≤ 20 ms at 1x and ≤ 40 ms at 4x). The mode
+switch now rebuilds the 3D view, so it costs about 3–4 times more, still far under 200 ms at 4x.
+
 ## 2026-10-29 · Map: provinces before/after the 2025 merger, terraced steps, capital star
 
 Owner request (2026-10-29). Adds 63 province fills and two border meshes to the inline map SVG, a
