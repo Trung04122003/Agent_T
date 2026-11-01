@@ -26,7 +26,7 @@ Công cụ: `node tools/gate-eval.mjs [--build]`, chạy trên bản `build:prod
 |---|---|
 | Không giả vờ tải: không thanh %, không chữ "loading" | Đạt, có test |
 | Bỏ qua được bằng một thao tác, "Bỏ qua" hiện từ giây 0 | Đạt. Nếu script lỗi, "Bỏ qua" vẫn là liên kết thật (`?skip=1`) nên người xem không bị kẹt |
-| Tối đa một lần mỗi phiên; không hiện với liên kết sâu, `?skip`, khi in, khi tắt JS | Đạt, mỗi trường hợp có test |
+| Hiện ở mọi lần tải trang, kể cả tải lại (chủ dự án đổi 01/11/2026, thay cho "tối đa một lần mỗi phiên"); không hiện với liên kết sâu, `?skip`, khi in, khi tắt JS | Đạt, mỗi trường hợp có test |
 | Trợ năng: dialog, `inert`, tiêu điểm vào và trả về `<h1>` | Đạt, axe không báo lỗi |
 | Chủ dự án: đập vào mắt nhưng không rối | Đạt: một nhịp mở (dải, mật danh giải mã, câu hỏi, ba lens), một vòng ngắm tĩnh làm nền, và dòng của phân khúc chỉ hiện khi người xem trỏ vào |
 | Chủ dự án: giải mã toàn màn hình khi đổi ngôn ngữ | Đạt: mọi nhãn ngắn và mật danh giải mã lại, ba nút lens trượt vào lại (dải và câu hỏi không quét lại, để không thành hiệu ứng thứ ba bên cạnh hiệu ứng khoá mục tiêu của con trỏ trên lá cờ), dòng đang xem gõ lại bằng ngôn ngữ mới |

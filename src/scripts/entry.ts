@@ -9,6 +9,7 @@ import { revealGate, revealName } from "./decode";
 import { readLens, saveLens } from "./lens";
 import { track } from "./gate-metrics";
 
+/** Read-only session flag: set by the test and measuring tools to skip the gate, never by the site. */
 export const GATE_KEY = "gateSeen";
 const DEFAULT_LENS = "partner";
 /** Everything but the gate: inert while it is open (25.5). */

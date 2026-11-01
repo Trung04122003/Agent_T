@@ -6,6 +6,7 @@
 import { getCollection } from "astro:content";
 import placesFile from "../../content/places.json";
 import admin from "../../content/provinces.json";
+import neighbours from "../../content/countries.json";
 import topo from "../assets/map/region.topo.json";
 import { t, type Locale } from "../lib/i18n";
 import { inFileOrder } from "../lib/ledger";
@@ -26,7 +27,9 @@ const map = buildMap(
   topo as unknown as Topology,
   places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon, text: p.label[locale] })),
   admin,
+  neighbours.labels,
 );
+const countryName = new Map(neighbours.labels.map((c) => [c.code, c[locale]]));
 // Two modes of the province layer (owner request 2026-10-29): the 63 provinces before the 2025
 // merger, the 34 after (default, as today). Names come from content/provinces.json.
 const before = new Map(admin.before.map((b) => [b.code, b[locale]]));
@@ -53,6 +56,8 @@ const roles = {
   home: await t("placeRoleHome", locale),
 };
 const zoom = { in: await t("mapZoomIn", locale), out: await t("mapZoomOut", locale), reset: await t("mapReset", locale) };
+// The 3D view's own buttons: named apart, so a screen reader can tell the two sets of controls.
+const zoom3d = { in: await t("map3dZoomIn", locale), out: await t("map3dZoomOut", locale), reset: await t("map3dReset", locale) };
 const hoangSa = await t("hoangSaLabel", locale);
 const truongSa = await t("truongSaLabel", locale);
 const credit = await t("mapCredit", locale);
@@ -121,6 +126,8 @@ const seas = [
         <path class="map__border map__border--merged" d={map.borders.merged} />
         <path class="map__border" d={map.borders.kept} />
         <path class="map__vn" d={vn.d} pathLength="1" />
+        {/* Land borders between countries (owner request 2026-11-01): dash-dot, as on printed maps. */}
+        <path class="map__frontier" d={map.frontiers} data-map-frontier />
         <g class="map__islands">
           {
             [...map.archipelagos.hoangSa.dots, ...map.archipelagos.truongSa.dots].map(([x, y]) => (
@@ -133,6 +140,13 @@ const seas = [
             ))
           }
         </g>
+        {
+          map.countryLabels.map((c) => (
+            <g class="map__country" transform={`translate(${c.x} ${c.y})`} data-country={c.code}>
+              <text class="map__fixed" text-anchor="middle">{countryName.get(c.code)}</text>
+            </g>
+          ))
+        }
         {
           seas.map((s) => (
             <g transform={`translate(${s.label[0]} ${s.label[1]})`}>
@@ -186,6 +200,11 @@ const seas = [
       <div class="map__frame map__frame--3d brackets">
         <svg class="map__svg map__svg--3d" aria-hidden="true" focusable="false" data-map-3d-svg></svg>
         <p class="map__readout" data-map-readout aria-hidden="true" hidden><span data-readout-name></span><span class="map__readout-sub" data-readout-sub></span></p>
+        <div class="map__zoom" data-map-zoom hidden>
+          <button type="button" data-zoom="in" aria-label={zoom3d.in} title={zoom3d.in}>+</button>
+          <button type="button" data-zoom="out" aria-label={zoom3d.out} title={zoom3d.out}>−</button>
+          <button type="button" data-zoom="reset" aria-label={zoom3d.reset} title={zoom3d.reset}>⟲</button>
+        </div>
       </div>
       {/* The steps, low to high: what the heights (and the 2D brightness) mean. It explains the
           drawings, which screen readers skip, so it is skipped too (the legend list carries the places). */}
@@ -353,11 +372,11 @@ const seas = [
     height: auto;
     overflow: hidden;
   }
-  .map.is-zoomed .map__svg {
+  .map__svg.is-zoomed {
     cursor: grab;
     touch-action: none; /* drag pans the map; at full view the page scrolls as usual */
   }
-  .map.is-dragging .map__svg {
+  .map__svg.is-dragging {
     cursor: grabbing;
   }
   /* Mode of the province layer: two pressed-or-not buttons (shown with JS only). */
@@ -585,6 +604,21 @@ const seas = [
   .map[data-era="after"] .map__border--merged {
     display: none;
   }
+  .map__frontier {
+    fill: none;
+    stroke: var(--ink-muted);
+    stroke-width: calc(1px / var(--k, 1));
+    stroke-dasharray: calc(6px / var(--k, 1)) calc(2px / var(--k, 1)) calc(1.5px / var(--k, 1)) calc(2px / var(--k, 1));
+    stroke-linejoin: round;
+  }
+  .map__svg .map__country text {
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    fill: var(--ink-muted);
+  }
+  .map__frontier,
+  .map__country,
   .map__border,
   .map__vn,
   .map__islands,
@@ -597,7 +631,7 @@ const seas = [
     color: var(--t-base);
     fill: currentColor;
     stroke: currentColor;
-    stroke-width: 0.5px;
+    stroke-width: calc(0.5px / var(--k, 1));
   }
   .map__svg--3d :global(.map3d__wall) {
     color: var(--t-base);
@@ -607,7 +641,25 @@ const seas = [
   .map__svg--3d :global(.map3d__world) {
     fill: var(--t-world);
     stroke: var(--line);
-    stroke-width: 0.5px;
+    stroke-width: calc(0.5px / var(--k, 1));
+  }
+  /* Same dash-dot as the flat map's land borders. */
+  .map__svg--3d :global(.map3d__frontier) {
+    fill: none;
+    stroke: var(--ink-muted);
+    stroke-width: calc(1px / var(--k, 1));
+    stroke-dasharray: calc(6px / var(--k, 1)) calc(2px / var(--k, 1)) calc(1.5px / var(--k, 1)) calc(2px / var(--k, 1));
+    pointer-events: none;
+  }
+  /* The lifted copy of the province under the pointer (terrace "ripple"): it only moves by transform. */
+  .map__svg--3d :global(.map3d__rise) {
+    pointer-events: none;
+  }
+  .map__svg--3d :global(.map3d__rise:not(.is-settling) path) {
+    pointer-events: auto;
+  }
+  .map__svg--3d :global(.is-lifted) {
+    visibility: hidden;
   }
   .map__svg--3d :global(.map3d__wall--world) {
     fill: color-mix(in oklab, var(--t-world) 55%, var(--t-sea));
@@ -615,7 +667,7 @@ const seas = [
   .map__svg--3d :global(.map3d__border) {
     fill: none;
     stroke: var(--t-border);
-    stroke-width: 0.6px;
+    stroke-width: calc(0.6px / var(--k, 1));
     pointer-events: none;
   }
   .map[data-era="after"] :global(.map3d__border--merged) {
@@ -632,9 +684,10 @@ const seas = [
   }
   /* The marks copied into the 3D view stand still: the 2D map's draw-in is the only reveal, so the
      motion budget (two effects at once) holds. */
-  /* Doubled class: outranks the draw-in rule (.map.is-revealed .map__point). */
-  .map .map__svg--3d :global(.map__point.map__point),
-  .map .map__svg--3d :global(.map__halo.map__halo) {
+  /* Root and doubled classes: outrank both the draw-in (.map.is-revealed .map__point) and the hiding
+     before it (:root[data-js] .map.is-armed .map__point), or the copies would stay hidden. */
+  :global(:root) .map.map .map__svg--3d :global(.map__point.map__point),
+  :global(:root) .map.map .map__svg--3d :global(.map__halo.map__halo) {
     animation: none;
     opacity: 1;
   }

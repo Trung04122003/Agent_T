@@ -15,7 +15,7 @@ const gateOf = (page: Page) => page.locator("[data-entry]");
 const state = (page: Page) => page.evaluate(() => document.documentElement.dataset["gate"] ?? null);
 
 test.describe("25.1 / 25.6 when the gate shows", () => {
-  test("first view of the session: shown, decided in the head; a reload in the same session skips it", async ({ page }) => {
+  test("shown, decided in the head; shown again on reload (owner 2026-11-01), nothing stored", async ({ page }) => {
     // The decision exists before the body is parsed: read it from the first script that can run.
     await page.addInitScript(() => {
       document.addEventListener("readystatechange", () => {
@@ -27,8 +27,9 @@ test.describe("25.1 / 25.6 when the gate shows", () => {
     expect(await page.evaluate(() => (window as unknown as { __early: string }).__early)).toBe("show");
     await expect(gateOf(page)).toBeVisible();
     await page.reload();
-    expect(await state(page)).toBe("skip");
-    await expect(gateOf(page)).toBeHidden();
+    expect(await state(page)).toBe("show");
+    await expect(gateOf(page)).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
   });
 
   for (const [name, url] of [
@@ -40,7 +41,7 @@ test.describe("25.1 / 25.6 when the gate shows", () => {
       await page.goto(url);
       expect(await state(page)).toBe("skip");
       await expect(gateOf(page)).toBeHidden();
-      // Still once a session: not "used up" by a skipped view.
+      // A plain load right after still shows it.
       await page.goto("/vi/");
       expect(await state(page)).toBe("show");
     });
@@ -246,7 +247,7 @@ test("25.4 lens and language are remembered for later visits; the lens can still
   expect(await later.evaluate(() => localStorage.getItem("lens"))).toBe("client");
 });
 
-test("25.4 storage blocked: no gate, no error", async ({ page }) => {
+test("25.4 storage blocked: the gate still shows, no error", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.addInitScript(() => {
@@ -259,7 +260,11 @@ test("25.4 storage blocked: no gate, no error", async ({ page }) => {
     }
   });
   await page.goto("/vi/");
-  expect(await state(page)).toBe("skip");
+  expect(await state(page)).toBe("show");
+  await expect(gateOf(page)).toBeVisible();
+  // Entering still works with nothing remembered.
+  await gateOf(page).locator('[data-entry-lens="client"]').click();
+  await expect(gateOf(page)).toBeHidden();
   await expect(page.locator("#gate-codename")).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -303,7 +308,7 @@ test("25.6 no extra request; the gate's JS is at most 3 KB gzip", async ({ page,
   // Size: the decision in the head, the gate's script and the chunks it imports that hold gate
   // code (the lens chunk is the page's own, loaded with or without the gate).
   const html = await (await page.request.get(`${SITE}/vi/`)).text();
-  const head = html.match(/var g="skip".*?dataset\.gate=g;/)![0];
+  const head = html.match(/var g="show".*?dataset\.gate=g;/)![0];
   const entrySrc = html.match(/<script type="module" src="([^"]*EntryGate[^"]*)"/)![1]!;
   const files = [entrySrc];
   const get = async (src: string) => (await page.request.get(`${SITE}${src}`)).text();

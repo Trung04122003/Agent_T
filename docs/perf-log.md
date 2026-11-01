@@ -3,6 +3,33 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-01 (2) · Map: 3D zoom/pan, terrace ripple, land borders and neighbours' names; gate on every load
+
+Owner requests (2026-11-01). Zoom and pan moved into `map-zoom.ts`, shared by both maps; the 3D view
+gets its own buttons. The province under the pointer in 3D rises a step and settles back (a copy of
+its stack, moved by transform only, 180 ms up and 160 ms down, nothing while the pointer rests). Land
+borders (dash-dot) and six neighbours' names on both maps. The entry gate now shows on every load
+(no size change: the head script is about as long). Same method as the entry below (1280 px,
+`/vi/`, system cursors, median of 3; the hover sweep now crosses provinces that rise).
+
+| Item | Before (cf8f66e) | After |
+|---|---|---|
+| `/vi/` HTML | 162 799 B (30 342 B gzip) | 168 334 B (31 563 B gzip, +1 221) |
+| `/en/` HTML | 155 151 B (28 759 B gzip) | 160 637 B (29 972 B gzip, +1 213) |
+| CSS total (gzip) | 13 824 B | 13 940 B (+116) |
+| `map-view` JS (gzip) | 1 784 B | 1 835 B (+51) |
+| `map-3d` JS (gzip, on demand) | 1 770 B | 2 648 B (+878) |
+| Lighthouse `/vi/` (2 runs) | 97 / 99, LCP 1.9 / 2.0 s, TBT 160 / 90 ms | 98 / 99, LCP 2.4 / 1.9 s, TBT 20 / 20 ms |
+| Lighthouse `/en/` (2 runs) | 81 (cold start, TBT 760 ms) / 99, LCP 1.7 / 1.8 s | 99 / 99, LCP 2.0 / 1.9 s |
+| Building the 3D view: longest task | none > 50 ms | none > 50 ms |
+| Mode switch 63 ↔ 34, click to paint, 1x | 21.4 ms (Mat), 17.6 ms (Giai mat) | 18.6 ms, 21.2 ms |
+| Mode switch, 4x CPU | 71.9 ms, 73.3 ms | 78.6 ms, 77.8 ms |
+| 3D hover sweep p95, 1x | 16.7 / 16.8 ms | 16.7 / 16.8 ms |
+| 3D hover sweep p95, 4x | 16.8 / 16.7 ms | 33.4 / 33.4 ms |
+
+**Reading.** Within the playbook: at 4x CPU the ripple costs a frame now and then (p95 33.4 ms, limit
+40 ms), at 1x none. The first Lighthouse run of each audit swings (known P30 item: cold start).
+
 ## 2026-11-01 · Map: terraced 3D view beside the flat map
 
 Owner request (2026-11-01). `map-3d.ts` builds a tilted SVG from the 2D drawing in the browser

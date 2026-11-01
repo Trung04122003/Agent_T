@@ -42,6 +42,12 @@ Claude Code đọc file này cùng `ROADMAP-v3.md` và `UX-v3.md`. Mọi chữ v
 - **Thanh loading đặc nhiệm:** chủ dự án chọn **màn chờ dài hơn** (khoảng 1,5–2 giây), tức là bỏ quy tắc ROADMAP 25.2 ("không thanh phần trăm giả, không chữ loading"). Claude Code đã nêu rủi ro (người xem phải chờ). Làm ở phiên sau.
 - **Biểu đồ:** cả ba: dòng chảy bằng chứng (dữ liệu có sẵn), liên kết bản đồ–sổ cái (cần chủ dự án gắn mỗi mục với một nơi chốn), ma trận năng lực (cần chủ dự án gắn nhãn lĩnh vực, chỉ có/không, không chấm điểm). Làm ở phiên sau.
 
+### Chỉnh sửa sau khi xem bản đồ 3D (chủ dự án, 01/11/2026)
+- Bản đồ 3D có thao tác như 2D: phóng to, thu nhỏ, kéo, lăn chuột, về toàn cảnh; chọn nơi chốn ở danh sách thì cả hai bản đồ cùng phóng tới.
+- **Hiệu ứng nhấp nhô ruộng bậc thang:** tỉnh (sau sáp nhập: cả tỉnh mới) dưới con trỏ nhô lên thêm một bậc, rời chuột thì hạ xuống. 180 ms lên, 160 ms xuống, chỉ đổi `transform`; giảm chuyển động thì nhô/hạ tức thì.
+- **Cổng hiện ở mọi lần tải trang, kể cả tải lại** (thay ROADMAP 25.1 "tối đa một lần mỗi phiên"). Không còn lưu gì để bỏ qua cổng; vẫn không hiện với liên kết sâu, `?skip`, khi in, khi tắt JS. Lens và ngôn ngữ đã chọn vẫn được nhớ làm mặc định.
+- **Đường biên giới và tên quốc gia** trên cả 2D và 3D: biên giới trên đất liền nét gạch chấm; tên sáu nước có đất trong khung (`content/countries.json`). Không ghi tên Hồng Kông, Ma Cao (quá nhỏ) và bãi Scarborough (đang tranh chấp; hồ sơ đứng ngoài chính trị).
+
 ## Buổi chụp ảnh (P29)
 - Ảnh gốc để ngoài git (`private/portrait-raw/`), chỉ bản đã xóa EXIF/GPS vào repo.
 - Chụp hai độ sáng cùng tư thế, cùng đồ, dùng chân máy: bản tối cho Mật, bản sáng hơn cho Giải mật.

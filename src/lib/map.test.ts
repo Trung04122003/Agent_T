@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import places from "../../content/places.json";
 import admin from "../../content/provinces.json";
+import neighbours from "../../content/countries.json";
 import topo from "../assets/map/region.topo.json";
 import { buildMap, LABEL, labelRect, VIEW } from "./map";
 import type { Topology } from "topojson-specification";
 
 const points = places.map((p) => ({ id: p.id, lat: p.approx.lat, lon: p.approx.lon, text: p.label.vi }));
-const map = buildMap(topo as unknown as Topology, points, admin);
+const map = buildMap(topo as unknown as Topology, points, admin, neighbours.labels);
 const at = (id: string) => map.points.find((p) => p.id === id)!;
 const inView = ([x, y]: [number, number]) => x >= 0 && x <= VIEW.width && y >= 0 && y <= VIEW.height;
 
@@ -111,6 +112,41 @@ describe("provinces, before and after the 2025 merger (owner request 2026-10-29)
   it("keeps the province layer small in the page", () => {
     const bytes = map.provinces.reduce((s, p) => s + p.d.length, 0) + map.borders.kept.length + map.borders.merged.length;
     expect(bytes).toBeLessThan(120_000);
+  });
+});
+
+describe("land borders and neighbours' names (owner request 2026-11-01)", () => {
+  it("draws the land borders between countries, not the coastline", () => {
+    expect(map.frontiers.length).toBeGreaterThan(200);
+    expect(map.frontiers.length).toBeLessThan(map.countries.find((c) => c.code === "VNM")!.d.length);
+  });
+
+  it("names only neighbours with land in the frame, never Hong Kong, Macau or the Scarborough feature", () => {
+    const codes = neighbours.labels.map((c) => c.code);
+    expect(codes).toEqual(["CHN", "LAO", "KHM", "THA", "MYS", "PHL"]);
+    for (const c of neighbours.labels) {
+      expect(c.vi.length).toBeGreaterThan(0);
+      expect(c.en.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("each name sits in view and covers no place label or dot", () => {
+    for (const c of map.countryLabels) {
+      expect(inView([c.x, c.y]), c.code).toBe(true);
+      const name = neighbours.labels.find((n) => n.code === c.code)!.vi;
+      const w = [...name].length * LABEL.char;
+      const box = { x0: c.x - w / 2, y0: c.y - 10, x1: c.x + w / 2, y1: c.y + 3 };
+      for (const p of map.points) {
+        const r = labelRect({ ...p, text: places.find((q) => q.id === p.id)!.label.vi }, p.label);
+        const hit = (a: typeof box, b: typeof box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+        expect(hit(box, r), `${c.code} over ${p.id} label`).toBe(false);
+        expect(hit(box, { x0: p.x - LABEL.dot, y0: p.y - LABEL.dot, x1: p.x + LABEL.dot, y1: p.y + LABEL.dot }), `${c.code} over ${p.id}`).toBe(false);
+      }
+    }
+  });
+
+  it("rejects a name for a country that is not on the map", () => {
+    expect(() => buildMap(topo as unknown as Topology, points, admin, [{ code: "XXX", lon: 105, lat: 15 }])).toThrow(/XXX/);
   });
 });
 

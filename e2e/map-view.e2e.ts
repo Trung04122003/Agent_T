@@ -13,20 +13,20 @@ test.beforeEach(async ({ page }) => {
 
 test("zoom buttons change the view; labels keep their screen size; reset returns", async ({ page }) => {
   const [, , w0] = await viewBox(page);
-  await expect(page.locator('[data-zoom="out"]')).toBeDisabled();
+  await expect(page.locator('[data-map-frame] [data-zoom="out"]')).toBeDisabled();
   const label = page.locator('[data-place="da-nang"] text').first();
   const size0 = (await label.boundingBox())!.height;
 
-  await page.locator('[data-zoom="in"]').click();
+  await page.locator('[data-map-frame] [data-zoom="in"]').click();
   const [, , w1] = await viewBox(page);
   expect(w1).toBeCloseTo(w0! / 1.5, 3);
   expect(Math.abs((await label.boundingBox())!.height - size0)).toBeLessThanOrEqual(1);
 
-  for (let i = 0; i < 6; i++) await page.locator('[data-zoom="in"]').click({ force: true });
+  for (let i = 0; i < 6; i++) await page.locator('[data-map-frame] [data-zoom="in"]').click({ force: true });
   expect((await viewBox(page))[2]).toBeCloseTo(w0! / 4, 3); // capped at 4x
-  await expect(page.locator('[data-zoom="in"]')).toBeDisabled();
+  await expect(page.locator('[data-map-frame] [data-zoom="in"]')).toBeDisabled();
 
-  await page.locator('[data-zoom="reset"]').click();
+  await page.locator('[data-map-frame] [data-zoom="reset"]').click();
   expect(await viewBox(page)).toEqual([0, 0, w0, (await viewBox(page))[3]]);
 });
 
@@ -44,7 +44,7 @@ test("mouse wheel zooms around the pointer; at full view, scrolling down still s
   const after = (await page.locator('[data-place="da-nang"] .map__dot').boundingBox())!;
   expect(Math.abs(after.x + after.width / 2 - at.x)).toBeLessThanOrEqual(2);
   expect(Math.abs(after.y + after.height / 2 - at.y)).toBeLessThanOrEqual(2);
-  await expect(page.locator('[data-zoom="out"]')).toBeEnabled();
+  await expect(page.locator('[data-map-frame] [data-zoom="out"]')).toBeEnabled();
 
   // Back out to the full view; a further scroll down is left to the page (not cancelled).
   for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 400);
@@ -74,8 +74,8 @@ test("dragging pans only while zoomed", async ({ page }) => {
   await drag();
   expect(await viewBox(page)).toEqual(before);
 
-  await page.locator('[data-zoom="in"]').click();
-  await page.locator('[data-zoom="in"]').click();
+  await page.locator('[data-map-frame] [data-zoom="in"]').click();
+  await page.locator('[data-map-frame] [data-zoom="in"]').click();
   const zoomed = await viewBox(page);
   await drag();
   const panned = await viewBox(page);
@@ -151,9 +151,9 @@ test("after an in-place language switch the map still zooms (controls re-armed)"
   await page.locator("[data-lang-switch]:not([aria-current])").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.locator("[data-map]").scrollIntoViewIfNeeded();
-  await expect(page.locator("[data-map-zoom]")).toBeVisible();
+  await expect(page.locator("[data-map-frame] [data-map-zoom]")).toBeVisible();
   const [, , w0] = await viewBox(page);
-  await page.locator('[data-zoom="in"]').click();
+  await page.locator('[data-map-frame] [data-zoom="in"]').click();
   expect((await viewBox(page))[2]).toBeCloseTo(w0! / 1.5, 3);
   await expect(page.locator("[data-map] [data-place]").first()).toHaveCSS("opacity", "1");
 });
@@ -162,7 +162,7 @@ test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
   test("no zoom controls; the legend still lists every place", async ({ page }) => {
     await page.goto("/vi/");
-    await expect(page.locator("[data-map-zoom]")).toBeHidden();
+    await expect(page.locator("[data-map-frame] [data-map-zoom]")).toBeHidden();
     await expect(page.locator("[data-place-btn]")).toHaveCount(4);
   });
 });

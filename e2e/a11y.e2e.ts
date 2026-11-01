@@ -33,8 +33,8 @@ test("keyboard: Tab reaches every control in reading order, each with a visible 
         el.closest("[data-claim]")?.getAttribute("data-claim") ??
         el.getAttribute("data-lens") ??
         (el.hasAttribute("data-mode-toggle") ? "mode" : null) ??
-        el.textContent?.trim().slice(0, 30) ??
-        el.tagName;
+        // The flat and the 3D map have the same zoom buttons: tell them apart by their frame.
+        (el.closest("[data-map-3d]") ? "3d " : "") + (el.textContent?.trim().slice(0, 30) ?? el.tagName);
       return { key: `${el.tagName}:${key}`, top: el.getBoundingClientRect().top + scrollY, outline: `${cs.outlineStyle} ${cs.outlineWidth}` };
     });
     if (!info) break; // wrapped past the end
@@ -48,8 +48,12 @@ test("keyboard: Tab reaches every control in reading order, each with a visible 
   expect(keys.filter((k) => k.startsWith("BUTTON:partner") || k.startsWith("BUTTON:client") || k.startsWith("BUTTON:curious"))).toHaveLength(3);
   expect(keys.filter((k) => /^BUTTON:(edu|role|project|classified)/.test(k))).toHaveLength(rowToggles);
   expect(keys.some((k) => k.includes("Made with Natural Earth"))).toBe(true);
-  // Reading order: positions never jump back up the page (the control bar comes first).
-  const tops = seen.slice(3).map((s) => s.top);
-  for (let i = 1; i < tops.length; i++) expect(tops[i]!).toBeGreaterThanOrEqual(tops[i - 1]! - 1);
+  // Reading order: positions never jump back up the page (the control bar comes first), except into
+  // the 3D map's column, which stands beside the flat map from 1280 px (its frame is shorter).
+  const rest = seen.slice(3);
+  for (let i = 1; i < rest.length; i++) {
+    const intoColumn = rest[i]!.key.includes(":3d ") && !rest[i - 1]!.key.includes(":3d ");
+    if (!intoColumn) expect(rest[i]!.top, rest[i]!.key).toBeGreaterThanOrEqual(rest[i - 1]!.top - 1);
+  }
   for (const s of seen) expect(s.outline, s.key).toMatch(/^solid [1-9]/);
 });

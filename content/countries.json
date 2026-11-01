@@ -1,0 +1,11 @@
+{
+  "notes": "Neighbour names shown on both maps (owner request 2026-11-01), only countries with land in the frame. lon/lat is where the label sits (placement only, chosen over open land of that country, away from the four places). Not labelled: Hong Kong and Macau (too small at this scale) and the Scarborough Shoal feature (disputed; the dossier stays out of politics).",
+  "labels": [
+    { "code": "CHN", "vi": "Trung Quốc", "en": "China", "lon": 110.6, "lat": 23.0 },
+    { "code": "LAO", "vi": "Lào", "en": "Laos", "lon": 102.8, "lat": 19.7 },
+    { "code": "KHM", "vi": "Campuchia", "en": "Cambodia", "lon": 104.7, "lat": 12.9 },
+    { "code": "THA", "vi": "Thái Lan", "en": "Thailand", "lon": 102.6, "lat": 16.2 },
+    { "code": "MYS", "vi": "Malaysia", "en": "Malaysia", "lon": 116.0, "lat": 6.4 },
+    { "code": "PHL", "vi": "Philippines", "en": "Philippines", "lon": 117.3, "lat": 10.4 }
+  ]
+}

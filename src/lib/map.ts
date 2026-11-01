@@ -44,7 +44,13 @@ export type MapGeometry = {
   capital: [number, number];
   /** Box (x, y, width, height) around the provinces and both archipelagos: the 3D view's frame. */
   focus: [number, number, number, number];
+  /** Land borders between countries (shared edges only, no coastline). */
+  frontiers: string;
+  /** Where each neighbour's name sits (content/countries.json), projected. */
+  countryLabels: { code: string; x: number; y: number }[];
 };
+/** content/countries.json: a neighbour's code and where its name sits. */
+export type CountryLabel = { code: string; lon: number; lat: number };
 
 /** Label metrics at the map's 11px monospace: about 0.6em per character. */
 export const LABEL = { size: 11, char: 6.6, dot: 7, pad: 2 } as const;
@@ -52,7 +58,7 @@ export const LABEL = { size: 11, char: 6.6, dot: 7, pad: 2 } as const;
 const inside = ([lon, lat]: [number, number], b: Box) => lon >= b.west && lon <= b.east && lat >= b.south && lat <= b.north;
 const round = (n: number) => Math.round(n * 10) / 10;
 
-export function buildMap(topo: Topology, points: Point[], admin: Admin): MapGeometry {
+export function buildMap(topo: Topology, points: Point[], admin: Admin, neighbours: CountryLabel[] = []): MapGeometry {
   const object = topo.objects["countries"] as GeometryCollection<{ code: string }>;
   const countries = feature(topo, object) as FeatureCollection<Polygon | MultiPolygon, { code: string }>;
 
@@ -139,6 +145,12 @@ export function buildMap(topo: Topology, points: Point[], admin: Admin): MapGeom
 
   return {
     focus,
+    frontiers: path(mesh(topo, object, (a, b) => a !== b)) ?? "",
+    countryLabels: neighbours.map((c) => {
+      if (!countries.features.some((f) => f.properties.code === c.code)) throw new Error(`map: no country ${c.code} in region.topo.json`);
+      const [x, y] = project(c.lon, c.lat);
+      return { code: c.code, x, y };
+    }),
     provinces: shapes.map((f, i) => ({ code: codes[i]!, after: unit(codes[i]!), d: path(f) ?? "", tier: { before: before[i]!, after: after[i]! } })),
     borders: { kept: border(true), merged: border(false) },
     capital: project(admin.capital.lon, admin.capital.lat),
