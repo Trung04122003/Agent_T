@@ -33,8 +33,11 @@ describe("20.3 tier spread on the real content", () => {
     const open = raw.filter((c) => c.kind !== "classified" && c.visibility !== "hold");
     const expected = { T1: 0, T2: 0, T3: 0 };
     for (const c of open) expected[tierOf((c.evidence ?? []) as Parameters<typeof tierOf>[0])]++;
-    expect(tierSpread(claimsSchema.parse(raw))).toEqual(expected);
-    expect(raw.some((c) => c.visibility === "hold")).toBe(true); // the case is really exercised
+    // Nothing is held back in the real file since 2026-11-02 (the IC team role was removed): a
+    // made-up held copy of an open entry keeps the case exercised; it must not be counted.
+    const source = raw.find((c) => c.kind !== "classified" && c.visibility === "open")!;
+    const held = { ...source, id: "role-held-test", visibility: "hold" };
+    expect(tierSpread(claimsSchema.parse([...raw, held]))).toEqual(expected);
   });
 });
 

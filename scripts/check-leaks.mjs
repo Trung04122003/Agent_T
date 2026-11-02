@@ -17,7 +17,9 @@ const readJson = (name) => JSON.parse(readFileSync(join(root, "content", name), 
 const norm = (s) => s.normalize("NFC").toLowerCase();
 
 // --- Sensitive strings taken from content/ ---
-const claims = readJson("claims.json");
+// CUPID_CLAIMS: a test dataset instead of content/claims.json (as in src/lib/paths.ts), so the hold
+// rule can be tested even when the real file holds nothing back.
+const claims = process.env["CUPID_CLAIMS"] ? JSON.parse(readFileSync(resolve(process.env["CUPID_CLAIMS"]), "utf8")) : readJson("claims.json");
 const identity = readJson("identity.json");
 const places = readJson("places.json");
 const risks = readJson("risks.json");

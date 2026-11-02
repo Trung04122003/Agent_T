@@ -1,7 +1,7 @@
 {
-  "frozenOn": "2026-11-01",
+  "frozenOn": "2026-11-02",
   "files": {
-    "claims.json": "a494406afbb28890565b0be7d592120f18df562e031feb8276e0ebc7c025aeda",
+    "claims.json": "aefa0df4546ae5986b2946d9828663c335c13ab0369b15b863919939f7984d37",
     "countries.json": "4b4a2c75914ca3f09d22bb8bd80d7729b69e4391e4041e15211bfad26f012452",
     "domains.json": "a93bb169a89e1fcb6d1bea83f475e1404286fe62e5309151831d03aad747fb71",
     "identity.json": "1611a74de8f9cd879ad678d2767da606552f2d8c1348bc7c1b3f1b5f5fedce60",

@@ -53,6 +53,7 @@ describe("evidence trail layout (owner request 2026-11-01)", () => {
     const open = (claimsFile as Raw[]).filter((c) => c.kind !== "classified" && c.visibility !== "hold" && (c.evidence?.length ?? 0) > 0);
     const real = evidenceFlow(open.map((c) => ({ id: c.id, name: c.id, evidence: c.evidence!.map((e) => ({ ...e, note: e.note.vi })) })));
     expect(new Set(real.entries.map((e) => e.id))).toEqual(new Set(open.map((c) => c.id)));
-    expect(real.entries.some((e) => /dfl24|classified/.test(e.id))).toBe(false);
+    const hidden = new Set((claimsFile as Raw[]).filter((c) => c.kind === "classified" || c.visibility === "hold").map((c) => c.id));
+    expect(real.entries.some((e) => hidden.has(e.id))).toBe(false);
   });
 });

@@ -10,10 +10,11 @@ describe("content freeze", () => {
     expect(changed, "content changed since the freeze: review it, then run pnpm freeze:content").toEqual([]);
   });
 
-  it("every open entry that needs an approval has one; hold entries stay hold", () => {
+  it("every open entry that needs an approval has one", () => {
     const rows = reconcile();
     expect(rows.filter((r) => r.shows === "open" && r.approval.endsWith("MISSING"))).toEqual([]);
-    expect(rows.find((r) => r.id === "role-dfl24-ic")?.shows).toBe("HOLD (never built)");
+    // Removed by the owner on 2026-11-02 (the DFL24 Cohort was cancelled): no IC team role at all.
+    expect(rows.find((r) => r.id === "role-dfl24-ic")).toBeUndefined();
     // Opened by the owner on 2026-10-29, approved by the office manager (DECISIONS-v3.md).
     const prudential = rows.find((r) => r.id === "role-prudential");
     expect(prudential?.shows).toBe("open");

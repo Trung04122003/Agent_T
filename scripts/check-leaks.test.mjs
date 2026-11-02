@@ -6,15 +6,34 @@ import { describe, expect, it } from "vitest";
 // Fixtures are generated under test-results/ (git-ignored) so no private text is committed.
 const base = join("test-results", "check-leaks");
 const claims = JSON.parse(readFileSync("content/claims.json", "utf8"));
-const holdTitle = claims.find((c) => c.visibility === "hold" && c.title).title.vi;
 const someNote = claims.find((c) => typeof c.notes === "string").notes;
+// The real file holds nothing back since 2026-11-02 (the IC team role was removed), so the hold
+// rule is tested with the real entries plus one made-up held entry, which shares a source with a
+// public entry (that shared text must not count as a leak).
+const pub = claims.find((c) => c.visibility === "open" && c.evidence?.length);
+const held = {
+  id: "role-held-test",
+  kind: "role",
+  visibility: "hold",
+  status: "needs-approval",
+  org: { vi: "Tổ chức thử nghiệm được giữ lại", en: "Held test organisation" },
+  title: { vi: "Chức danh thử nghiệm được giữ lại", en: "Held test title" },
+  period: null,
+  teaser: null,
+  summary: null,
+  evidence: [pub.evidence[0]],
+};
+const holdTitle = held.title.vi;
+const withHold = join(base, "claims-with-hold.json");
+mkdirSync(base, { recursive: true });
+writeFileSync(withHold, JSON.stringify([...claims, held]));
 
 function run(name, files) {
   const dir = join(base, name);
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   for (const [file, body] of Object.entries(files)) writeFileSync(join(dir, file), body);
-  const r = spawnSync(process.execPath, ["scripts/check-leaks.mjs", dir], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["scripts/check-leaks.mjs", dir], { encoding: "utf8", env: { ...process.env, CUPID_CLAIMS: withHold } });
   return { code: r.status, out: r.stdout + r.stderr };
 }
 
@@ -122,7 +141,6 @@ describe("check-leaks noindex rule", () => {
 
 describe("check-leaks shared text", () => {
   it("does not flag text a hold entry shares with a public entry", () => {
-    const pub = claims.find((c) => c.visibility === "open" && c.evidence?.length);
     const shared = pub.evidence[0].note.vi;
     const r = run("shared-note", { "index.html": page(shared) });
     expect(r.out).toContain("check-leaks: OK");

@@ -36,7 +36,7 @@ describe("lenses (ROADMAP 7.1)", () => {
   });
 
   it("never exposes hidden ids through public weights", () => {
-    const withHold = { id: "t", weights: { "role-dfl24-ic": 99, "role-jci": 1 } };
+    const withHold = { id: "t", weights: { "role-held": 99, "role-jci": 1 } };
     expect(publicWeights(withHold, publicIds).weights).toEqual({ "role-jci": 1 });
   });
 });

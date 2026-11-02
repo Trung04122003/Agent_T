@@ -216,26 +216,6 @@
     "notes": "Chủ dự án chọn một dòng trung tính (24/10/2026): thì quá khứ, có mốc ngày, không logo, không chuyện nội bộ. Chức danh gốc: Phó Chủ tịch phụ trách Đào tạo và Phát triển hội viên (chủ dự án xác nhận câu chữ VI và EN). Cần mốc ngày."
   },
   {
-    "id": "role-dfl24-ic",
-    "kind": "role",
-    "visibility": "hold",
-    "status": "needs-approval",
-    "bluf": null,
-    "org": {
-      "vi": "DFL24 (Danang Fintech Lab) — VIFC Đà Nẵng",
-      "en": "DFL24 (Danang Fintech Lab) — VIFC Da Nang"
-    },
-    "title": {
-      "vi": "Trưởng nhóm Hợp tác quốc tế (IC)",
-      "en": "Leader, International Cooperation (IC) Team"
-    },
-    "period": null,
-    "teaser": null,
-    "summary": null,
-    "evidence": [],
-    "notes": "Cần DFL24 cho biết điều gì được công khai. Không đưa tên người khác hay chi tiết đoàn khách vào nội dung."
-  },
-  {
     "id": "role-prudential",
     "kind": "role",
     "visibility": "open",
