@@ -1,0 +1,9 @@
+{
+  "notes": "Fields for the capability matrix. Names chosen by the owner (2026-11-01); their order and the entries under each were drafted by Claude Code at the owner's request and approved the same day. The matrix shows presence only, never a score.",
+  "domains": [
+    { "id": "tech", "vi": "Công nghệ", "en": "Technology" },
+    { "id": "business", "vi": "Kinh doanh", "en": "Business" },
+    { "id": "finance", "vi": "Tài chính – bảo hiểm", "en": "Finance & insurance" },
+    { "id": "relations", "vi": "Ngoại giao", "en": "External relations" }
+  ]
+}

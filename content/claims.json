@@ -40,6 +40,8 @@
         "en": "A lesson kept: never miss anything that could affect finishing work or projects on schedule."
       }
     },
+    "place": "da-nang",
+    "domains": ["tech"],
     "evidence": [
       {
         "type": "document-on-request",
@@ -92,6 +94,8 @@
         "en": "Stick to goals: set them, and work towards them in numbers."
       }
     },
+    "place": "da-nang",
+    "domains": ["business", "relations"],
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
     ],
@@ -123,6 +127,8 @@
       "vi": "Hỗ trợ giảng viên trong việc đào tạo những kiến thức nền về lập trình cho sinh viên CNTT tại Đà Nẵng, hướng dẫn sử dụng và lập trình các hệ ngôn ngữ PHP, Laravel, VueJS, Git.",
       "en": "Assisting the lecturer in training IT students in Da Nang on programming fundamentals, guiding the use and development of PHP, Laravel, VueJS, Git."
     },
+    "place": "da-nang",
+    "domains": ["tech"],
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
     ],
@@ -168,6 +174,8 @@
         "en": "Graded 9.1/10 (defence and examination in English). The AQI was computed successfully, with a heat map by region and alerts on potential health risks based on the AQI."
       }
     },
+    "place": "da-nang",
+    "domains": ["tech"],
     "evidence": [
       { "type": "link", "url": "https://github.com/Trung04122003/aqm_front_end.git", "note": { "vi": "Mã nguồn dự án FE trên GitHub", "en": "Front-end source code on GitHub" } },
       { "type": "link", "url": "https://github.com/Trung04122003/aqm_back_end.git", "note": { "vi": "Mã nguồn dự án BE trên GitHub", "en": "Back-end source code on GitHub" } }
@@ -200,6 +208,8 @@
       "vi": "Phụ trách mảng đào tạo và phát triển hội viên của câu lạc bộ.",
       "en": "Responsible for the club's training and member development."
     },
+    "place": "da-nang",
+    "domains": ["relations"],
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
     ],
@@ -252,6 +262,8 @@
       "vi": "Tư vấn viên bảo hiểm nhân thọ, có chứng chỉ hành nghề sau kỳ thi của Bộ Tài chính. Làm việc tại văn phòng Ngũ Hành Sơn, Đà Nẵng.",
       "en": "Licensed life insurance advisor, certified after the Ministry of Finance examination. Based at the Ngu Hanh Son office, Da Nang."
     },
+    "place": "da-nang",
+    "domains": ["finance"],
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Chứng chỉ tư vấn viên bảo hiểm nhân thọ (kỳ thi của Bộ Tài chính), cung cấp khi có yêu cầu", "en": "Life insurance advisor certificate (Ministry of Finance examination), available on request" } }
     ],
@@ -304,6 +316,8 @@
         "en": "Plan properly; discipline is strength; work smart."
       }
     },
+    "place": "da-nang",
+    "domains": ["business"],
     "evidence": [
       { "type": "document-on-request", "note": { "vi": "Giấy chứng nhận hoàn thành, cung cấp khi có yêu cầu", "en": "Certificate of completion, available on request" } }
     ],

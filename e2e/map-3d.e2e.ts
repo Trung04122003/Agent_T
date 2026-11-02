@@ -170,6 +170,34 @@ test.describe("1280 px: side by side", () => {
   });
 });
 
+test.describe("1280 px: the archipelagos are named on the 3D view too", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+  const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
+
+  test("Hoang Sa (Viet Nam) and Truong Sa (Viet Nam): in view, next to their islands, vi and en", async ({ page }) => {
+    for (const locale of ["vi", "en"] as const) {
+      await page.goto(`/${locale}/`);
+      await page.locator("[data-map]").scrollIntoViewIfNeeded();
+      const marks = page.locator("[data-map-3d-svg] .map3d__marks");
+      const box = (await page.locator("[data-map-3d-svg]").boundingBox())!;
+      for (const [id, key] of [["hoang-sa", "hoangSaLabel"], ["truong-sa", "truongSaLabel"]] as const) {
+        const label = marks.locator(`[data-archipelago="${id}"]`);
+        await expect(label).toHaveText(ui[key][locale]);
+        await expect(label).toBeVisible();
+        const b = (await label.boundingBox())!;
+        expect(b.x).toBeGreaterThanOrEqual(box.x);
+        expect(b.x + b.width).toBeLessThanOrEqual(box.x + box.width);
+        // The nearest island dot is close under the name.
+        const near = await page.evaluate((r) => {
+          const dots = [...document.querySelectorAll("[data-map-3d-svg] .map3d__isle")].map((c) => c.getBoundingClientRect());
+          return Math.min(...dots.map((d) => Math.hypot(d.x - (r.x + r.width / 2), d.y - r.y)));
+        }, b);
+        expect(near, id).toBeLessThan(140);
+      }
+    }
+  });
+});
+
 test.describe("375 px: one map at a time", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 

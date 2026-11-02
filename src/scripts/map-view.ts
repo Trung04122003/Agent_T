@@ -51,6 +51,23 @@ export function initMapView(): void {
     p.addEventListener("pointerenter", () => hover(p.dataset["place"]!));
     p.addEventListener("pointerleave", () => hover(null));
   }
+  // Owner, 2026-11-01: a ledger row points at its place on the map; its "see it on the map" link
+  // brings the map up and picks the place (both maps zoom to it), focus on the place's button.
+  for (const row of document.querySelectorAll<HTMLElement>("[data-place-ref]")) {
+    const id = row.dataset["placeRef"]!;
+    row.addEventListener("pointerenter", () => hover(id));
+    row.addEventListener("pointerleave", () => hover(null));
+  }
+  for (const a of document.querySelectorAll<HTMLAnchorElement>("[data-goto-place]")) {
+    a.addEventListener("click", (e) => {
+      const b = items.find((x) => x.dataset["placeBtn"] === a.dataset["gotoPlace"]);
+      if (!b) return;
+      e.preventDefault();
+      map.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      if (b.getAttribute("aria-pressed") !== "true") b.click();
+      b.focus({ preventScroll: true });
+    });
+  }
 
   initProvinces(map);
   initTerraced(map);

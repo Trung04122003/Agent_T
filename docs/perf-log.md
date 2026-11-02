@@ -3,6 +3,46 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-01 (6) · Capability matrix; ledger rows linked to their place on the map
+
+Owner request. A new table section (no script) and, per ledger row, a "see it on the map" link plus
+a hover that lights the place; the map legend counts the entries of each place. Compared with the
+state right after entry (5) (same machine, same day). Lighthouse `/vi/`, 5 runs this time.
+
+| Item | Before (after entry 5) | After |
+|---|---|---|
+| `/vi/` HTML | 180 893 B (33 157 B gzip) | 188 961 B (33 784 B gzip, +627) |
+| `/en/` HTML | 172 537 B (31 496 B gzip) | 180 445 B (32 054 B gzip, +558) |
+| CSS total (gzip) | 14 926 B | 15 276 B (+350) |
+| JS total (gzip) | 18 231 B | 18 380 B (+149) |
+| Lighthouse `/vi/` | 99 / 99, TBT 30 / 50 ms (2 runs) | 94, 97, 99, 99, 99; TBT 280, 160, 100, 40, 90 ms (median 99, 100 ms) |
+| Lighthouse `/en/` | 99 / 99 | 99 / 99, TBT 40 / 0 ms |
+
+**Reading.** Within the playbook (score >= 90 every run). The first two `/vi/` runs swing as
+before (known P30 item); the median TBT is up from about 40 to about 100 ms, possibly real (a
+larger page) or the machine (runs right after the e2e suite). Worth re-measuring in P30.
+
+## 2026-11-01 (5) · Evidence trail chart; archipelago names on the 3D map
+
+Owner request. A new section (EvidenceFlow.astro): HTML nodes over one SVG of ribbons, built at
+build time from content/claims.json; a small hover script. The 3D map copies the two archipelago
+names (no measurable cost). Sizes from `build:prod` (gzip -9; "JS total" is every file in
+`_astro/`, most of it loaded on demand). Hover: 1280 px, `/vi/`, system cursors, 81 moves across
+the trail, rAF frame times, median of 3.
+
+| Item | Before (3d93742) | After |
+|---|---|---|
+| `/vi/` HTML | 170 536 B (31 821 B gzip) | 180 893 B (33 157 B gzip, +1 336) |
+| `/en/` HTML | 162 802 B (30 230 B gzip) | 172 537 B (31 496 B gzip, +1 266) |
+| CSS total (gzip) | 14 531 B | 14 926 B (+395) |
+| JS total (gzip) | 17 763 B | 18 231 B (+468) |
+| Lighthouse `/vi/` (2 runs) | 99 / 99, LCP 1.9 / 1.9 s, TBT 0 / 80 ms | 99 / 99, LCP 2.0 / 2.0 s, TBT 30 / 50 ms |
+| Lighthouse `/en/` (2 runs) | 100 / 99, LCP 1.8 / 2.1 s | 99 / 99, LCP 2.1 / 1.9 s |
+| Trail hover sweep p95, 1x and 4x CPU | — | 16.8 ms (Mat and Giai mat) |
+
+**Reading.** Within the playbook. The ribbons ease opacity only: a fill transition also ran on every
+mode change (the accent changes) and broke the Declassify budget; caught by e2e, removed.
+
 ## 2026-11-01 (4) · Gate: Skip and Esc play the opening too, and enter with no lens
 
 Owner request. Behaviour only: the same CSS opening, now also after Skip and Esc, which no longer

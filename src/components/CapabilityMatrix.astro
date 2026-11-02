@@ -1,0 +1,174 @@
+---
+// Capability matrix (owner request 2026-11-01): the open entries against the fields they touch,
+// from claims.json "domains" and content/domains.json. Presence only, never a score: a filled
+// square or an empty one. A real table, so screen readers read it as it is; no script.
+import domainsFile from "../../content/domains.json";
+import { t, type Locale } from "../lib/i18n";
+import { publicClaims } from "../lib/ledger";
+import type { Claim } from "../lib/schema";
+
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+}
+const { claims, locale } = Astro.props;
+const domains = domainsFile.domains;
+// Ledger order; only entries the owner placed in at least one field.
+const rows = publicClaims(claims).flatMap((c) =>
+  c.kind !== "classified" && "domains" in c && c.domains?.length ? [{ id: c.id, name: (c.org ?? c.title)?.[locale] ?? c.id, has: new Set(c.domains) }] : [],
+);
+const totals = domains.map((d) => rows.filter((r) => r.has.has(d.id)).length);
+const keys = ["matrixKicker", "matrixTitle", "matrixNote", "matrixYes", "matrixTotal", "flowEntry"];
+const [kicker, title, note, yes, total, colEntry] = await Promise.all(keys.map((k) => t(k, locale)));
+---
+
+{
+  rows.length > 0 && (
+    <section class="matrix sheet sheet--block" aria-labelledby="matrix-title" data-matrix>
+      <p class="matrix__kicker">{kicker}</p>
+      <h2 id="matrix-title" class="matrix__title">{title}</h2>
+      <p class="matrix__note">{note}</p>
+      <table class="matrix__table">
+        <thead>
+          <tr>
+            <th scope="col" class="matrix__corner">{colEntry}</th>
+            {domains.map((d) => (
+              <th scope="col" data-domain={d.id}>
+                {d[locale]}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr data-matrix-row={r.id}>
+              <th scope="row">{r.name}</th>
+              {domains.map((d) => (
+                <td data-has={String(r.has.has(d.id))}>
+                  <span class="matrix__mark" aria-hidden="true" />
+                  {r.has.has(d.id) && <span class="visually-hidden">{yes}</span>}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">{total}</th>
+            {totals.map((n) => (
+              <td>{n}</td>
+            ))}
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+  )
+}
+
+<style>
+  .matrix__kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .matrix__title {
+    margin: var(--space) 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .matrix__note {
+    margin: 0 0 calc(var(--space) * 3);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  .matrix__table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .matrix__table th,
+  .matrix__table td {
+    padding: calc(var(--space) * 1.25) var(--space);
+    border-bottom: 1px solid var(--line);
+  }
+  .matrix__table thead th {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    vertical-align: bottom;
+    text-align: center;
+    color: var(--ink-muted);
+    border-bottom-color: var(--accent);
+  }
+  .matrix__table thead .matrix__corner {
+    width: 40%;
+    text-align: start;
+  }
+  .matrix__table tbody th {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: start;
+    color: var(--ink);
+  }
+  .matrix__table td {
+    text-align: center;
+  }
+  /* Presence only: a filled square or an empty frame, never a scale. */
+  .matrix__mark {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    border: 1px solid var(--line);
+  }
+  [data-has="true"] .matrix__mark {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .matrix__table tbody tr:hover th,
+  .matrix__table tbody tr:hover td {
+    background: color-mix(in oklab, var(--accent) 8%, transparent);
+  }
+  .matrix__table tfoot th,
+  .matrix__table tfoot td {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    border-bottom: 0;
+  }
+  .matrix__table tfoot th {
+    text-align: start;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  @media (max-width: 639px) {
+    .matrix__table thead .matrix__corner {
+      width: 34%;
+    }
+    .matrix__table th,
+    .matrix__table td {
+      padding: var(--space) 4px;
+    }
+    .matrix__table thead th {
+      font-size: 0.5625rem;
+      letter-spacing: 0.02em;
+      overflow-wrap: anywhere;
+    }
+    .matrix__table tbody th {
+      font-size: 0.75rem;
+    }
+  }
+  @media (forced-colors: active) {
+    [data-has="true"] .matrix__mark {
+      background: CanvasText;
+    }
+  }
+</style>

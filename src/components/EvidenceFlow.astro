@@ -1,0 +1,267 @@
+---
+// Evidence trail (owner request 2026-11-01): each open entry, the named sources that back it, and
+// the tier they give (ROADMAP 9.7), drawn as three columns joined by ribbons. Built here from
+// content/claims.json, nothing typed by hand: one unit per (entry, source) pair. The drawing is for
+// the eye; screen readers get the same trail as a table. Pointing at a node lights its trail.
+import { t, type Locale } from "../lib/i18n";
+import { evidenceFlow } from "../lib/evidence-flow";
+import type { Claim } from "../lib/schema";
+import TierMeter from "./TierMeter.astro";
+
+interface Props {
+  claims: Claim[];
+  locale: Locale;
+}
+const { claims, locale } = Astro.props;
+const open = claims.flatMap((c) =>
+  c.kind === "classified" || !("evidence" in c) || !c.evidence.length
+    ? []
+    : [{ id: c.id, name: (c.org ?? c.title)?.[locale] ?? c.id, evidence: c.evidence.map((e) => ({ ...e, note: e.note[locale] })) }],
+);
+const flow = evidenceFlow(open);
+const keys = ["flowKicker", "flowTitle", "flowHint", "flowEntry", "flowSource", "flowTier", "tierT1", "tierT2", "tierT3"];
+const [kicker, title, hint, colEntry, colSource, colTier, ...tierText] = await Promise.all(keys.map((k) => t(k, locale)));
+const tierLabel = { T1: tierText[0]!, T2: tierText[1]!, T3: tierText[2]! };
+
+// Geometry, in rows: a row (--u in CSS, taller on phones) holds one unit; nodes in a column are GAP
+// rows apart; columns with fewer nodes are centred. Every column holds the same units, so all
+// positions scale with the row and the ribbons' SVG simply stretches with the plot.
+const GAP = 0.3;
+const most = Math.max(flow.entries.length, flow.sources.length, flow.tiers.length);
+const H = flow.units + (most - 1) * GAP;
+const at = (nodes: { units: number }[], node: { start: number; i: number }) => node.start + (node.i + (most - nodes.length) / 2) * GAP;
+/** Where unit `u` of a node sits (its top edge). */
+const slot = (nodes: { start: number; units: number; i: number }[], u: number) => {
+  const node = nodes.find((n) => u >= n.start && u < n.start + n.units)!;
+  return at(nodes, node) + (u - node.start);
+};
+// Columns, in % of the width: entries | ribbons | sources | ribbons | tiers.
+const X = { e: [0, 32], s: [44, 72], t: [82, 100] } as const;
+/** A ribbon from (x1, y1..y1+h1) to (x2, y2..y2+h2), curved halfway. */
+const ribbon = (x1: number, y1: number, x2: number, y2: number, h: number) => {
+  const m = (x1 + x2) / 2;
+  const [a, b, c, d] = [y1, y2, y2 + h, y1 + h].map(r3);
+  return `M${x1} ${a}C${m} ${a} ${m} ${b} ${x2} ${b}V${c}C${m} ${c} ${m} ${d} ${x1} ${d}Z`;
+};
+const sourceName = new Map(flow.sources.map((s) => [s.key, s.name]));
+const entryName = new Map(flow.entries.map((e) => [e.id, e.name]));
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+const box = (x: readonly [number, number], y: number, h: number) =>
+  `left:${x[0]}%;width:${x[1] - x[0]}%;top:calc(var(--u) * ${r3(y)});height:calc(var(--u) * ${r3(h)})`;
+---
+
+{
+  flow.units > 0 && (
+    <section class="flow sheet sheet--block" aria-labelledby="flow-title" data-flow>
+      <p class="flow__kicker">{kicker}</p>
+      <h2 id="flow-title" class="flow__title">{title}</h2>
+      <p class="flow__hint" aria-hidden="true">{hint}</p>
+      <div class="flow__heads" aria-hidden="true">
+        <span style={`left:${X.e[0]}%;width:${X.e[1] - X.e[0]}%`}>{colEntry}</span>
+        <span style={`left:${X.s[0]}%;width:${X.s[1] - X.s[0]}%`}>{colSource}</span>
+        <span style={`left:${X.t[0]}%;width:${X.t[1] - X.t[0]}%`}>{colTier}</span>
+      </div>
+      <div class="flow__plot" style={`height:calc(var(--u) * ${r3(H)})`} aria-hidden="true" data-flow-plot>
+        <svg viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" focusable="false">
+          {flow.links.map((l) => (
+            <path class="flow__ribbon" d={ribbon(X.e[1], slot(flow.entries, l.from), X.s[0], slot(flow.sources, l.to), 1)} data-entries={l.entry} />
+          ))}
+          {flow.feeds.map((f) => (
+            <path
+              class={`flow__ribbon flow__ribbon--${f.tier}`}
+              d={ribbon(X.s[1], at(flow.sources, flow.sources.find((s) => s.key === f.source)!), X.t[0], slot(flow.tiers, f.to), f.units)}
+              data-entries={f.entries.join(" ")}
+            />
+          ))}
+        </svg>
+        {flow.entries.map((e) => (
+          <div class="flow__node flow__node--entry" style={box(X.e, at(flow.entries, e), e.units)} title={e.name} data-entries={e.id}>
+            <span>{e.name}</span>
+          </div>
+        ))}
+        {flow.sources.map((s) => (
+          <div class="flow__node flow__node--source" style={box(X.s, at(flow.sources, s), s.units)} title={s.name} data-entries={s.entries.join(" ")}>
+            <span>{s.name}</span>
+          </div>
+        ))}
+        {flow.tiers.map((tr) => (
+          <div class="flow__node flow__node--tier" style={box(X.t, at(flow.tiers, tr), tr.units)} title={tierLabel[tr.tier]} data-entries={tr.entries.join(" ")}>
+            <span class="flow__tier-code">
+              <TierMeter tier={tr.tier} always />
+              <b>{tr.tier}</b>
+            </span>
+            <span class="flow__tier-text">{tierLabel[tr.tier].replace(/^T\d\s*—\s*/, "")}</span>
+          </div>
+        ))}
+      </div>
+      {/* Hidden by its wrapper: a table never shrinks to the 1px of .visually-hidden. */}
+      <div class="visually-hidden">
+      <table>
+        <caption>{title}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{colEntry}</th>
+            <th scope="col">{colSource}</th>
+            <th scope="col">{colTier}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {flow.links.map((l) => {
+            const s = flow.sources.find((x) => x.key === l.source)!;
+            return (
+              <tr>
+                <th scope="row">{entryName.get(l.entry)}</th>
+                {/* Text only: a link here would take focus while hidden; the ledger row has it. */}
+                <td>{sourceName.get(l.source)}</td>
+                <td>{tierLabel[s.tier]}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import { initEvidenceFlow } from "../scripts/evidence-flow";
+  initEvidenceFlow();
+</script>
+
+<style>
+  .flow__kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .flow__title {
+    margin: var(--space) 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .flow__hint {
+    margin: 0 0 calc(var(--space) * 3);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+  .flow__heads {
+    position: relative;
+    height: 1.5rem;
+    margin-bottom: var(--space);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .flow__heads span {
+    position: absolute;
+    top: 0;
+  }
+  .flow__plot {
+    --u: 34px;
+    position: relative;
+  }
+  .flow__plot svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  /* One hue (the accent): the ribbons are quiet, the trail under the pointer is bright. Only
+     opacity eases: a fill transition would also run on every mode change (the accent changes). */
+  .flow__ribbon {
+    fill: color-mix(in oklab, var(--accent) 22%, transparent);
+    transition: opacity 150ms ease;
+  }
+  .flow__ribbon--T3 {
+    fill: color-mix(in oklab, var(--accent) 34%, transparent);
+  }
+  .flow__node {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: var(--space);
+    box-sizing: border-box;
+    padding: 0 var(--space);
+    overflow: hidden;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--accent);
+    transition: opacity 150ms ease;
+  }
+  .flow__node span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .flow__node--entry {
+    font-weight: 700;
+  }
+  .flow__node--source {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  .flow__node--tier {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-muted);
+  }
+  .flow__tier-code {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink);
+  }
+  .flow__tier-text {
+    -webkit-line-clamp: 4 !important;
+  }
+  /* Pointing at a node: its trail stays, the rest steps back (opacity and fill only). */
+  .flow.is-hot .flow__node:not(.is-lit) {
+    opacity: 0.35;
+  }
+  .flow.is-hot .flow__ribbon:not(.is-lit) {
+    opacity: 0.3;
+  }
+  .flow.is-hot .flow__ribbon.is-lit {
+    fill: color-mix(in oklab, var(--accent) 55%, transparent);
+  }
+  /* Narrow: names stay on two lines; the tier column keeps its meter and code only. */
+  @media (max-width: 639px) {
+    .flow__plot {
+      --u: 52px;
+    }
+    .flow__node span:not(.flow__tier-code) {
+      -webkit-line-clamp: 3;
+    }
+    .flow__node {
+      padding: 0 4px;
+      font-size: 0.6875rem;
+    }
+    .flow__node--source {
+      font-size: 0.625rem;
+    }
+    .flow__tier-text {
+      display: none !important;
+    }
+  }
+  @media (forced-colors: active) {
+    .flow__ribbon {
+      fill: GrayText;
+    }
+  }
+</style>

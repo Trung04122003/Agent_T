@@ -16,6 +16,7 @@ import TierMeter from "./TierMeter.astro";
 import Aar from "./Aar.astro";
 import PageMark from "./PageMark.astro";
 import Redaction from "./Redaction.astro";
+import placesFile from "../../content/places.json";
 
 export interface LedgerLabels {
   heading: string;
@@ -37,6 +38,9 @@ interface Props {
 }
 const { claims, locale, labels, showUnverified, seed } = Astro.props;
 const rows = publicClaims(claims);
+// Owner, 2026-11-01: an entry's place links its row to the map (map-view.ts does the linking).
+const placeName = new Map(placesFile.map((p) => [p.id, p.label[locale]]));
+const onMap = await t("ledgerOnMap", locale);
 const stamp = await t("stampOpened", locale);
 // Giai mat "data floor" (ROADMAP 14.1): column heads and each entry's length in months.
 // File number for the request mail's reference ("CUPID-2610" + the row code, ROADMAP 24.3).
@@ -142,7 +146,7 @@ const [balanceLabel, balanceNote, sourceLabel, sourceSelf] = await Promise.all(
         );
 
         return (
-          <li class="row" id={`claim-${c.id}`} data-claim={c.id} data-kind={c.kind}>
+          <li class="row" id={`claim-${c.id}`} data-claim={c.id} data-kind={c.kind} data-place-ref={c.place}>
             <h3 class="row__head">
               {hasPanel ? (
                 <button class="row__toggle" type="button" aria-expanded="true" aria-controls={panelId} data-row-toggle>
@@ -193,6 +197,14 @@ const [balanceLabel, balanceNote, sourceLabel, sourceSelf] = await Promise.all(
                       {onRequest.length > 0 && <RequestDocs locale={locale} fileRef={`${fileNo}-${code}`} docs={onRequest} />}
                     </div>
                   )}
+                  {/* To the map: picks the place there (map-view.ts); without JS, a plain jump. */}
+                  {c.place && placeName.has(c.place) && (
+                    <p class="row__place">
+                      <a href="#map-title" data-goto-place={c.place}>
+                        <span aria-hidden="true">⌖</span> {placeName.get(c.place)} · {onMap}
+                      </a>
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -215,6 +227,16 @@ const [balanceLabel, balanceNote, sourceLabel, sourceSelf] = await Promise.all(
   .row__tier,
   .row__badge,
   .ledger__legend,
+  .row__place {
+    margin: calc(var(--space) * 1.5) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+  .row__place a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
   .row__evidence-heading {
     font-family: var(--font-mono);
     font-size: 0.75rem;

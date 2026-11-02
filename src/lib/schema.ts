@@ -154,6 +154,10 @@ const openClaim = z
     aar: aar.nullable().optional(),
     /** ROADMAP 20.2: on pause. Shown as "paused", not counted as ongoing nor in the commitment chart. */
     paused: z.literal(true).optional(),
+    /** Owner, 2026-11-01: where on the map this entry belongs (an id in content/places.json). */
+    place: text.optional(),
+    /** Owner, 2026-11-01: the fields it touches (ids in content/domains.json); presence, never a score. */
+    domains: z.array(text).optional(),
     evidence: z.array(evidence),
     /** Internal record that the organisation agreed to publication (ROADMAP 9.6). Never rendered. */
     approval: z.strictObject({ by: text, on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD") }).optional(),

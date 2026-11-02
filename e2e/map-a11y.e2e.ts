@@ -4,11 +4,15 @@ import { expect, test } from "./test";
 
 // ROADMAP 6.4: screen readers get a text list (the legend) instead of the drawing; axe finds no issue.
 const places = JSON.parse(readFileSync("content/places.json", "utf8")) as Array<{
+  id: string;
   role: "origin" | "current" | "home";
   label: { vi: string; en: string };
   region: { vi: string; en: string } | null;
 }>;
 const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
+// Owner, 2026-11-01: a place with entries of the file says how many (claims.json "place").
+const claims = JSON.parse(readFileSync("content/claims.json", "utf8")) as { place?: string; visibility?: string }[];
+const entriesAt = (id: string) => claims.filter((c) => c.place === id && c.visibility !== "hold").length;
 
 for (const locale of ["vi", "en"] as const) {
   test(`map text alternative lists every place and both archipelagos (${locale})`, async ({ page }) => {
@@ -21,7 +25,8 @@ for (const locale of ["vi", "en"] as const) {
     await expect(items).toHaveText([
       ...places.map((p) => {
         const name = p.region ? `${p.label[locale]}, ${p.region[locale]}` : p.label[locale];
-        return `${name} — ${ui[{ origin: "placeRoleOrigin", current: "placeRoleCurrent", home: "placeRoleHome" }[p.role]][locale]}`;
+        const n = entriesAt(p.id);
+        return `${name} — ${ui[{ origin: "placeRoleOrigin", current: "placeRoleCurrent", home: "placeRoleHome" }[p.role]][locale]}${n ? ` · ${n} ${ui.mapPlaceEntries[locale]}` : ""}`;
       }),
       ui.mapCapital[locale],
       ui.hoangSaLabel[locale],

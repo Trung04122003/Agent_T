@@ -117,8 +117,9 @@ export function initMap3d(map: HTMLElement): void {
     scene.replaceChildren(...levels);
   };
 
-  // Marks on top of every step: the neighbours' names (on their step), the islands (on the near
-  // step), the four places and the capital (on the home step), copied from the 2D drawing with their
+  // Marks on top of every step: the neighbours' names (on their step), the islands and the names of
+  // Hoang Sa and Truong Sa (on the near step; owner, 2026-11-01: always named, as on the flat map),
+  // the four places and the capital (on the home step), copied from the 2D drawing with their
   // classes, so they look the same.
   const lift = (x: number, y: number, h: number) => ground(x, y, h).map((n) => Math.round(n * 10) / 10) as [number, number];
   const copy = (g: SVGGElement, h: number): [SVGGElement, [number, number]] | null => {
@@ -132,6 +133,7 @@ export function initMap3d(map: HTMLElement): void {
   };
   for (const g of flat.querySelectorAll<SVGGElement>(".map__country")) copy(g, HEIGHT.world);
   for (const [x, y] of isles) marks.append(el("circle", { class: "map3d__isle", transform: `translate(${lift(x, y, HEIGHT.near).join(" ")})`, r: "1.8" }));
+  for (const t of flat.querySelectorAll<SVGTextElement>("[data-archipelago]")) copy(t.parentNode as SVGGElement, HEIGHT.near);
   const copies = new Map<SVGGElement, SVGGElement>();
   const spots = new Map<string, [number, number]>();
   for (const g of flat.querySelectorAll<SVGGElement>(".map__point, .map__capital")) {
@@ -150,12 +152,15 @@ export function initMap3d(map: HTMLElement): void {
   const controls = frame.querySelector<HTMLElement>("[data-map-zoom]");
   if (controls) {
     const zoom = zoomable(svg, controls);
+    const follow = (b: HTMLButtonElement): void => {
+      const at = spots.get(b.dataset["placeBtn"]!);
+      if (at && b.getAttribute("aria-pressed") === "true") zoom.focus(...at);
+    };
     for (const b of map.querySelectorAll<HTMLButtonElement>("[data-place-btn]")) {
       // Runs after the flat map's own handler, which has set aria-pressed by then.
-      b.addEventListener("click", () => {
-        const at = spots.get(b.dataset["placeBtn"]!);
-        if (at && b.getAttribute("aria-pressed") === "true") zoom.focus(...at);
-      });
+      b.addEventListener("click", () => follow(b));
+      // Picked before this view was built (e.g. from a ledger row's link while the page scrolled).
+      follow(b);
     }
   }
 

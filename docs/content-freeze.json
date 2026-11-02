@@ -1,8 +1,9 @@
 {
   "frozenOn": "2026-11-01",
   "files": {
-    "claims.json": "f22b893547560192c45454265091b477cce328294b052e41b217a5e5054d7316",
+    "claims.json": "a494406afbb28890565b0be7d592120f18df562e031feb8276e0ebc7c025aeda",
     "countries.json": "4b4a2c75914ca3f09d22bb8bd80d7729b69e4391e4041e15211bfad26f012452",
+    "domains.json": "a93bb169a89e1fcb6d1bea83f475e1404286fe62e5309151831d03aad747fb71",
     "identity.json": "1611a74de8f9cd879ad678d2767da606552f2d8c1348bc7c1b3f1b5f5fedce60",
     "lenses.json": "e4327e746fffd38e5dd4007da7007abbfb0a87bf7f4c8950d37f6eb492723cf9",
     "metrics.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
@@ -11,6 +12,6 @@
     "print.json": "0a62fa9e1d783ce551a8d2acea194bc551c3b50cda5806642f4844ac1d5476d5",
     "provinces.json": "a1fe194f2ddb4ff74ce9bb526e3b40ff06b06e817c012db7373419adba23f399",
     "risks.json": "6d20554822ab7e5952c8215f54b0625d54cf1b0e7b6d2b4b5b12933db8a23c50",
-    "ui.json": "3d1c701cd307931276c8a6053c755e7bff7d5e2c88da647ff8c0026d7ebfce04"
+    "ui.json": "b2372d7e34fba1d7195f3288a874a6108f0f5f216568c0959ddc050a6822a0d6"
   }
 }

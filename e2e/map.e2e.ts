@@ -13,7 +13,7 @@ for (const locale of ["vi", "en"] as const) {
     await map.scrollIntoViewIfNeeded();
     await page.evaluate(() => document.fonts.ready);
     for (const [key, id] of [["hoangSaLabel", "hoang-sa"], ["truongSaLabel", "truong-sa"]] as const) {
-      const label = map.locator(`[data-archipelago="${id}"]`);
+      const label = map.locator(`[data-map-svg] [data-archipelago="${id}"]`);
       await expect(label).toHaveText(ui[key][locale]);
       await expect(label).toBeVisible();
       const box = (await label.boundingBox())!;

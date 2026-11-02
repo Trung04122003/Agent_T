@@ -6,6 +6,7 @@ import { revealGate } from "./decode";
 import { initLedger } from "./ledger";
 import { initLens } from "./lens";
 import { initChart } from "./chart";
+import { initEvidenceFlow } from "./evidence-flow";
 import { initMap } from "./map-reveal";
 import { initMapView } from "./map-view";
 import { initEntry } from "./entry";
@@ -55,6 +56,7 @@ async function show(url: string, push: boolean): Promise<void> {
   initMap();
   initMapView();
   initChart();
+  initEvidenceFlow();
   // Chosen inside the open entry gate (ROADMAP 25.2): the gate stays, now in the new language; the
   // page behind it is inert and hidden, so it gets no fade or decode of its own.
   if (root.dataset["gate"] === "show") return initEntry(true);
