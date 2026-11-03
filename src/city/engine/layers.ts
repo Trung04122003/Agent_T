@@ -17,6 +17,14 @@ export const LAYERS = {
   maxDpr: 2,
   /** DPR is lowered in these steps until the plan fits. */
   dprStep: 0.25,
+  /**
+   * Most pixels a frame paints per tier (dynamic layer), so a full-screen stage costs what a laptop
+   * window does: beyond it the canvases render smaller and are stretched (the HUD is DOM, so text
+   * stays sharp). Owner request 03/11/2026 (full screen), held to the frame budget.
+   */
+  pixels: { high: Infinity, medium: 1_100_000, low: 750_000 },
+  /** Never below this scale, however large the stage. */
+  minDpr: 0.5,
 } as const;
 
 export type CanvasPlan = { name: "dynamic" | "darkness" | "light" | "chunk"; w: number; h: number; count: number; bytes: number };
@@ -42,9 +50,16 @@ function planAt(cssW: number, cssH: number, dpr: number): LayerPlan {
   return { dpr, canvases, total: canvases.reduce((n, c) => n + c.bytes, 0) };
 }
 
-/** The sharpest plan under the memory budget for a viewport (CSS px) and the device's DPR. */
-export function planLayers(cssW: number, cssH: number, deviceDpr: number): LayerPlan {
+/**
+ * The sharpest plan under the memory budget for a viewport (CSS px) and the device's DPR, painting
+ * at most `maxPixels` on the dynamic layer (a tier's budget, LAYERS.pixels).
+ */
+export function planLayers(cssW: number, cssH: number, deviceDpr: number, maxPixels = Infinity): LayerPlan {
   let dpr = Math.max(1, Math.min(LAYERS.maxDpr, deviceDpr));
+  if (cssW * cssH * dpr * dpr > maxPixels) {
+    // Steps of 0.05, so a chunk's side stays a whole number of pixels near its spacing (no seam).
+    dpr = Math.max(LAYERS.minDpr, Math.floor(Math.sqrt(maxPixels / (cssW * cssH)) * 20) / 20);
+  }
   let plan = planAt(cssW, cssH, dpr);
   while (plan.total > LAYERS.maxBytes && dpr > LAYERS.dprStep) {
     dpr = Math.max(LAYERS.dprStep, Math.round((dpr - LAYERS.dprStep) * 100) / 100);

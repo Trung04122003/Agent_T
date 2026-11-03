@@ -17,7 +17,7 @@ import { follow } from "./camera";
 import { decideTier, readCapabilities } from "./engine/capabilities";
 import { createInput } from "./engine/input";
 import { TILE } from "./engine/iso";
-import { planLayers, type LayerPlan } from "./engine/layers";
+import { LAYERS, planLayers, type LayerPlan } from "./engine/layers";
 import { createLoop } from "./engine/loop";
 import { createQuality, TIERS, type Tier } from "./engine/quality";
 import { drawFigure, drawShadow, FIGURE } from "./figure";
@@ -166,11 +166,20 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   let atHand: string | null = null;
 
   // Sizes come from the observer's entry, not from reading the layout.
+  let sizeW = 0;
+  let sizeH = 0;
   const resize = new ResizeObserver(([entry]) => {
     if (!entry) return;
-    const w = Math.round(entry.contentRect.width);
-    const h = Math.round(entry.contentRect.height);
-    plan = planLayers(w, h, devicePixelRatio || 1);
+    sizeW = Math.round(entry.contentRect.width);
+    sizeH = Math.round(entry.contentRect.height);
+    replan();
+  });
+  /** Canvases for the stage's size and the tier's pixel budget (layers.ts); again on a tier change. */
+  function replan(): void {
+    const w = sizeW;
+    const h = sizeH;
+    if (!w || !h) return;
+    plan = planLayers(w, h, devicePixelRatio || 1, LAYERS.pixels[quality.tier]);
     for (const c of plan.canvases) {
       const el = c.name === "dynamic" ? dynamic : c.name === "darkness" ? darkness : c.name === "light" ? lightMask : null;
       if (!el) continue;
@@ -184,13 +193,15 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     dirty = lightDirty = true;
     stage.dataset["dpr"] = String(plan.dpr);
     stage.dataset["backing"] = String(plan.total);
+    firstComposite = true;
     input.measure();
     loop.poke();
-  });
+  }
 
   const quality = createQuality(start, (tier) => {
     stage.dataset["tier"] = tier;
     applyTier();
+    replan();
   });
   function applyTier(): void {
     rain.setTier(quality.tier, pal.mode === "mat" && !reduced.matches);

@@ -3,6 +3,46 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P39 · Atlas data export; full-width city (owner request)
+
+**Atlas data** (`pnpm city:budget` on the flag-on build): `/city/atlas.json` 43 986 B raw, **10 638 B gzip**
+(budget 61 440 B). City JS 26 027 B gzip, city CSS 1 606 B (both unchanged by the export, which is data).
+
+**Method correction (important).** Every frame-time figure from P32 to P38 was taken with headless
+Chromium rendering through **SwiftShader**, a software GPU running on the CPU, not through the reference
+machine's integrated graphics. Found in P39 by reading the WebGL renderer string. With
+`--use-angle=d3d11 --ignore-gpu-blocklist --enable-gpu` the same browser uses
+`ANGLE (Intel, Intel(R) UHD Graphics (0x00009A78) Direct3D11)`, the i3's own graphics, which is what the
+rules ask for. `tools/perf/city-frames.mjs` and `city-alloc.mjs` now use the real GPU by default and print
+the renderer; `CITY_GPU=0` measures with SwiftShader again. The earlier figures were the stricter case
+(software compositing); they stay in this log as they were.
+
+**Full-width stage** (owner request; stage 1366x618 in a 1366x768 window, 1920x930 in 1920x1080, Medium
+pixel budget 1.1 Mpx, so the larger stage renders at 0.8 and is stretched). Medium, walking 6 s, median
+of 3:
+
+| Renderer | Mode | Viewport | CPU | p95 frame | Max frame | Frames > 33 ms | Tier (3 runs) |
+|---|---|---|---|---|---|---|---|
+| Intel UHD (D3D11) | Mat | 1366x768 | 1x | 16.8 ms | 83.4 ms | 1 | Medium |
+| Intel UHD (D3D11) | Mat | 1366x768 | 4x | 16.8 ms | 16.8 ms | 0 | Medium |
+| Intel UHD (D3D11) | Mat | 1920x1080 | 1x | 16.8 ms | 16.8 ms | 0 | Medium |
+| Intel UHD (D3D11) | Mat | 1920x1080 | 4x | 16.8 ms | 83.4 ms | 5 | Medium |
+| Intel UHD (D3D11) | Giai mat | 1366x768 | 1x | 16.8 ms | 33.3 ms | 0 | Medium |
+| Intel UHD (D3D11) | Giai mat | 1366x768 | 4x | 16.8 ms | 33.4 ms | 1 | Medium |
+| Intel UHD (D3D11) | Giai mat | 1920x1080 | 1x | 16.8 ms | 66.6 ms | 3 | Medium |
+| Intel UHD (D3D11) | Giai mat | 1920x1080 | 4x | 16.8 ms | 50.0 ms | 1 | Medium |
+| SwiftShader | Mat | 1920x1080 | 1x | 33.4 ms | 66.5 ms | 22 | Low (all 3) |
+| SwiftShader | Mat | 1920x1080 | 4x | 49.9 ms | 133.4 ms | 27 | Low (all 3) |
+
+With the reference graphics the full-width city holds the budget everywhere (p95 16.8 ms, Medium, no
+step-down). Under SwiftShader it does not (p95 33.4 ms at 1x on the large stage), and the per-tier pixel
+budget barely helped there: the cost was software compositing of the whole page, not canvas pixels.
+High tier (no pixel budget, rain) on the GPU: p95 16.8 ms in every configuration, but one isolated frame of
+500-600 ms on the 1920x930 stage (a P50 item: likely a first-time texture upload at full size).
+
+**Allocation** (`city-alloc.mjs`, GPU): mouse still 2 scavenges in 5 s, heap 2.88 -> 3.11 MB; moving 14;
+Lite baseline 0 (as P38).
+
 ## 2026-11-03 · P38 · Day engine (the Giai mat look)
 
 Same method (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Medium, walking 6 s after the entrance;

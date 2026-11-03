@@ -11,7 +11,8 @@ process.env["PLAYWRIGHT_BROWSERS_PATH"] ??= join("F:", "\\", "Dev", "Data", "pla
 const { chromium } = await import("@playwright/test");
 
 const base = process.argv[2] ?? "http://localhost:4324";
-const browser = await chromium.launch();
+// The machine's integrated graphics, as tools/perf/city-frames.mjs (CITY_GPU=0: SwiftShader).
+const browser = await chromium.launch({ args: process.env["CITY_GPU"] !== "0" ? ["--use-angle=d3d11", "--ignore-gpu-blocklist", "--enable-gpu"] : [] });
 
 async function run(moving, query = "?quality=high") {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });

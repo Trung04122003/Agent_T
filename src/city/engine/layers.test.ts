@@ -48,4 +48,13 @@ describe("baked chunk cache", () => {
     expect(cache.size).toBe(0);
     expect(dropped).toEqual(["chunk b", "chunk a", "chunk c"]);
   });
+
+  it("a tier's pixel budget scales a large stage down (full screen), never below the floor", () => {
+    const big = planLayers(1920, 930, 1, LAYERS.pixels.medium);
+    expect(big.dpr).toBeLessThan(1);
+    expect(big.canvases.find((c) => c.name === "dynamic")!.w * big.canvases.find((c) => c.name === "dynamic")!.h).toBeLessThanOrEqual(LAYERS.pixels.medium * 1.01);
+    expect(planLayers(1366, 618, 1, LAYERS.pixels.medium).dpr).toBe(1); // a laptop window: untouched
+    expect(planLayers(1920, 930, 1, LAYERS.pixels.high).dpr).toBe(1);
+    expect(planLayers(3840, 2160, 1, LAYERS.pixels.low).dpr).toBe(LAYERS.minDpr); // a 4K screen
+  });
 });

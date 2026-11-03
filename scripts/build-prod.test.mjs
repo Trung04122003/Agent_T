@@ -83,6 +83,7 @@ describe("PUBLIC_CITY build flag", () => {
     expect(r.code).toBe(0);
     const out = "test-results/dist-fixture";
     for (const l of ["vi", "en"]) expect(existsSync(join(out, l, "city"))).toBe(false);
+    expect(existsSync(join(out, "city", "atlas.json"))).toBe(false); // the Atlas's data neither (P39)
     for (const f of htmlFiles(out)) expect(readFileSync(f, "utf8"), f).not.toMatch(/href="[^"]*\/city\b/);
     // Not even an orphan chunk: none of the city's code is bundled.
     for (const f of readdirSync(join(out, "_astro")).filter((x) => x.endsWith(".js"))) {
@@ -94,5 +95,10 @@ describe("PUBLIC_CITY build flag", () => {
     const r = buildCity(true);
     expect(r.code).toBe(0);
     for (const l of ["vi", "en"]) expect(existsSync(join("test-results/dist-fixture", l, "city", "index.html"))).toBe(true);
+    // P39: the Atlas's data, with both archipelago labels exactly as the 2D map has them.
+    const atlas = JSON.parse(readFileSync(join("test-results/dist-fixture", "city", "atlas.json"), "utf8"));
+    const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
+    expect(atlas.archipelagos.hoangSa.text).toEqual({ vi: ui.hoangSaLabel.vi, en: ui.hoangSaLabel.en });
+    expect(atlas.archipelagos.truongSa.text).toEqual({ vi: ui.truongSaLabel.vi, en: ui.truongSaLabel.en });
   }, 120_000);
 });

@@ -164,6 +164,22 @@ export function createHud(stage: HTMLElement, text: CityText, states: States, on
     }
   }
   if (promptBtn) on(promptBtn, "click", () => shownPrompt && open(shownPrompt));
+  // Full screen (owner request, 03/11/2026): offered where the browser allows it, with a mouse.
+  const full = q<HTMLButtonElement>("[data-hud-full]");
+  if (full && document.fullscreenEnabled && matchMedia("(pointer: fine)").matches) {
+    full.hidden = false;
+    const label = (): void => {
+      const isFull = document.fullscreenElement === stage;
+      full.textContent = (isFull ? full.dataset["off"] : full.dataset["on"]) ?? "";
+      full.setAttribute("aria-pressed", String(isFull));
+    };
+    on(full, "click", () => {
+      if (document.fullscreenElement === stage) void document.exitFullscreen();
+      else void stage.requestFullscreen().then(() => stage.focus({ preventScroll: true }), () => {});
+    });
+    on(document, "fullscreenchange", label);
+    label();
+  }
   const renderPrompt = (): void => {
     if (!promptBtn || !near) return;
     const id = shownPrompt;

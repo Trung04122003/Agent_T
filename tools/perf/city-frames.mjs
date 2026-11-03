@@ -78,7 +78,22 @@ async function run(browser, [w, h], rate) {
   };
 }
 
-const browser = await chromium.launch();
+// The reference machine's own integrated graphics (Intel UHD through D3D11). Without these flags
+// headless Chromium renders with SwiftShader, a software GPU (P32-P38 were measured that way; found
+// in P39). CITY_GPU=0 measures with SwiftShader again, for comparison.
+const GPU = process.env["CITY_GPU"] !== "0";
+const browser = await chromium.launch({ args: GPU ? ["--use-angle=d3d11", "--ignore-gpu-blocklist", "--enable-gpu"] : [] });
+{
+  const p = await browser.newPage();
+  await p.goto(`${base}/vi/city/?lite`);
+  const renderer = await p.evaluate(() => {
+    const gl = document.createElement("canvas").getContext("webgl");
+    const ext = gl && gl.getExtension("WEBGL_debug_renderer_info");
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : "unknown";
+  });
+  console.log(`renderer: ${renderer}`);
+  await p.close();
+}
 const rows = [];
 for (const vp of viewports) {
   for (const rate of [1, 4]) {

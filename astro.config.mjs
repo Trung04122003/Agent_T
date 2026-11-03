@@ -32,6 +32,8 @@ const cityRoute = {
     "astro:config:setup": ({ command, injectRoute }) => {
       if (command !== "dev" && process.env["PUBLIC_CITY"] !== "1") return;
       injectRoute({ pattern: "/[lang]/city", entrypoint: "./src/city/route.astro" });
+      // The Atlas's data (ROADMAP-v4 P39), from the 2D map's own geometry.
+      injectRoute({ pattern: "/city/atlas.json", entrypoint: "./src/city/atlas.json.ts" });
     },
   },
 };

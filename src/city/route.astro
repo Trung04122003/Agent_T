@@ -43,6 +43,7 @@ const keys = [
   "cityNameplate", "cityLog", "cityNext", "cityClose", "cityHint", "cityDropNote", "modeMat", "modeGiaiMat",
   "cityStateSealed", "cityStateScouted", "cityStateBriefed", "cityStateDeclassified",
   "cityNear", "cityPrompt", "cityPromptDrop", "cityLight", "cityAllLit", "cityQuietSealed", "cityQuietLit",
+  "cityFullscreen", "cityFullscreenExit",
 ] as const;
 const s = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const))) as Record<(typeof keys)[number], string>;
 // Back to the dossier lands past its gate (any hash skips it) on the page's heading.
@@ -156,6 +157,8 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
         <button type="button" class="city-hud__prompt" data-hud-prompt hidden></button>
         <p class="visually-hidden" aria-live="polite" data-hud-near></p>
         <p class="city-hud__hint">{s.cityHint}</p>
+        {/* Owner request (03/11/2026): the city full screen on PC and laptop (Fullscreen API; Esc leaves). */}
+        <button type="button" class="city-hud__full" data-hud-full data-on={s.cityFullscreen} data-off={s.cityFullscreenExit} hidden>{s.cityFullscreen}</button>
       </div>
     </div>
 
@@ -291,6 +294,29 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
     border: 1px solid var(--city-hud-line);
     touch-action: none; /* taps and drags belong to the city, not to page scroll and zoom */
   }
+  /* PC and laptop (owner request, 03/11/2026): the city takes the window's full width and nearly
+     its full height, out of the text column; the controls and title stay above it. */
+  @media (min-width: 1024px) and (pointer: fine) {
+    .city {
+      max-width: none;
+      padding-inline: 0;
+    }
+    .city > :not(.city-stage, dialog) {
+      max-width: calc(var(--measure) + 2 * var(--gutter));
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .city-stage {
+      height: max(560px, calc(100vh - 150px));
+      border-inline: 0;
+    }
+  }
+  .city-stage:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border: 0;
+  }
   .city-stage :global(.city-layer) {
     position: absolute;
     inset: 0;
@@ -421,6 +447,18 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
   .city-hud__light {
     inset-block-start: 10px;
     inset-inline-end: 10px;
+  }
+  .city-hud__full {
+    inset-block-start: 82px;
+    inset-inline-end: 10px;
+    min-height: var(--target);
+    font: inherit;
+    color: var(--city-hud-ink);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .city-hud__full[hidden] {
+    display: none;
   }
   .city-hud__hint {
     inset-block-start: 46px;

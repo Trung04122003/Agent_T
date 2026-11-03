@@ -85,3 +85,17 @@ The entrance (UX-v4 section 6b): he waits two tiles inside the alley nearest the
 | `main.ts` | `M` runs the dossier's own `switchMode` (`declassify.ts`, which writes through `mode.ts`); the city reads the mode from the page every time and keeps none. | A unit test fails if city code writes the saved mode; an e2e test switches in the city and reads it in the dossier, and the other way round. |
 
 Review images: `district-states.png` (one district, 4 states x 2 modes) and `night-dawn.png` (side by side), made by `tools/city-review.mjs` (district id as its 4th argument, default `role-prudential`). `tools/perf/city-frames.mjs` measures dawn with `CITY_MODE=giai-mat`.
+
+## Atlas data (P39)
+| Piece | What it does | Rules it enforces |
+|---|---|---|
+| `src/city/atlas.ts` (`atlasFrom`) | Turns the 2D map's own `buildMap` output into the Atlas's data: provinces (`d`, unit after 2025, tier per mode), inner borders, land borders, neighbours' shapes and names, places, the capital, Hoang Sa and Truong Sa (islands, label spot, label text). | No new geometry source. The archipelago labels are the 2D map's own strings (`ui.json` `hoangSaLabel`, `truongSaLabel`); a missing label, or one without "(Viet Nam)" / "(Việt Nam)", throws, which fails the build. |
+| `src/city/atlas.json.ts` | The endpoint `/city/atlas.json`, written at build time with the same inputs as `Map.astro`; injected with the city route only. | Emitted only with the city flag on (a build test checks both ways); counted by `pnpm city:budget` (atlas <= 60 KB gzip). |
+| `src/city/atlas.test.ts` | 39.2 sovereignty (labels equal the 2D map's in vi and en, both say "(Viet Nam)", the export throws without them); 39.3 no line at sea (every vertex of every line path, land and province borders, lies on a land shape's outline; the check catches a line drawn between the archipelagos); 39.4 places (only `places.json`, in its order, id, role, label, position; no notes, no coordinates). | |
+
+Size: 43 986 B raw, **10 638 B gzip** (budget 61 440 B): no simplification needed, so nothing is dropped, the islands of Hoang Sa and Truong Sa included.
+
+## Full screen on PC and laptop (owner request, 03/11/2026)
+- From 1024 px wide with a mouse, the stage spans the window's full width and nearly its full height (`max(560px, 100vh - 150px)`); the title, list and print line keep the text column. Phones keep the column layout.
+- A HUD button (`Full screen` / `Exit full screen`) puts the stage in the browser's full screen (Fullscreen API; `Esc` leaves); shown only where the browser allows it and a mouse is present. Briefings still open above it (dialogs live in the top layer).
+- Pixel budget per tier (`LAYERS.pixels`: Medium 1.1 Mpx, Low 0.75 Mpx, High none): a stage larger than that renders its canvases smaller and stretches them (the HUD is DOM, its text stays sharp); a tier change re-plans the canvases.

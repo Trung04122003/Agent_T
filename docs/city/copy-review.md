@@ -61,3 +61,9 @@ Flavor lines (`cityQuiet*`, `cityAllLit`, `cityDropNote`) were drafted with the 
 | cityAllLit | Cả thành phố đã lên đèn. | Every block in the city is lit. | Compass when every district is done | draft |
 | cityDropNote | Để lại lời nhắn ở đây. Thư đi thẳng tới hộp thư công việc. | Leave a note here. It goes to the work inbox. | Dead Drop briefing: what the request button does (it opens a mail to the allowlisted work address) | draft |
 | cityHint | Mũi tên: đi · E: mở · F: mục tiêu tiếp | Arrows: walk · E: open · F: next objective | Controls line in the HUD | draft |
+
+## P39: full screen
+| Key | vi | en | Purpose | Status |
+|---|---|---|---|---|
+| cityFullscreen | Toàn màn hình | Full screen | HUD button, PC and laptop | draft |
+| cityFullscreenExit | Thoát toàn màn hình | Exit full screen | The same button while full screen | draft |

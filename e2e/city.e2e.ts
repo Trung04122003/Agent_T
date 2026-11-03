@@ -440,6 +440,37 @@ test.describe("P38 day engine", () => {
   });
 });
 
+test.describe("full screen on PC and laptop (owner request, 03/11/2026)", () => {
+  for (const [w, h] of [[1366, 768], [1920, 1080]] as const) {
+    test(`${w}x${h}: the city spans the window's width, no sideways scroll; the button takes it full screen`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto("/vi/city/");
+      const stage = page.locator("[data-city-stage]");
+      const box = (await stage.boundingBox())!;
+      expect(Math.round(box.width)).toBe(w);
+      expect(box.height).toBeGreaterThanOrEqual(560);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+      // The text column stays a column.
+      expect((await page.locator(".city__districts").boundingBox())!.width).toBeLessThan(w * 0.8);
+      const full = page.locator("[data-hud-full]");
+      await expect(full).toBeVisible();
+      await full.click();
+      await expect.poll(() => page.evaluate(() => document.fullscreenElement?.hasAttribute("data-city-stage") ?? false)).toBe(true);
+      await expect(full).toHaveAttribute("aria-pressed", "true");
+      await full.click();
+      await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+    });
+  }
+
+  test("a phone keeps the column layout and no full-screen button", async ({ browser }) => {
+    const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const page = await phone.newPage();
+    await page.goto(`${CITY}/vi/city/`);
+    await expect(page.locator("[data-hud-full]")).toBeHidden();
+    await phone.close();
+  });
+});
+
 test("33.5 with the city on, dossier pages load the same JS as with it off, and no more of it", async ({ request }) => {
   // Every script a dossier page loads, through its static imports, by name (hash removed) and size.
   const reach = async (base: string, page: string) => {

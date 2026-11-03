@@ -177,5 +177,7 @@
   "cityQuietLit": { "vi": "Khu này đã lên đèn.", "en": "This block's lights are on." },
   "cityAllLit": { "vi": "Cả thành phố đã lên đèn.", "en": "Every block in the city is lit." },
   "cityDropNote": { "vi": "Để lại lời nhắn ở đây. Thư đi thẳng tới hộp thư công việc.", "en": "Leave a note here. It goes to the work inbox." },
-  "cityHint": { "vi": "Mũi tên: đi · E: mở · F: mục tiêu tiếp", "en": "Arrows: walk · E: open · F: next objective" }
+  "cityHint": { "vi": "Mũi tên: đi · E: mở · F: mục tiêu tiếp", "en": "Arrows: walk · E: open · F: next objective" },
+  "cityFullscreen": { "vi": "Toàn màn hình", "en": "Full screen" },
+  "cityFullscreenExit": { "vi": "Thoát toàn màn hình", "en": "Exit full screen" }
 }
