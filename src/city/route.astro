@@ -23,6 +23,7 @@ import { ledgerLabels } from "../lib/ledger-labels";
 import { getLenses } from "../lib/lenses";
 import { orderByLens, publicWeights } from "../lib/lens";
 import { STIR } from "../scripts/stir";
+import { HEIGHT, RISE } from "../scripts/map-3d";
 import { experienceBalance } from "../lib/stats";
 import type { CityText } from "./hud";
 
@@ -112,6 +113,7 @@ const text: CityText = {
   order: shownIds,
   lenses: Object.fromEntries(getLenses().map((l) => [l.id, orderByLens(shownIds, publicWeights(l, shownIds))])),
   stir: { ms: STIR.ms, step: STIR.step },
+  atlas: { height: { ...HEIGHT }, rise: { ...RISE }, lang: locale },
 };
 const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
 ---

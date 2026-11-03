@@ -5,7 +5,7 @@
 import { building, type Solid, type Tone } from "./archetypes";
 import { toScreen, type World } from "./engine/iso";
 import { mix, type Palette } from "./palette";
-import { ALLEYS, CANAL, GRID, isBridge, LAMPS, PLAZA, walkable, type CityLayout, type Rect, type Tile } from "./plan";
+import { ALLEYS, ATLAS_TABLE, CANAL, GRID, isBridge, LAMPS, PLAZA, walkable, type CityLayout, type Rect, type Tile } from "./plan";
 
 /** Direction toward the light (unnormalised): high, from the screen's upper left. */
 const LIGHT = norm([-0.45, 0.55, 0.85]);
@@ -68,12 +68,13 @@ function faces(s: Solid): Face[] {
     }
     case "frustum": {
       const { cx, cy, z, r0, r1, h, sides } = s;
+      const turn = s.turn ?? Math.PI / sides;
       const at = (i: number, r: number, zz: number): World => {
-        const a = (i / sides) * Math.PI * 2 + Math.PI / sides;
+        const a = (i / sides) * Math.PI * 2 + turn;
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, z: zz };
       };
       for (let i = 0; i < sides; i++) {
-        const a = ((i + 0.5) / sides) * Math.PI * 2 + Math.PI / sides;
+        const a = ((i + 0.5) / sides) * Math.PI * 2 + turn;
         add([at(i, r0, z), at(i + 1, r0, z), at(i + 1, r1, z + h), at(i, r1, z + h)], [Math.cos(a) * h, Math.sin(a) * h, r0 - r1]);
       }
       if (r1 > 0.06) add(Array.from({ length: sides }, (_, i) => at(i, r1, z + h)), [0, 0, 1]);
@@ -447,8 +448,12 @@ export function cityScene(layout: CityLayout): Scene {
     ...layout.plots.map((pl) => ({ solids: building(pl.archetype, pl.rect, pl.lot), lot: pl.rect, district: pl.id })),
     ...layout.landmarks.map((l) => ({ solids: building(l.archetype, l.rect, l.id), lot: l.rect })),
     ...(layout.vault ? [{ solids: building("vault-monolith", layout.vault.rect, "vault"), lot: layout.vault.rect }] : []),
-    // The Atlas table's site at the plaza's heart (the table itself is P40): a low brass dais.
-    { solids: [{ type: "frustum", cx: 22, cy: 22, z: 0, r0: 2.6, r1: 2.4, h: 0.18, sides: 16, tone: "trim" }], lot: { x: 19.4, y: 19.4, w: 5.2, d: 5.2 } },
+    // The Atlas table's pedestal (P40): a square turned to face the viewer; the relief on its top is
+    // drawn live (atlas-view.ts).
+    {
+      solids: [{ type: "frustum", cx: ATLAS_TABLE.x, cy: ATLAS_TABLE.y, z: 0, r0: ATLAS_TABLE.r, r1: ATLAS_TABLE.r - 0.15, h: ATLAS_TABLE.h, sides: 4, turn: 0, tone: "body" }],
+      lot: { x: ATLAS_TABLE.x - ATLAS_TABLE.r, y: ATLAS_TABLE.y - ATLAS_TABLE.r, w: 2 * ATLAS_TABLE.r, d: 2 * ATLAS_TABLE.r },
+    },
     ...ALLEYS.map((a) => ({ solids: alleyProps(a.tiles), lot: rectAround(a.tiles.at(-1)!) })),
     ...LAMPS.map((l): Placed => ({ solids: [{ type: "mast", x: l.x, y: l.y, z: 0, h: 1.6, lit: true }], lot: { x: l.x - 0.1, y: l.y - 0.1, w: 0.2, d: 0.2 } })),
   ];

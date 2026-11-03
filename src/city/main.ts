@@ -22,15 +22,29 @@ import { createLoop } from "./engine/loop";
 import { createQuality, TIERS, type Tier } from "./engine/quality";
 import { drawFigure, drawShadow, FIGURE } from "./figure";
 import { createNight, hullOf, type Lantern, type NightView, type Occluder } from "./night";
-import { palette, type Mode } from "./palette";
-import { ALLEYS, assignLots, LAMPS, PLAZA, type CityData, type Rect } from "./plan";
+import { palette, type Mode, type Palette } from "./palette";
+import { ALLEYS, assignLots, ATLAS_TABLE, LAMPS, PLAZA, type CityData, type Rect } from "./plan";
 import { createRain, glassWalls } from "./rain";
 import { cityScene, silhouette } from "./render";
 import { createSigns } from "./signs";
 import { activeLens, createHud, createStates, nextObjective, RANK, type CityText } from "./hud";
 import { switchMode } from "../scripts/declassify";
+import type { Atlas } from "./atlas";
+import { createAtlasView, type AtlasView } from "./atlas-view";
 import { insidePolygon } from "./visibility";
 import { walkWorld } from "./walk";
+
+/** Bakes the Atlas's relief for every zoom step in idle time, one step per idle callback. */
+function prebakeAtlas(view: AtlasView, dpr: () => number, pal: () => Palette): void {
+  const idle = (fn: () => void) => ("requestIdleCallback" in window ? requestIdleCallback(() => fn(), { timeout: 2000 }) : setTimeout(fn, 200));
+  let i = 0;
+  const next = (): void => {
+    if (i >= ZOOMS.length) return;
+    view.prebake(ZOOMS[i++]!, dpr(), pal());
+    idle(next);
+  };
+  idle(next);
+}
 
 export type CityHandle = { stop(): void; readonly plan: LayerPlan | null; readonly tier: Tier | "lite" };
 
@@ -58,6 +72,9 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   };
   const dynamic = make("dynamic");
   const darkness = make("darkness");
+  // Above the darkness (P40): the beacon, Hoang Sa and Truong Sa; nothing may hide them.
+  const topLayer = make("top");
+  const topCtx = topLayer.getContext("2d")!;
   const lightMask = document.createElement("canvas"); // offscreen, never in the page
   const ctx = dynamic.getContext("2d", { alpha: true })!;
   let plan: LayerPlan | null = null;
@@ -134,6 +151,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
       if (t && RANK[st] >= RANK.briefed) pools.push(t.cx, t.cy, t.r * (st === "declassified" ? 1.7 : 1.3), st === "declassified" ? 1 : 0.7);
       signs.setClear(i, day ? RANK[st] >= RANK.briefed : st === "declassified");
     });
+    // The Atlas is a hologram: it lights the plaza around it.
+    pools.push(ATLAS_TABLE.x, ATLAS_TABLE.y, ATLAS_TABLE.relief * 1.5, 1);
     night.setLit(Float64Array.from(pools));
     night.setLitBuildings(
       layout.plots
@@ -164,6 +183,23 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   let firstComposite = true;
   let presses = 0;
   let atHand: string | null = null;
+  // The Atlas (P40): its data comes with the city's own file, /city/atlas.json (P39).
+  let atlas: AtlasView | null = null;
+  let hoverCode: string | null = null;
+  let hoverX = NaN;
+  let hoverY = NaN;
+  void fetch("/city/atlas.json")
+    .then((r) => (r.ok ? (r.json() as Promise<Atlas>) : Promise.reject(new Error(String(r.status)))))
+    .then((a) => {
+      atlas = createAtlasView(a, text.atlas);
+      // For tests and tools: where the archipelago labels and the beacon were last drawn.
+      Object.assign(topLayer, { atlasLabels: () => atlas?.labels() ?? [], atlasBeacon: () => atlas?.beacon() ?? null });
+      stage.dataset["atlas"] = "ready";
+      prebakeAtlas(atlas, () => plan?.dpr ?? 1, () => pal);
+      dirty = lightDirty = true;
+      loop.poke();
+    })
+    .catch(() => (stage.dataset["atlas"] = "failed"));
 
   // Sizes come from the observer's entry, not from reading the layout.
   let sizeW = 0;
@@ -181,7 +217,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     if (!w || !h) return;
     plan = planLayers(w, h, devicePixelRatio || 1, LAYERS.pixels[quality.tier]);
     for (const c of plan.canvases) {
-      const el = c.name === "dynamic" ? dynamic : c.name === "darkness" ? darkness : c.name === "light" ? lightMask : null;
+      const el = c.name === "dynamic" ? dynamic : c.name === "darkness" ? darkness : c.name === "light" ? lightMask : c.name === "top" ? topLayer : null;
       if (!el) continue;
       el.width = c.w;
       el.height = c.h;
@@ -331,7 +367,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     atHand = hand;
     hud.prompt(hand);
     // The camera follows him; reduced motion snaps it.
-    if (follow(cam, (agent.x - agent.y) * HX, (agent.x + agent.y) * HY, dt, reduced.matches, scene.bounds)) dirty = lightDirty = true;
+    let moved = follow(cam, (agent.x - agent.y) * HX, (agent.x + agent.y) * HY, dt, reduced.matches, scene.bounds);
+    if (moved) dirty = lightDirty = true;
     // The lantern: in his hand; where he walks, or at the mouse while he stands (desktop).
     let heading = agent.heading;
     const p = st.pointer;
@@ -358,10 +395,42 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     nv.zoom = shown.zoom = cam.zoom;
     shown.x = (nv.ox + cam.w / 2) / cam.zoom;
     shown.y = (nv.oy + cam.h / 2) / cam.zoom;
-    if ((dirty || stirred || changed) && plan) {
+    // The Atlas: the province under the cursor rises (or Da Nang's, when Agent T stands at the table).
+    let tableInView = false;
+    let animating = false;
+    if (atlas) {
+      const z = cam.zoom;
+      const b = atlas.box;
+      tableInView = !(b.x1 < nv.ox / z || b.x0 > (nv.ox + cam.w) / z || b.y1 < nv.oy / z || b.y0 > (nv.oy + cam.h) / z);
+      if (p.over && p.kind === "mouse" && (p.x !== hoverX || p.y !== hoverY || moved)) {
+        hoverX = p.x;
+        hoverY = p.y;
+        hoverCode = atlas.hit((p.x + nv.ox) / z, (p.y + nv.oy) / z);
+      } else if (!p.over) hoverCode = null;
+      const atTable = Math.abs(agent.x - ATLAS_TABLE.x) + Math.abs(agent.y - ATLAS_TABLE.y) < ATLAS_TABLE.relief + 1.4;
+      animating = atlas.step(dt, hoverCode ?? (atTable ? atlas.hq : null), reduced.matches);
+
+    }
+    // The table's moving parts go on the top canvas, unless Agent T stands over the table on screen
+    // (then they must respect depth, on the dynamic layer, redrawn every frame while he does).
+    let liveBelow = false;
+    if (atlas && tableInView) {
+      const ax = (agent.x - agent.y) * HX;
+      const ay = (agent.x + agent.y) * HY;
+      const b = atlas.box;
+      liveBelow = !(ax + 14 * FIGURE.scale < b.x0 || ax - 14 * FIGURE.scale > b.x1 || ay < b.y0 || ay - FIGURE.height * FIGURE.scale > b.y1);
+    }
+    if ((dirty || stirred || changed || (liveBelow && (animating || !reduced.matches))) && plan) {
       const missing = layer.composite(ctx, shown, firstComposite ? Infinity : 2);
       signs.draw(ctx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal);
-      drawAgent(plan.dpr);
+      // Agent T and the table in depth order: whoever is nearer is drawn last.
+      const behind = agent.x + agent.y < ATLAS_TABLE.x + ATLAS_TABLE.y;
+      if (behind) drawAgent(plan.dpr);
+      if (atlas && tableInView) {
+        atlas.draw(ctx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal);
+        if (liveBelow) atlas.drawLive(ctx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal, now, reduced.matches);
+      }
+      if (!behind) drawAgent(plan.dpr);
       firstComposite = false;
       dirty = missing > 0;
       const s = layer.stats;
@@ -375,6 +444,13 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     }
     if (plan && lightDirty) night.light(nv, pal.mode === "mat" ? lantern : null, signs.centres, signs.count);
     if (plan && (lightDirty || rain.count)) night.paint(nv, rain.count ? paintRain : null);
+    // The top layer: redrawn while the beacon pulses, or when the view moved.
+    if (plan && atlas && (moved || lightDirty || animating || !reduced.matches)) {
+      topCtx.setTransform(1, 0, 0, 1, 0, 0);
+      topCtx.clearRect(0, 0, topLayer.width, topLayer.height);
+      if (tableInView && !liveBelow) atlas.drawLive(topCtx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal, now, reduced.matches);
+      atlas.drawTop(topCtx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal, now, reduced.matches);
+    }
     lightDirty = false;
     // State for tests and tools, written only when it changes.
     const walking = agent.moving ? "1" : "0";

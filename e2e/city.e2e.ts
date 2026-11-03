@@ -471,6 +471,77 @@ test.describe("full screen on PC and laptop (owner request, 03/11/2026)", () => 
   });
 });
 
+test.describe("P40 the Atlas table", () => {
+  // Still frames: the beacon at a steady strength, the camera snapped.
+  test.use({ reducedMotion: "reduce" });
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mode", "mat"));
+  });
+  type Box = { x: number; y: number; w: number; h: number };
+  /** Opaque pixels of the top canvas (CSS-px box), as a share of the box. */
+  const inked = (page: Page, b: Box) =>
+    page.evaluate((b) => {
+      const c = document.querySelector<HTMLCanvasElement>(".city-layer--top")!;
+      const k = c.width / c.getBoundingClientRect().width;
+      const x = Math.max(0, Math.floor(b.x * k));
+      const y = Math.max(0, Math.floor(b.y * k));
+      const d = c.getContext("2d")!.getImageData(x, y, Math.max(1, Math.ceil(b.w * k)), Math.max(1, Math.ceil(b.h * k))).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i]! > 128) n++;
+      return n / (d.length / 4);
+    }, b);
+  const ready = async (page: Page) => {
+    await page.goto("/vi/city/");
+    await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-atlas", "ready");
+    await page.waitForTimeout(300);
+  };
+
+  test("40.3 Hoang Sa and Truong Sa: the 2D map's labels, drawn above the fog at every zoom step", async ({ page }) => {
+    const ui = JSON.parse(readFileSync("content/ui.json", "utf8"));
+    await ready(page);
+    await page.locator("[data-city-stage]").focus();
+    for (const step of ["mid", "far", "close"]) {
+      if (step === "far") await page.keyboard.press("-");
+      if (step === "close") await page.keyboard.press("+"), await page.keyboard.press("+");
+      await page.waitForTimeout(300);
+      const labels = await page.evaluate(() => (document.querySelector(".city-layer--top") as unknown as { atlasLabels(): { text: string; x: number; y: number; w: number; h: number }[] }).atlasLabels());
+      expect(labels.map((l) => l.text)).toEqual([ui.hoangSaLabel.vi, ui.truongSaLabel.vi]);
+      for (const l of labels) {
+        expect(l.text).toContain("(Việt Nam)");
+        expect(await inked(page, l), `${step}: ${l.text}`).toBeGreaterThan(0.08);
+      }
+    }
+  });
+
+  test("40.2 the beacon over Da Nang shows above the fog at all three zoom steps", async ({ page }) => {
+    await ready(page);
+    await page.locator("[data-city-stage]").focus();
+    for (const key of ["", "-", "+"]) {
+      if (key) await page.keyboard.press(key);
+      await page.waitForTimeout(300);
+      const b = await page.evaluate(() => (document.querySelector(".city-layer--top") as unknown as { atlasBeacon(): { x: number; y: number } }).atlasBeacon());
+      // Up the column, well above the table: nearly every row has a lit pixel near its axis.
+      const rows = await page.evaluate((b) => {
+        const c = document.querySelector<HTMLCanvasElement>(".city-layer--top")!;
+        const k = c.width / c.getBoundingClientRect().width;
+        const x = Math.floor((b.x - 6) * k);
+        const y0 = Math.max(0, Math.floor((b.y - 120) * k));
+        const h = Math.max(1, Math.floor(60 * k));
+        const w = Math.ceil(12 * k);
+        const d = c.getContext("2d")!.getImageData(x, y0, w, h).data;
+        let lit = 0;
+        for (let r = 0; r < h; r++) {
+          let max = 0;
+          for (let i = 0; i < w; i++) max = Math.max(max, d[(r * w + i) * 4 + 3]!);
+          if (max > 100) lit++;
+        }
+        return lit / h;
+      }, b);
+      expect(rows, key || "mid").toBeGreaterThan(0.9);
+    }
+  });
+});
+
 test("33.5 with the city on, dossier pages load the same JS as with it off, and no more of it", async ({ request }) => {
   // Every script a dossier page loads, through its static imports, by name (hash removed) and size.
   const reach = async (base: string, page: string) => {

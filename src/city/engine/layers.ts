@@ -27,7 +27,7 @@ export const LAYERS = {
   minDpr: 0.5,
 } as const;
 
-export type CanvasPlan = { name: "dynamic" | "darkness" | "light" | "chunk"; w: number; h: number; count: number; bytes: number };
+export type CanvasPlan = { name: "dynamic" | "darkness" | "light" | "top" | "chunk"; w: number; h: number; count: number; bytes: number };
 export type LayerPlan = { dpr: number; canvases: CanvasPlan[]; total: number };
 
 const BYTES_PER_PIXEL = 4;
@@ -45,6 +45,8 @@ function planAt(cssW: number, cssH: number, dpr: number): LayerPlan {
     { name: "darkness", w: dw, h: dh, count: 1, bytes: dw * dh * BYTES_PER_PIXEL },
     // The light mask the darkness is cut with (P35): same size, offscreen.
     { name: "light", w: dw, h: dh, count: 1, bytes: dw * dh * BYTES_PER_PIXEL },
+    // Above the darkness (P40): what no fog may hide (the beacon, Hoang Sa and Truong Sa).
+    { name: "top", w, h, count: 1, bytes: w * h * BYTES_PER_PIXEL },
     { name: "chunk", w: side, h: side, count: chunks, bytes: side * side * BYTES_PER_PIXEL * chunks },
   ];
   return { dpr, canvases, total: canvases.reduce((n, c) => n + c.bytes, 0) };

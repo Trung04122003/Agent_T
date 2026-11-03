@@ -24,7 +24,7 @@ export type Tone = "body" | "trim" | "glass" | "dark";
 /** Boxes, n-gon frustums (cylinders, cones, domes in layers), ridge roofs and thin masts. */
 export type Solid =
   | { type: "box"; x: number; y: number; z: number; w: number; d: number; h: number; tone: Tone; windows?: boolean }
-  | { type: "frustum"; cx: number; cy: number; z: number; r0: number; r1: number; h: number; sides: number; tone: Tone }
+  | { type: "frustum"; cx: number; cy: number; z: number; r0: number; r1: number; h: number; sides: number; tone: Tone; turn?: number }
   | { type: "gable"; x: number; y: number; z: number; w: number; d: number; h: number; ridge: "x" | "y"; tone: Tone }
   | { type: "mast"; x: number; y: number; z: number; h: number; lit?: boolean };
 

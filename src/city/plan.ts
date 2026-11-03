@@ -34,6 +34,13 @@ export const STREETS: readonly Rect[] = [
   rect(21, 22, 4, 39),
 ];
 export const PLAZA = rect(17, 26, 17, 26);
+/**
+ * The Atlas table (UX-v4 section 5, P40) at the plaza's heart: a square turned 45 degrees on the
+ * ground (so it faces the viewer as a 2:1 rectangle), `r` from its centre to each corner (world
+ * units), its top `h` above the ground; the relief projected over it spans `relief` (a little wider
+ * than the pedestal). Small enough that both avenues still reach the plaza and the way round is open.
+ */
+export const ATLAS_TABLE = { x: 22, y: 22, r: 3.5, h: 0.6, relief: 4.4 } as const;
 export const CANAL = { y: [31, 32] as const };
 
 export const PLOT_LOTS: readonly PlotLot[] = [

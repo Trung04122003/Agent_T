@@ -60,6 +60,23 @@ export type Palette = {
   sheen: number;
   veil: { sealed: number; scouted: number; color: string };
   gold: string;
+  /** The Atlas (P40): sea and its scan grid and sweep, neighbours' land, the three steps (top, wall), marks. */
+  atlas: {
+    sea: string;
+    grid: string;
+    sweep: string;
+    world: string;
+    frontier: string;
+    border: string;
+    top: [string, string, string];
+    wall: [string, string, string];
+    pin: string;
+    hq: string;
+    beacon: string;
+    label: string;
+    halo: string;
+    isle: string;
+  };
 };
 
 export function palette(mode: Mode): Palette {
@@ -95,6 +112,23 @@ export function palette(mode: Mode): Palette {
       sheen: 0,
       veil: { sealed: 0, scouted: 0, color: t.bg },
       gold: alpha(t.accent, 0),
+      // Night: a dim scan grid, brass terraces (UX-v4 section 8).
+      atlas: {
+        sea: mix(t.bg, t.accent, 0.1),
+        grid: alpha(t.accent, 0.22),
+        sweep: alpha(t.accent, 0.5),
+        world: mix(t.bg, t.surface, 0.9),
+        frontier: alpha(t.inkMuted, 0.35),
+        border: alpha(t.bg, 0.55),
+        top: [mix(t.surface, t.accent, 0.38), mix(t.surface, t.accent, 0.6), mix(t.accent, t.ink, 0.25)],
+        wall: [mix(t.bg, t.accent, 0.2), mix(t.bg, t.accent, 0.32), mix(t.bg, t.accent, 0.5)],
+        pin: t.ink,
+        hq: t.accent,
+        beacon: mix(t.accent, t.ink, 0.35),
+        label: t.ink,
+        halo: t.bg,
+        isle: t.accent,
+      },
     };
   }
   // Dawn: warm paper, ink outlines, gold trim.
@@ -129,5 +163,22 @@ export function palette(mode: Mode): Palette {
     sheen: 0.45,
     veil: { sealed: 0.35, scouted: 0.18, color: t.bg },
     gold: alpha(t.accent, 0.16),
+    // Dawn: a lit relief, gold terraces.
+    atlas: {
+      sea: mix(t.bg, t.line, 0.5),
+      grid: alpha(t.accent, 0.18),
+      sweep: alpha(t.accent, 0.55),
+      world: mix(t.bg, t.surface, 0.7),
+      frontier: alpha(t.inkMuted, 0.4),
+      border: alpha(t.surface, 0.8),
+      top: [mix(t.surface, t.accent, 0.22), mix(t.surface, t.accent, 0.42), mix(t.surface, t.accent, 0.66)],
+      wall: [mix(t.line, t.accent, 0.35), mix(t.line, t.accent, 0.55), mix(t.line, t.accent, 0.75)],
+      pin: t.ink,
+      hq: t.accent,
+      beacon: t.accent,
+      label: t.ink,
+      halo: t.bg,
+      isle: t.accent,
+    },
   };
 }

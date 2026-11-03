@@ -99,6 +99,43 @@ for (const mode of ["mat", "giai-mat"]) {
   shots.push(lite);
   await context.close();
 }
+// P40: the Atlas table, close, in both modes; moment 2 (the beacon rising out of the fog, far zoom)
+// and moment 6 (the terraces rising under the cursor). Still frames (reduced motion).
+for (const mode of ["mat", "giai-mat"]) {
+  const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+  await context.addInitScript((m) => {
+    localStorage.setItem("mode", m);
+    localStorage.setItem("cursorFx", "system");
+  }, mode);
+  const page = await context.newPage();
+  await page.goto(`${site}/vi/city/`);
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-atlas") === "ready");
+  const stage = page.locator("[data-city-stage]");
+  await stage.focus();
+  await page.keyboard.press("+");
+  await page.waitForTimeout(500);
+  const b = await page.evaluate(() => document.querySelector(".city-layer--top").atlasBeacon());
+  const close = join(out, `atlas-${mode}.png`);
+  await stage.screenshot({ path: close });
+  shots.push(close);
+  if (mode === "mat") {
+    await stage.hover({ position: { x: b.x - 6, y: b.y + 4 } });
+    await page.waitForTimeout(400);
+    const m6 = join(out, "moment-6-terraces.png");
+    await stage.screenshot({ path: m6 });
+    shots.push(m6);
+    await page.mouse.move(5, 5);
+    await stage.focus();
+    await page.keyboard.press("-");
+    await page.keyboard.press("-");
+    await page.waitForTimeout(500);
+    const m2 = join(out, "moment-2-beacon.png");
+    await stage.screenshot({ path: m2 });
+    shots.push(m2);
+  }
+  await context.close();
+}
+
 // P38: one district in its four states, night and dawn (still frames), and night beside dawn.
 {
   const states = ["sealed", "scouted", "briefed", "declassified"];

@@ -3,7 +3,7 @@
 // graph (streets, plaza, bridges, alleys) with A*; keyboard moves slide along walls (each axis on its
 // own). He can never get stuck: a position inside a footprint snaps to the nearest free tile.
 // Pure functions on numbers and typed arrays, so they are unit-tested without a canvas.
-import { ALLEYS, GRID, isBridge, isCanal, walkable, type CityLayout, type Tile } from "./plan";
+import { ALLEYS, ATLAS_TABLE, GRID, isBridge, isCanal, walkable, type CityLayout, type Tile } from "./plan";
 
 /** A building footprint, world units (the lot without its sidewalk). */
 export type Footprint = { id: string; x0: number; y0: number; x1: number; y1: number; door: Tile };
@@ -34,6 +34,13 @@ export function walkWorld(layout: CityLayout): WalkWorld {
   const roads = new Uint8Array(GRID * GRID);
   for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) if (walkable(x, y)) roads[y * GRID + x] = 1;
   for (const a of ALLEYS) for (const t of a.tiles) roads[t.y * GRID + t.x] = 1;
+  // The Atlas table stands on the plaza: tiles it covers leave the road graph.
+  // A tile goes if any part of it is within reach (its point nearest the table's centre), so a walk
+  // between two tile centres never cuts a corner of the table.
+  const near = (v: number, c: number) => Math.min(v + 1, Math.max(v, c));
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) if (onTable(near(x, ATLAS_TABLE.x), near(y, ATLAS_TABLE.y), BODY)) roads[y * GRID + x] = 0;
+  }
   return { footprints, roads };
 }
 
@@ -43,10 +50,14 @@ const water = (x: number, y: number): boolean => {
   return isCanal(tx, ty) && !isBridge(tx, ty);
 };
 
-/** Is a disc of radius r at (x, y) clear of footprints, water and the grid's edge? */
+/** Within reach of the Atlas table (a square turned 45 degrees: |dx| + |dy| <= r)? */
+const onTable = (x: number, y: number, r: number): boolean => Math.abs(x - ATLAS_TABLE.x) + Math.abs(y - ATLAS_TABLE.y) < ATLAS_TABLE.r + r * Math.SQRT2;
+
+/** Is a disc of radius r at (x, y) clear of footprints, the Atlas table, water and the grid's edge? */
 export function free(w: WalkWorld, x: number, y: number, r = BODY): boolean {
   if (x - r < 0 || y - r < 0 || x + r > GRID || y + r > GRID) return false;
   if (water(x - r, y - r) || water(x + r, y - r) || water(x - r, y + r) || water(x + r, y + r)) return false;
+  if (onTable(x, y, r)) return false;
   for (let i = 0; i < w.footprints.length; i++) {
     const f = w.footprints[i]!;
     if (x + r > f.x0 && x - r < f.x1 && y + r > f.y0 && y - r < f.y1) return false;

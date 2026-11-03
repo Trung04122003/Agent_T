@@ -4,6 +4,7 @@
 // one the entry's own ledger row; the Vault's type label; the Dead Drop's request). District states
 // are cosmetic: they light the city and fill the log, and never decide what can be opened.
 import { switchMode } from "../scripts/declassify";
+import type { AtlasConsts } from "./atlas-view";
 
 export type DistrictState = "sealed" | "scouted" | "briefed" | "declassified";
 export const RANK: Record<DistrictState, number> = { sealed: 0, scouted: 1, briefed: 2, declassified: 3 };
@@ -26,6 +27,8 @@ export type CityText = {
   lenses: Record<string, string[]>;
   /** The dossier's redaction stir timing (src/scripts/stir.ts). */
   stir: { ms: number; step: number };
+  /** The 3D map's heights and ripple (src/scripts/map-3d.ts) and the page's language, for the Atlas. */
+  atlas: AtlasConsts;
 };
 
 /** Where the states live: per tab, cosmetic (UX-v4 section 4). */

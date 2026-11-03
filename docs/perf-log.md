@@ -3,6 +3,37 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P40 · The Atlas table
+
+The reference graphics (Intel UHD, D3D11), `PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Medium, the
+Atlas in view (Agent T starts beside the plaza), walking 6 s, median of 3, full-width stage.
+
+| Mode | Viewport | CPU | First frame | p95 frame | Max frame | Frames > 33 ms | Tier (3 runs) |
+|---|---|---|---|---|---|---|---|
+| Mat | 1366x768 | 1x | 57 ms | 16.7 ms | 16.8 ms | 0 | Medium |
+| Mat | 1366x768 | 4x | 160 ms | 16.7 ms | 33.3 ms | 0 | Medium |
+| Mat | 1920x1080 | 1x | 54 ms | 16.8 ms | 33.3 ms | 0 | Medium |
+| Mat | 1920x1080 | 4x | 240 ms | 16.8 ms | 33.4 ms | 1 | Medium |
+| Giai mat | 1366x768 | 1x | 67 ms | 16.7 ms | 16.8 ms | 0 | Medium |
+| Giai mat | 1366x768 | 4x | 163 ms | 16.7 ms | 33.4 ms | 0 | Medium |
+| Giai mat | 1920x1080 | 1x | 65 ms | 16.7 ms | 16.8 ms | 0 | Medium |
+| Giai mat | 1920x1080 | 4x | 142 ms | 16.8 ms | 99.9 ms | 7 | Medium / Low / Medium |
+
+Within budget everywhere. Two fixes found by measuring, both before these numbers:
+- **Allocation**: the first version redrew the dynamic layer every frame for the sweep line, and with it
+  the building in front of Agent T (the glass tower beside his start): 26 scavenges in 5 s while still.
+  The sweep and the rising provinces now go on the top canvas (a hologram's light, above the fog); the
+  dynamic layer is again redrawn only on change, except while Agent T stands over the table on screen.
+  Now: still 2 scavenges in 5 s (P39: 2), heap 3.05 -> 3.75 MB; moving 12 (P39: 14).
+- **Long frames**: the relief's sprite for a new zoom step was baked in the frame that needed it (frames
+  up to 466 ms at 4x). The three zoom steps are now baked ahead in idle time.
+
+**Ripple layout check** (`node tools/perf/atlas-layout.mjs`, 3 s of the mouse over the table): 30 moves,
+0 Layout, 0 style recalc.
+
+**Sizes** (`pnpm city:budget`): city JS **29 397 B gzip** (P38: 26 027 B; budget 81 920 B), city CSS
+**1 748 B** (P39: 1 606 B; budget 8 192 B), atlas data **10 638 B** (budget 61 440 B), no image or font.
+
 ## 2026-11-03 · P39 · Atlas data export; full-width city (owner request)
 
 **Atlas data** (`pnpm city:budget` on the flag-on build): `/city/atlas.json` 43 986 B raw, **10 638 B gzip**

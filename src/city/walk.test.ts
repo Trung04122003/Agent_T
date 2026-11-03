@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALLEYS, assignLots, GRID, PLAZA, type CityData } from "./plan";
+import { ALLEYS, assignLots, ATLAS_TABLE, GRID, PLAZA, type CityData } from "./plan";
 import { insidePolygon, footprintSegments, visibility, visibilityCache } from "./visibility";
 import { BODY, findPath, footprintAt, free, nearestFree, nearestRoad, slide, walkWorld } from "./walk";
 
@@ -56,6 +56,21 @@ describe("walking (36.2)", () => {
     const out = nearestFree(world, inside.x, inside.y);
     expect(free(world, out.x, out.y)).toBe(true);
     expect(Math.hypot(out.x - inside.x, out.y - inside.y)).toBeLessThan(4);
+  });
+});
+
+describe("the Atlas table (P40)", () => {
+  it("blocks the way through its middle, never the way round it, and both avenues still reach the plaza", () => {
+    expect(free(world, ATLAS_TABLE.x, ATLAS_TABLE.y)).toBe(false);
+    expect(world.roads[ATLAS_TABLE.y * GRID + ATLAS_TABLE.x]).toBe(0);
+    // Corner to opposite corner of the plaza, around the table.
+    const round = findPath(world, { x: PLAZA.x + PLAZA.w - 1, y: PLAZA.y }, { x: PLAZA.x, y: PLAZA.y + PLAZA.d - 1 })!;
+    expect(round).not.toBeNull();
+    for (const t of round) expect(free(world, t.x + 0.5, t.y + 0.5), `${t.x},${t.y}`).toBe(true);
+    // Each avenue's tile at the plaza's edge is still on the road graph.
+    for (const t of [{ x: 21, y: PLAZA.y }, { x: PLAZA.x, y: 21 }, { x: 21, y: PLAZA.y + PLAZA.d - 1 }, { x: PLAZA.x + PLAZA.w - 1, y: 21 }]) {
+      expect(world.roads[t.y * GRID + t.x], `${t.x},${t.y}`).toBe(1);
+    }
   });
 });
 
