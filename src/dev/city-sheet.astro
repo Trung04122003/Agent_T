@@ -1,0 +1,73 @@
+---
+// Dev-only (ROADMAP-v4 34.4): every building archetype of Agent T City side by side, in both
+// palettes (Mat on the night ground, Giai mat on the dawn ground), drawn by the city's own code.
+import Base from "../layouts/Base.astro";
+---
+
+<Base locale="en" title="City sheet (dev)">
+  <div class="sheet-page">
+    <h1>City sheet (dev)</h1>
+    <p>Each archetype on a 6 x 6 lot (kiosks smaller), shaded from the city's one light. Top row Mat, bottom row Giai mat.</p>
+    <div class="sheet-grid" data-city-sheet></div>
+  </div>
+</Base>
+
+<script>
+  import { building, type Archetype } from "../city/archetypes";
+  import { toScreen } from "../city/engine/iso";
+  import { palette, type Mode } from "../city/palette";
+  import { drawBuilding } from "../city/render";
+
+  const all: Archetype[] = [
+    "campus-hall", "antenna-tower", "server-hall", "market-hall", "glass-tower", "pavilion-mast", "observatory",
+    "vault-monolith", "archive-tower", "lab", "debrief-room", "risk-registry", "dead-drop",
+  ];
+  const grid = document.querySelector<HTMLElement>("[data-city-sheet]")!;
+  const W = 220;
+  const H = 300;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  for (const mode of ["mat", "giai-mat"] as Mode[]) {
+    const p = palette(mode);
+    for (const a of all) {
+      const side = a === "dead-drop" ? 2 : a === "archive-tower" || a === "risk-registry" ? 4 : 6;
+      const lot = { x: 0, y: 0, w: side, d: side };
+      const fig = document.createElement("figure");
+      const canvas = document.createElement("canvas");
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = p.ground;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Centre the lot near the bottom: zoom 0.55 shows the tallest archetype whole.
+      const zoom = 0.55;
+      const c = toScreen({ x: side / 2, y: side / 2 });
+      ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, (W / 2 - c.sx * zoom) * dpr, (H - 70 - c.sy * zoom) * dpr);
+      ctx.lineJoin = "round";
+      drawBuilding(ctx, building(a, lot, a), lot, p, 1 / zoom);
+      const cap = document.createElement("figcaption");
+      cap.textContent = `${a} · ${mode}`;
+      fig.append(canvas, cap);
+      grid.append(fig);
+    }
+  }
+</script>
+
+<style>
+  .sheet-page {
+    padding: 24px;
+  }
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 220px);
+    gap: 12px;
+  }
+  .sheet-grid :global(figure) {
+    margin: 0;
+  }
+  .sheet-grid :global(figcaption) {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+</style>

@@ -75,6 +75,10 @@ export class ChunkCache<T> {
     this.items.set(key, item);
     return item;
   }
+  /** Present, without counting as a use. */
+  has(key: string): boolean {
+    return this.items.has(key);
+  }
   get size(): number {
     return this.items.size;
   }

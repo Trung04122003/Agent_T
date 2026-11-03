@@ -27,4 +27,17 @@ The route `/[lang]/city/` is injected by `astro.config.mjs` only in `pnpm dev` o
 - The district list (`#d-<id>`, one per ledger entry, the Vault last with its type label only) links each entry to `/<lang>/#claim-<id>`. It is what no-JS readers, screen readers and the Lite plan's links reach.
 - Print: one line pointing to the dossier.
 - Entry: plain links in the gate (under the lenses) and the dossier header, only with the flag on, so dossier pages carry no city JS. The lens travels on the city's `?lens=`, else from the same-origin referrer, and goes back on every link to the dossier; language is the path, mode the saved one.
-- Not yet: `Esc` opening the exit prompt (UX-v4 section 1) needs the world's own key handling (P34 onward).
+- Not yet: `Esc` opening the exit prompt (UX-v4 section 1) needs the world's own key handling (later phase; P34 adds the camera only).
+
+## City plan and buildings (P34)
+| Module | What it does | Rules it enforces |
+|---|---|---|
+| `plan.ts` | The authored plan on a 44 x 44 grid: ring road, two avenues crossing at the Atlas plaza, a canal with three bridges, 14 plot lots (7 drawn for an archetype, 7 generic), 5 landmark lots, the Vault lot, 4 alleys. `assignLots()` puts the content map's entries on lots in ledger order. | Fixed, not random. `plan.test.ts`: lots on land and disjoint, one connected street graph, every door a street tile touching its lot, every entry exactly one plot, the Vault present, the plan's limit reported by name. |
+| `archetypes.ts` | Archetype per entry from `kind` and first domain; `building()` turns an archetype and a lot into solids (boxes, n-gon frustums, ridge roofs, masts), seeded by the lot's id. | Never reads the tier, metrics or lens weights: the page only receives `id`, `kind`, `domains` (`CityData`); a test shuffles tiers and gets the same skyline. Solids stay inside their lot. |
+| `palette.ts` | Mat and Giai mat colours: the dossier's tokens and sRGB mixes of two tokens. | No new hue family; a test compares the tokens with `tokens.css`. |
+| `render.ts` | Ground (streets, plaza paving, canal banks, bridges, alleys), then buildings far to near; faces shaded from one fixed light, window grids on walls, glass mullions, rim light on top edges and the near vertical edge. | Back faces culled exactly (view axis (1, 1, 1) of the 2:1 projection). Drawn only into baked chunks, never per frame. |
+| `bake.ts` | The static layer: 512 px chunks per zoom step (0.32, 0.6, 1) and mode, LRU-cached to the layer plan's chunk count; copied to the stage only when the view changed. | At most 2 chunk bakes per frame after the first; bake counters on the stage (`data-bake-chunks`, `data-bake-ms`, `data-bake-max`). |
+
+Camera until Agent T exists (P36): arrow keys or WASD pan (Shift faster), `+` and `-` change the zoom step, the view's centre stays over the city. The dossier's mode switch repaints the city in the other palette.
+
+Dev page: `/dev/city-sheet` (dev server only) draws every archetype in both palettes. Review images: `node tools/city-review.mjs <phase> <preview-url> [dev-url]`. Frame times: `node tools/perf/city-frames.mjs [preview-url]`.

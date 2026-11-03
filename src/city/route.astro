@@ -11,6 +11,8 @@ import { t } from "../lib/i18n";
 import { ledgerEntries } from "../lib/ledger-entries";
 import { LOCALES, type Locale } from "../lib/locales";
 import { cityContentMap } from "./content-map";
+import { toScreen } from "./engine/iso";
+import { assignLots, CANAL, GRID, LANDMARK_LOTS, PLAZA, STREETS, type CityData, type Rect } from "./plan";
 
 export function getStaticPaths() {
   return LOCALES.map((lang) => ({ params: { lang } }));
@@ -33,13 +35,31 @@ const districts = [
   ...map.plots.map((p, i) => ({ id: p.id, code: String(i + 1).padStart(2, "0"), name: nameOf(p.id), vault: false })),
   ...(map.vault ? [{ id: map.vault.id, code: "--", name: nameOf(map.vault.id), vault: true }] : []),
 ];
-// Lite plan: a placeholder grid until the real plan exists (P34); one cell per district.
-const COLS = 4;
-const CELL = 120;
-const GAP = 16;
-const rows = Math.ceil(districts.length / COLS);
-const W = COLS * CELL + (COLS + 1) * GAP;
-const H = rows * CELL + (rows + 1) * GAP;
+// What the page's script gets: ids, kinds and domains to place buildings; no tier, no text.
+const data: CityData = {
+  plots: map.plots.map(({ id, kind, domains }) => ({ id, kind, domains })),
+  vault: map.vault ? { id: map.vault.id } : null,
+  landmarks: map.landmarks.map(({ id }) => ({ id })),
+};
+// Lite view: the same plan as the world, flat, from above at the same angle; each district a link.
+const layout = assignLots(data);
+const pts = (r: Rect): string =>
+  [
+    { x: r.x, y: r.y },
+    { x: r.x + r.w, y: r.y },
+    { x: r.x + r.w, y: r.y + r.d },
+    { x: r.x, y: r.y + r.d },
+  ]
+    .map((p) => toScreen(p))
+    .map((q) => `${q.sx},${q.sy}`)
+    .join(" ");
+const mid = (r: Rect) => toScreen({ x: r.x + r.w / 2, y: r.y + r.d / 2 });
+const lots = [
+  ...layout.plots.map((p) => ({ id: p.id, rect: p.rect })),
+  ...(layout.vault ? [{ id: layout.vault.id, rect: layout.vault.rect }] : []),
+];
+const landmarks = LANDMARK_LOTS.filter((l) => layout.landmarks.some((m) => m.id === l.id));
+const half = GRID * 32;
 ---
 
 <Base locale={locale} title={s.cityTitle} noindex canonical={dossier}>
@@ -57,22 +77,29 @@ const H = rows * CELL + (rows + 1) * GAP;
 
     {/* Lite view: a static plan, each district a link to its entry in the list below. */}
     <figure class="city-lite" data-city-lite>
-      <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-labelledby="city-lite-title" focusable="false">
+      <svg viewBox={`${-half} 0 ${2 * half} ${half + 24}`} role="group" aria-labelledby="city-lite-title" focusable="false">
         <title id="city-lite-title">{s.cityLiteMap}</title>
+        <polygon class="city-lite__ground" points={pts({ x: 0, y: 0, w: GRID, d: GRID })} />
+        <polygon class="city-lite__canal" points={pts({ x: 0, y: CANAL.y[0], w: GRID, d: CANAL.y.length })} />
+        {STREETS.map((r) => <polygon class="city-lite__street" points={pts(r)} />)}
+        <polygon class="city-lite__street" points={pts(PLAZA)} />
+        {landmarks.map((l) => <polygon class="city-lite__landmark" points={pts(l.rect)} />)}
         {
-          districts.map((d, i) => {
-            const x = GAP + (i % COLS) * (CELL + GAP);
-            const y = GAP + Math.floor(i / COLS) * (CELL + GAP);
+          lots.map((l) => {
+            const d = districts.find((x) => x.id === l.id)!;
+            const c = mid(l.rect);
             return (
-              <a href={`#d-${d.id}`} aria-label={`${d.code === "--" ? s.cityVault : d.code} ${d.name}`}>
-                <rect class:list={["city-lite__plot", d.vault && "city-lite__plot--vault"]} x={x} y={y} width={CELL} height={CELL} />
-                <text x={x + 12} y={y + 28} class="city-lite__code">{d.vault ? "▮▮" : d.code}</text>
+              <a href={`#d-${d.id}`} aria-label={`${d.vault ? s.cityVault : d.code} ${d.name}`}>
+                <polygon class:list={["city-lite__plot", d.vault && "city-lite__plot--vault"]} points={pts(l.rect)} />
+                <text x={c.sx} y={c.sy + 10} text-anchor="middle" class="city-lite__code">{d.vault ? "▮▮" : d.code}</text>
               </a>
             );
           })
         }
       </svg>
     </figure>
+
+    <script type="application/json" data-city-data set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />
 
     <nav class="city__districts" aria-labelledby="city-districts">
       <h2 id="city-districts">{s.cityDistricts}</h2>
@@ -98,7 +125,8 @@ const H = rows * CELL + (rows + 1) * GAP;
   carryLens(document);
   const section = document.querySelector<HTMLElement>("[data-city]");
   const stage = document.querySelector<HTMLElement>("[data-city-stage]");
-  if (section && stage) showView(section, bootCity(stage).tier);
+  const data = document.querySelector("[data-city-data]")?.textContent;
+  if (section && stage && data) showView(section, bootCity(stage, JSON.parse(data)).tier);
 </script>
 
 <style>
@@ -178,13 +206,27 @@ const H = rows * CELL + (rows + 1) * GAP;
   .city-lite svg {
     display: block;
     width: 100%;
-    max-width: 560px;
+    max-width: 960px;
     height: auto;
+  }
+  .city-lite__ground {
+    fill: var(--surface);
+  }
+  .city-lite__canal {
+    fill: var(--bg);
+  }
+  .city-lite__street {
+    fill: var(--line);
+  }
+  .city-lite__landmark {
+    fill: var(--line);
+    stroke: var(--ink-muted);
+    stroke-width: 2px;
   }
   .city-lite__plot {
     fill: var(--surface);
-    stroke: var(--line);
-    stroke-width: 1px;
+    stroke: var(--ink-muted);
+    stroke-width: 3px;
   }
   .city-lite__plot--vault {
     fill: var(--ink);
@@ -192,12 +234,15 @@ const H = rows * CELL + (rows + 1) * GAP;
   .city-lite a:focus-visible .city-lite__plot,
   .city-lite a:hover .city-lite__plot {
     stroke: var(--accent);
-    stroke-width: 3px;
+    stroke-width: 8px;
   }
   .city-lite__code {
     font-family: var(--font-mono);
-    font-size: 18px;
-    fill: var(--ink-muted);
+    font-size: 30px;
+    fill: var(--ink);
+  }
+  .city-lite a:has(.city-lite__plot--vault) .city-lite__code {
+    fill: var(--bg);
   }
   .city__districts h2 {
     margin: calc(var(--space) * 3) 0 var(--space);

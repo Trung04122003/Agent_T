@@ -140,6 +140,28 @@ test("33.4 without ?lite the world view shows (the stage, no static plan)", asyn
   await expect(page.locator("[data-city-lite]")).toBeHidden();
 });
 
+test("34 the city draws its plan, and repaints in the other palette on a mode switch", async ({ page }) => {
+  await page.goto("/vi/city/");
+  await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+  const stage = page.locator("[data-city-stage]");
+  const painted = () =>
+    page.evaluate(() => {
+      const c = document.querySelector<HTMLCanvasElement>(".city-layer--dynamic")!;
+      const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4 * 97) if (d[i]! > 0) n++;
+      return n / (d.length / (4 * 97));
+    });
+  expect(await painted()).toBeGreaterThan(0.5);
+  const before = Number(await stage.getAttribute("data-bake-chunks"));
+  expect(before).toBeGreaterThan(0);
+  await page.evaluate(() => (document.documentElement.dataset["mode"] = "giai-mat"));
+  await expect.poll(async () => Number(await stage.getAttribute("data-bake-chunks"))).toBeGreaterThan(before);
+  // The data handed to the page names entries but carries no tier and no text.
+  const data = JSON.parse((await page.locator("[data-city-data]").textContent())!);
+  expect(Object.keys(data.plots[0]).sort()).toEqual(["domains", "id", "kind"]);
+});
+
 test("33.5 a dossier page loads no city file; the city page does", async ({ page }) => {
   const js = async (path: string) => {
     const seen: string[] = [];

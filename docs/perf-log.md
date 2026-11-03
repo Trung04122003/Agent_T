@@ -3,6 +3,27 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P34 · City plan and procedural buildings
+
+Reference machine (i3-1115G4, 7.7 GB, integrated graphics). `PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`,
+page `/vi/city/`, Mat, `node tools/perf/city-frames.mjs` (raw results in `.perf/city-frames.json`): each run
+6 s of panning with the arrow keys (chunks bake while it pans), then a zoom out and in. Median of 3 runs.
+Viewport is the window; the stage is the page column, `min(70vh, 720px)` tall.
+
+| Viewport | CPU | First frame after DOM ready | p95 frame | Max frame | Frames > 33 ms | Tier | Chunks baked | Bake per chunk (avg / max) | Canvas backing store | JS heap |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1366x768 | 1x | 32 ms | 16.8 ms | 33.3 ms | 0 | Medium | 19 | 3.1 / 9.0 ms | 17.9 MB | 3.1 MB |
+| 1366x768 | 4x | 62 ms | 16.8 ms | 33.4 ms | 0 | Medium | 19 | 6.5 / 12.3 ms | 17.9 MB | 4.4 MB |
+| 1920x1080 | 1x | 41 ms | 16.7 ms | 33.3 ms | 0 | Medium | 19 | 2.9 / 10.1 ms | 18.6 MB | 3.1 MB |
+| 1920x1080 | 4x | 38 ms | 16.8 ms | 33.4 ms | 1 | Medium | 15 | 4.6 / 10.6 ms | 18.6 MB | 3.4 MB |
+
+All within budget (p95 <= 20 ms at 1x, <= 40 ms at 4x; first frame <= 1.5 s / 4 s; backing store <= 64 MB);
+no step-down. Baking is the city's only heavy work and stays under one frame per chunk; at most two chunks
+bake in a frame after the first.
+
+**Sizes** (`pnpm city:budget`, flag-on build): city JS **14 982 B gzip** (P33: 8 916 B; budget 81 920 B),
+city CSS **887 B** (P33: 833 B; budget 8 192 B), atlas 0 B, no image or font.
+
 ## 2026-11-03 · P33 · City route, entry, exit and fallback shell
 
 Sizes only (P33 adds markup and a small script, no rendering). `pnpm city:budget` on the flag-on build
