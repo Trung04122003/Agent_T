@@ -7,6 +7,8 @@ export const SITE = "http://localhost:4321";
 export const DEV = "http://localhost:4322";
 /** Build of the test dataset e2e/fixtures/claims.json (outputs to test-results/, never dist/). */
 export const FIXTURE = "http://localhost:4323";
+/** Build of the real content with Agent T City switched on (PUBLIC_CITY=1), into test-results/. */
+export const CITY = "http://localhost:4324";
 
 export default defineConfig({
   testDir: "e2e",
@@ -21,6 +23,13 @@ export default defineConfig({
       command: "pnpm build && pnpm preview --port 4323 --ignore-lock",
       url: FIXTURE,
       env: { CUPID_CLAIMS: "e2e/fixtures/claims.json", CUPID_RISKS: "e2e/fixtures/risks.json", CUPID_METRICS: "e2e/fixtures/metrics.json", CUPID_LENSES: "e2e/fixtures/lenses.json" },
+      reuseExistingServer: false,
+      timeout: 180_000,
+    },
+    {
+      command: "pnpm build && pnpm preview --port 4324 --ignore-lock",
+      url: CITY,
+      env: { PUBLIC_CITY: "1", CUPID_OUT: "test-results/city" },
       reuseExistingServer: false,
       timeout: 180_000,
     },

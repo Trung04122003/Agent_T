@@ -13,6 +13,7 @@ import { t, type Locale } from "../lib/i18n";
 import { codenameFor, getIdentity } from "../lib/identity";
 import { BUILT, fileNumber } from "../lib/dossier";
 import { getLenses } from "../lib/lenses";
+import { CITY_ENABLED } from "../lib/flags";
 import LangSwitch from "./LangSwitch.astro";
 
 interface Props {
@@ -31,6 +32,8 @@ const load = {
   steps: await Promise.all(["entryLoadVerify", "entryLoadDecrypt", "entryLoadUnlock"].map((k) => t(k, locale))),
   granted: await t("entryLoadGranted", locale),
 };
+// Agent T City (ROADMAP-v4 33.2, UX-v4 section 1): a plain link, so the gate's script is untouched.
+const cityEnter = CITY_ENABLED ? await t("cityEnter", locale) : null;
 ---
 
 <div class="entry" role="dialog" aria-modal="true" aria-labelledby="entry-title" data-entry>
@@ -69,6 +72,7 @@ const load = {
     {/* The reader's own line: typed out under the buttons when one is pointed at (decorative copy;
         each button is described by the same text for screen readers). */}
     <p class="entry__line" aria-hidden="true" data-entry-line></p>
+    {cityEnter && <a class="entry__city" href={`/${locale}/city/`} data-city-enter>{cityEnter} <span aria-hidden="true">›</span></a>}
     {
       lenses.map(
         (l) =>
@@ -271,6 +275,18 @@ const load = {
     text-underline-offset: 3px;
   }
   .entry__skip:hover {
+    color: var(--ink);
+  }
+  .entry__city {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    text-underline-offset: 3px;
+  }
+  .entry__city:hover {
     color: var(--ink);
   }
   /* The opening, in CSS so it starts with the first paint (no flash before the script runs).

@@ -144,6 +144,14 @@ body {
   border-bottom: 1px solid var(--line);
   background: var(--bg);
 }
+/* Agent T City's entry link (ROADMAP-v4 33.2), only rendered while the city flag is on. */
+.controls__city {
+  margin-inline-start: calc(var(--space) * 2);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  text-underline-offset: 3px;
+}
 /* "Aa" (P27) next to the mode switch. */
 .controls__end {
   display: flex;

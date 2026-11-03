@@ -1,0 +1,161 @@
+import { gzipSync } from "node:zlib";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+import { CITY, SITE } from "../playwright.config";
+
+// ROADMAP-v4 P33: Agent T City's route, entry, exit and fallback shell, on a real build with the
+// city flag on (CITY, port 4324). The gate is met as a first-time reader here (no e2e/test.ts).
+test.use({ baseURL: CITY });
+
+const gateOf = (page: Page) => page.locator("[data-entry]");
+/** Ledger rows of the dossier page itself: what the city's district list must reach. */
+const ledgerIds = (page: Page) => page.locator("[data-claim]").evaluateAll((els) => [...new Set(els.map((e) => (e as HTMLElement).dataset["claim"]!))]);
+
+test("33.1 noindex, canonical to the dossier, in every language", async ({ request }) => {
+  for (const l of ["vi", "en"]) {
+    const html = await (await request.get(`/${l}/city/`)).text();
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).toContain(`<link rel="canonical" href="/${l}/">`);
+    expect(html).toContain(`<html lang="${l}"`);
+  }
+});
+
+test("33.2 the gate's JS is byte for byte the same with the city on, under 3.2 KB", async ({ request }) => {
+  const gateJs = async (base: string) => {
+    const html = await (await request.get(`${base}/vi/`)).text();
+    const src = html.match(/<script type="module" src="([^"]*EntryGate[^"]*)"/)![1]!;
+    const body = await (await request.get(`${base}${src}`)).text();
+    const deps = await Promise.all([...body.matchAll(/from"\.\/([^"]+)"/g)].map(async (m) => (await request.get(`${base}/_astro/${m[1]}`)).text()));
+    return { head: html.match(/var g="show".*?dataset\.gate=g;/)![0], body, deps };
+  };
+  const on = await gateJs(CITY);
+  const off = await gateJs(SITE);
+  expect(on).toEqual(off);
+  const size = gzipSync(on.head).length + [on.body, ...on.deps].reduce((n, b) => n + gzipSync(b).length, 0);
+  test.info().annotations.push({ type: "size", description: `gate JS ${size} B gzip` });
+  expect(size).toBeLessThanOrEqual(3.2 * 1024);
+});
+
+test("33.2 gate -> city -> back: language kept, gate not replayed, browser Back works", async ({ page }) => {
+  await page.goto("/en/");
+  await expect(gateOf(page)).toBeVisible();
+  await gateOf(page).locator("[data-city-enter]").click();
+  await expect(page).toHaveURL(`${CITY}/en/city/`);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.goBack();
+  await expect(page).toHaveURL(`${CITY}/en/`);
+  await page.goForward();
+  await page.locator(".city__bar [data-city-back]").click();
+  await expect(page).toHaveURL(`${CITY}/en/#gate-codename`);
+  await expect(gateOf(page)).toBeHidden();
+});
+
+test("33.2 dossier header -> city -> back keeps lens, language and mode", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("mode", "giai-mat"));
+  await page.goto("/en/?lens=curious&skip=1");
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+  await page.locator("header.controls [data-city-enter]").click();
+  await expect(page).toHaveURL(`${CITY}/en/city/?lens=curious`);
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+  for (const a of await page.locator("[data-city-back], [data-city-dossier-link]").all()) {
+    expect(new URL((await a.getAttribute("href"))!, CITY).searchParams.get("lens")).toBe("curious");
+  }
+  await page.locator(".city__bar [data-city-back]").click();
+  await expect(page).toHaveURL(`${CITY}/en/?lens=curious#gate-codename`);
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+  await expect(page.locator('[data-positioning-lens="curious"]:visible')).toHaveCount(1);
+});
+
+test("33.3 the skip link is the first Tab stop and leads to the dossier", async ({ page }) => {
+  await page.goto("/vi/city/");
+  await page.keyboard.press("Tab");
+  const skip = page.locator(".city-skip");
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeInViewport();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`${CITY}/vi/#gate-codename`);
+});
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("33.3 the district list reaches every open entry and the Vault", async ({ page }) => {
+    for (const l of ["vi", "en"]) {
+      await page.goto(`/${l}/`);
+      const ledger = await ledgerIds(page);
+      expect(ledger.length).toBeGreaterThan(0);
+      await page.goto(`/${l}/city/`);
+      await expect(page.locator(".city__note")).toBeVisible();
+      await expect(page.locator("[data-city-stage]")).toBeHidden();
+      await expect(page.locator("[data-city-lite]")).toBeHidden();
+      const items = page.locator("[data-district]");
+      const districts = await items.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["district"]!));
+      // Every ledger row has its district, in the same order; the classified one is the Vault.
+      expect(districts.filter((id) => ledger.includes(id))).toEqual(ledger);
+      for (const id of districts) {
+        const link = page.locator(`#d-${id} [data-city-dossier-link]`);
+        await expect(link).toBeVisible();
+        expect(await link.getAttribute("href")).toBe(`/${l}/#claim-${id}`);
+      }
+    }
+  });
+});
+
+test("33.3 print shows one line pointing to the dossier", async ({ page }) => {
+  await page.goto("/vi/city/");
+  await page.emulateMedia({ media: "print" });
+  const line = page.locator(".city__print");
+  await expect(line).toBeVisible();
+  await expect(line.locator("a")).toHaveAttribute("href", "/vi/");
+  for (const s of [".city__bar", ".city__districts", "[data-city-stage]", "[data-city-lite]"]) await expect(page.locator(s)).toBeHidden();
+});
+
+test("33.4 Lite via ?lite: the static plan, usable with the keyboard alone", async ({ page }) => {
+  await page.goto("/vi/city/?lite");
+  await expect(page.locator("[data-city]")).toHaveAttribute("data-view", "lite");
+  await expect(page.locator("[data-city-lite]")).toBeVisible();
+  await expect(page.locator("[data-city-stage]")).toBeHidden();
+  await expect(page.locator("[data-city-stage] canvas")).toHaveCount(0);
+  const plots = page.locator("[data-city-lite] a");
+  const count = await plots.count();
+  expect(count).toBe(await page.locator("[data-district]").count());
+  // Tab from the top until the first plot has focus, then Enter jumps to its entry in the list.
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press("Tab");
+    if (await plots.first().evaluate((a) => a === document.activeElement)) break;
+  }
+  await expect(plots.first()).toBeFocused();
+  const target = (await plots.first().getAttribute("href"))!;
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`${target}$`));
+  await expect(page.locator(`${target}:target`)).toHaveCount(1);
+  const axe = await new AxeBuilder({ page }).include("[data-city]").analyze();
+  expect(axe.violations.map((v) => v.id)).toEqual([]);
+});
+
+test("33.4 without ?lite the world view shows (the stage, no static plan)", async ({ page }) => {
+  await page.goto("/vi/city/");
+  await expect(page.locator("[data-city]")).toHaveAttribute("data-view", "world");
+  await expect(page.locator("[data-city-stage]")).toBeVisible();
+  await expect(page.locator("[data-city-lite]")).toBeHidden();
+});
+
+test("33.5 a dossier page loads no city file; the city page does", async ({ page }) => {
+  const js = async (path: string) => {
+    const seen: string[] = [];
+    page.on("request", (r) => {
+      if (r.resourceType() === "script") seen.push(r.url());
+    });
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    page.removeAllListeners("request");
+    return Promise.all(seen.map(async (u) => ({ u, body: await (await page.request.get(u)).text() })));
+  };
+  const isCity = (b: string) => b.includes("city:first-frame");
+  for (const path of ["/vi/", "/en/?skip=1"]) {
+    const files = await js(path);
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.filter((f) => isCity(f.body)).map((f) => f.u), path).toEqual([]);
+  }
+  expect((await js("/vi/city/")).some((f) => isCity(f.body))).toBe(true);
+});

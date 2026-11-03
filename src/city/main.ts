@@ -14,7 +14,7 @@ export type CityHandle = { stop(): void; readonly plan: LayerPlan | null; readon
 export function bootCity(stage: HTMLElement): CityHandle {
   const start = decideTier(readCapabilities(window));
   stage.dataset["tier"] = start;
-  // Lite: no canvas world at all (the static view is P33.4).
+  // Lite: no canvas world at all; the route shows its static plan instead (shell.ts).
   if (start === "lite") return { stop() {}, plan: null, tier: "lite" };
 
   const make = (name: string): HTMLCanvasElement => {

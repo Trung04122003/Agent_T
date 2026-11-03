@@ -1,6 +1,4 @@
 ---
-import { readFileSync } from "node:fs";
-import { getCollection } from "astro:content";
 import CommitChart from "../../components/CommitChart.astro";
 import EvidenceFlow from "../../components/EvidenceFlow.astro";
 import CapabilityMatrix from "../../components/CapabilityMatrix.astro";
@@ -14,8 +12,8 @@ import RiskFactors from "../../components/RiskFactors.astro";
 import StatsBoard from "../../components/StatsBoard.astro";
 import Base from "../../layouts/Base.astro";
 import { t } from "../../lib/i18n";
-import { inFileOrder, publicClaims } from "../../lib/ledger";
-import { CLAIMS_FILE } from "../../lib/paths";
+import { publicClaims } from "../../lib/ledger";
+import { ledgerEntries } from "../../lib/ledger-entries";
 import { LOCALES, type Locale } from "../../lib/locales";
 
 export function getStaticPaths() {
@@ -23,11 +21,7 @@ export function getStaticPaths() {
 }
 
 const locale = Astro.params.lang as Locale;
-const idsInFile = (JSON.parse(readFileSync(CLAIMS_FILE, "utf8")) as { id: string }[]).map((c) => c.id);
-const claims = inFileOrder(
-  (await getCollection("claims")).map((e) => e.data),
-  idsInFile,
-);
+const claims = await ledgerEntries();
 const labels: LedgerLabels = {
   heading: await t("ledgerHeading", locale),
   tiers: {

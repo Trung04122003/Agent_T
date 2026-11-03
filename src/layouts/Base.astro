@@ -21,6 +21,7 @@ import { FONT_KEY, NIGHT_KEY, SIZE_KEY } from "../scripts/reading";
 import ReadingPanel from "../components/ReadingPanel.astro";
 import EntryGate from "../components/EntryGate.astro";
 import { MODE_KEY } from "../scripts/mode";
+import { CITY_ENABLED } from "../lib/flags";
 
 interface Props {
   locale: Locale;
@@ -31,8 +32,12 @@ interface Props {
   dir?: "ltr" | "rtl";
   /** Offer the entry gate (ROADMAP P25): the file's home page only. */
   gate?: boolean;
+  /** Never indexed, whatever NOINDEX says (Agent T City, ROADMAP-v4 33.1). */
+  noindex?: boolean;
+  /** The page this one is a view of (the city points to the dossier). */
+  canonical?: string;
 }
-const { locale, title, path, dir = dirFor(locale), gate = false } = Astro.props;
+const { locale, title, path, dir = dirFor(locale), gate = false, noindex = false, canonical } = Astro.props;
 const updatedLabel = await t("updatedLabel", locale);
 const updated = updatedStamp(new Date());
 // Neutral SEO (ROADMAP 8.4): the positioning line from content/, nothing more.
@@ -56,6 +61,8 @@ const published = LOCALES.filter((l) => complete.has(l));
 const gateScript = `var g="show";try{if(sessionStorage.getItem(${JSON.stringify(GATE_KEY)}))g="skip"}catch(e){}if(location.hash||/[?&]skip(=|&|$)/.test(location.search)||matchMedia("print").matches)g="skip";document.documentElement.dataset.gate=g;`;
 // Reading settings (ROADMAP 27.5), before the first paint too: no flash of the default face/size.
 const readingScript = `try{var f=localStorage.getItem(${JSON.stringify(FONT_KEY)});if(f==="bien-ban"||f==="de-doc"||f==="may-chu")document.documentElement.dataset.font=f;var z=localStorage.getItem(${JSON.stringify(SIZE_KEY)});if(z==="sm"||z==="lg")document.documentElement.dataset.size=z;if(localStorage.getItem(${JSON.stringify(NIGHT_KEY)})==="off")document.documentElement.dataset.night="off"}catch(e){}`;
+// Agent T City (ROADMAP-v4 33.2): a plain link in the dossier's header, only while the flag is on.
+const cityEnter = CITY_ENABLED && gate ? await t("cityEnter", locale) : null;
 const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentElement.dataset.js="";try{var m=localStorage.getItem(${JSON.stringify(MODE_KEY)});if(m==="mat"||m==="giai-mat")document.documentElement.dataset.mode=m}catch(e){}var c="custom";try{if(localStorage.getItem(${JSON.stringify(CURSOR_KEY)})==="system")c="system"}catch(e){}document.documentElement.dataset.cursor=c`;
 ---
 
@@ -66,7 +73,8 @@ const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentEl
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
-    {NOINDEX && <meta name="robots" content="noindex" />}
+    {(NOINDEX || noindex) && <meta name="robots" content="noindex" />}
+    {canonical && <link rel="canonical" href={canonical} />}
     <meta name="description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -78,9 +86,10 @@ const modeScript = `${gate ? gateScript : ""}${readingScript}document.documentEl
     {path !== undefined && published.map((l) => <link rel="alternate" hreflang={l} href={`/${l}${path}`} />)}
   </head>
   <body>
+    <slot name="top" />
     <ClassBanner locale={locale} position="top" />
     <header class="controls">
-      <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} locales={published} />}<slot name="controls-start" /></div>
+      <div class="controls__start">{path !== undefined && <LangSwitch locale={locale} path={path} locales={published} />}<slot name="controls-start" />{cityEnter && <a class="controls__city" href={`/${locale}/city/`} data-city-enter>{cityEnter}</a>}</div>
       <div class="controls__end">
         <ReadingPanel locale={locale} />
         <ModeToggle locale={locale} />

@@ -3,6 +3,16 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P33 · City route, entry, exit and fallback shell
+
+Sizes only (P33 adds markup and a small script, no rendering). `pnpm city:budget` on the flag-on build
+(`PUBLIC_CITY=1`, `test-results/city/dist`): city JS **8 916 B gzip** (P32: 8 689 B; budget 81 920 B), city
+CSS **833 B** (P32: 263 B; budget 8 192 B), atlas 0 B, no image or font. **Dossier with the flag off**
+(`pnpm perf:size`, `dist/`): 21 JS files, **18 380 B gzip, unchanged (+0 B)**. With the flag on, the gate's
+JS is byte for byte the one of the flag-off build (e2e `city.e2e.ts`, 33.2), and no script a dossier page
+loads contains city code (33.5). The header link's rule sits in the shared `base.css` (one small rule,
+shipped with the flag off too).
+
 ## 2026-11-03 · P32 · City engine core, empty scene
 
 Reference machine: Intel Core i3-1115G4, 7.7 GB RAM, integrated graphics. `PUBLIC_CITY=1 pnpm build:prod`

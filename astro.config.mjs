@@ -38,8 +38,10 @@ export default defineConfig({
   output: "static",
   // Builds from a test dataset (CUPID_CLAIMS) must never land in dist/, which is what gets deployed.
   // Its content store is kept apart too (cacheDir), so the two datasets can never mix.
-  outDir: process.env["CUPID_CLAIMS"] ? "test-results/dist-fixture" : "dist",
-  cacheDir: process.env["CUPID_CLAIMS"] ? "test-results/cache-fixture" : "node_modules/.astro",
+  // CUPID_OUT (e2e only, under test-results/): a second build of the real content, e.g. with the
+  // city flag on, running next to the default one without sharing its output or store.
+  outDir: process.env["CUPID_OUT"] ? `${process.env["CUPID_OUT"]}/dist` : process.env["CUPID_CLAIMS"] ? "test-results/dist-fixture" : "dist",
+  cacheDir: process.env["CUPID_OUT"] ? `${process.env["CUPID_OUT"]}/cache` : process.env["CUPID_CLAIMS"] ? "test-results/cache-fixture" : "node_modules/.astro",
   // Also makes duplicate ids in content/*.json fail the build instead of warning.
   prerenderConflictBehavior: "error",
   devToolbar: { enabled: false },

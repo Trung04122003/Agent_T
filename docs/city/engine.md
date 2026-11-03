@@ -19,3 +19,12 @@ The core every later phase builds on. No art yet: the scene is cleared and empty
 
 ## The flag
 The route `/[lang]/city/` is injected by `astro.config.mjs` only in `pnpm dev` or with `PUBLIC_CITY=1`. With the flag off, nothing of the city is bundled (a build test checks that no city code is in `dist/`).
+
+## The shell (P33)
+`src/city/route.astro` holds everything that works without the canvas; `src/city/shell.ts` is its small script.
+- Top: a skip link (first Tab stop) and "Back to dossier", both to `/<lang>/#gate-codename` (any hash skips the gate).
+- Views: the stage when JS picked a tier (`data-view="world"`); the Lite plan (`data-view="lite"`, `?lite` or a weak device); neither without JS.
+- The district list (`#d-<id>`, one per ledger entry, the Vault last with its type label only) links each entry to `/<lang>/#claim-<id>`. It is what no-JS readers, screen readers and the Lite plan's links reach.
+- Print: one line pointing to the dossier.
+- Entry: plain links in the gate (under the lenses) and the dossier header, only with the flag on, so dossier pages carry no city JS. The lens travels on the city's `?lens=`, else from the same-origin referrer, and goes back on every link to the dossier; language is the path, mode the saved one.
+- Not yet: `Esc` opening the exit prompt (UX-v4 section 1) needs the world's own key handling (P34 onward).

@@ -1,38 +1,143 @@
 ---
-// Agent T City route, /[lang]/city/ (ROADMAP-v4). Injected by astro.config.mjs only when the city
-// flag is on (src/lib/flags.ts), so with it off nothing of the city is even bundled. P31 stub plus
-// the P32 engine on an empty stage; the real shell (noindex, canonical, district list, Lite view) is P33.
+// Agent T City route, /[lang]/city/ (ROADMAP-v4 P33). Injected by astro.config.mjs only when the city
+// flag is on (src/lib/flags.ts), so with it off nothing of the city is even bundled.
+// The shell works without the canvas: a skip link and "Back to dossier" first, then the stage (JS
+// only), the Lite view (a static SVG plan, ?lite or a weak device), and the district list as real
+// links, which is also what a reader without JS, a screen reader or a printer gets.
+// Data: the ledger's own entries (ledgerEntries), through the city content map; nothing else.
+import { getCollection } from "astro:content";
 import Base from "../layouts/Base.astro";
 import { t } from "../lib/i18n";
+import { ledgerEntries } from "../lib/ledger-entries";
 import { LOCALES, type Locale } from "../lib/locales";
+import { cityContentMap } from "./content-map";
 
 export function getStaticPaths() {
   return LOCALES.map((lang) => ({ params: { lang } }));
 }
 
 const locale = Astro.params.lang as Locale;
-const title = await t("cityTitle", locale);
-const back = await t("cityBack", locale);
-const stub = await t("cityStub", locale);
+const entries = await ledgerEntries();
+const map = cityContentMap(entries, (await getCollection("risks")).length);
+const byId = new Map(entries.map((c) => [c.id, c]));
+const nameOf = (id: string): string => {
+  const c = byId.get(id)!;
+  return c.kind === "classified" ? c.label[locale] : ((c.org ?? c.title)?.[locale] ?? id);
+};
+const keys = ["cityTitle", "cityBack", "citySkip", "cityDistricts", "cityOpenInDossier", "cityVault", "cityLite", "cityLiteMap", "cityNoScript", "cityPrint"] as const;
+const s = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const))) as Record<(typeof keys)[number], string>;
+// Back to the dossier lands past its gate (any hash skips it) on the page's heading.
+const dossier = `/${locale}/`;
+const back = `${dossier}#gate-codename`;
+const districts = [
+  ...map.plots.map((p, i) => ({ id: p.id, code: String(i + 1).padStart(2, "0"), name: nameOf(p.id), vault: false })),
+  ...(map.vault ? [{ id: map.vault.id, code: "--", name: nameOf(map.vault.id), vault: true }] : []),
+];
+// Lite plan: a placeholder grid until the real plan exists (P34); one cell per district.
+const COLS = 4;
+const CELL = 120;
+const GAP = 16;
+const rows = Math.ceil(districts.length / COLS);
+const W = COLS * CELL + (COLS + 1) * GAP;
+const H = rows * CELL + (rows + 1) * GAP;
 ---
 
-<Base locale={locale} title={title}>
-  <section class="city-stub page" data-city>
-    <h1>{title}</h1>
-    <p>{stub}</p>
-    <p><a href={`/${locale}/`}>{back}</a></p>
-    {/* The city's stage: focusable so keys drive the city, not the page. Empty until P34. */}
-    <div class="city-stage" role="group" aria-label={title} tabindex="0" data-city-stage></div>
+<Base locale={locale} title={s.cityTitle} noindex canonical={dossier}>
+  <a slot="top" class="city-skip" href={back} data-city-back>{s.citySkip}</a>
+  <section class="city page" aria-labelledby="city-title" data-city>
+    <div class="city__bar">
+      <h1 id="city-title" class="city__title">{s.cityTitle}</h1>
+      <a class="city__action" href={back} data-city-back>{s.cityBack}</a>
+      <a class="city__action" href="?lite" data-city-lite-link>{s.cityLite}</a>
+    </div>
+    <noscript><p class="city__note">{s.cityNoScript}</p></noscript>
+
+    {/* The world (JS only, not Lite). Empty until P34. */}
+    <div class="city-stage" role="group" aria-label={s.cityTitle} tabindex="0" data-city-stage></div>
+
+    {/* Lite view: a static plan, each district a link to its entry in the list below. */}
+    <figure class="city-lite" data-city-lite>
+      <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-labelledby="city-lite-title" focusable="false">
+        <title id="city-lite-title">{s.cityLiteMap}</title>
+        {
+          districts.map((d, i) => {
+            const x = GAP + (i % COLS) * (CELL + GAP);
+            const y = GAP + Math.floor(i / COLS) * (CELL + GAP);
+            return (
+              <a href={`#d-${d.id}`} aria-label={`${d.code === "--" ? s.cityVault : d.code} ${d.name}`}>
+                <rect class:list={["city-lite__plot", d.vault && "city-lite__plot--vault"]} x={x} y={y} width={CELL} height={CELL} />
+                <text x={x + 12} y={y + 28} class="city-lite__code">{d.vault ? "▮▮" : d.code}</text>
+              </a>
+            );
+          })
+        }
+      </svg>
+    </figure>
+
+    <nav class="city__districts" aria-labelledby="city-districts">
+      <h2 id="city-districts">{s.cityDistricts}</h2>
+      <ol>
+        {
+          districts.map((d) => (
+            <li id={`d-${d.id}`} data-district={d.id}>
+              <span class="city__code" aria-hidden="true">{d.code}</span>
+              <span class="city__name">{d.vault ? `${s.cityVault}: ${d.name}` : d.name}</span>
+              <a href={`${dossier}#claim-${d.id}`} data-city-dossier-link>{s.cityOpenInDossier}</a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+    <p class="city__print">{s.cityPrint} <a href={dossier}>{dossier}</a></p>
   </section>
 </Base>
 
 <script>
   import { bootCity } from "./main";
+  import { carryLens, showView } from "./shell";
+  carryLens(document);
+  const section = document.querySelector<HTMLElement>("[data-city]");
   const stage = document.querySelector<HTMLElement>("[data-city-stage]");
-  if (stage) bootCity(stage);
+  if (section && stage) showView(section, bootCity(stage).tier);
 </script>
 
 <style>
+  .city-skip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 200;
+    padding: var(--space) calc(var(--space) * 2);
+    color: var(--bg);
+    background: var(--ink);
+    transform: translateY(-120%);
+  }
+  .city-skip:focus {
+    transform: none;
+  }
+  .city__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space) calc(var(--space) * 3);
+    margin-block-end: calc(var(--space) * 2);
+  }
+  .city__title {
+    margin: 0;
+    margin-inline-end: auto;
+    font-size: 1.5rem;
+  }
+  .city__action {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  .city__note {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+  }
   .city-stage {
     position: relative;
     height: min(70vh, 720px);
@@ -54,5 +159,86 @@ const stub = await t("cityStub", locale);
     font-family: var(--font-mono);
     font-size: 0.75rem;
     color: var(--ink-muted);
+  }
+  /* Which view shows (shell.ts): the stage once JS has picked a tier, Lite on ?lite or a weak
+     device, neither without JS (the district list carries everything). */
+  .city-stage,
+  .city-lite {
+    display: none;
+  }
+  .city[data-view="world"] .city-stage {
+    display: block;
+  }
+  .city[data-view="lite"] .city-lite {
+    display: block;
+  }
+  .city-lite {
+    margin: 0;
+  }
+  .city-lite svg {
+    display: block;
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+  }
+  .city-lite__plot {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1px;
+  }
+  .city-lite__plot--vault {
+    fill: var(--ink);
+  }
+  .city-lite a:focus-visible .city-lite__plot,
+  .city-lite a:hover .city-lite__plot {
+    stroke: var(--accent);
+    stroke-width: 3px;
+  }
+  .city-lite__code {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    fill: var(--ink-muted);
+  }
+  .city__districts h2 {
+    margin: calc(var(--space) * 3) 0 var(--space);
+    font-size: 1.125rem;
+  }
+  .city__districts ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .city__districts li {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr) auto;
+    gap: var(--space);
+    align-items: baseline;
+    padding: var(--space) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .city__districts li:target {
+    background: color-mix(in oklab, var(--accent) 10%, transparent);
+  }
+  .city__code {
+    font-family: var(--font-mono);
+    color: var(--ink-muted);
+  }
+  .city__districts a {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--accent);
+  }
+  .city__print {
+    display: none;
+  }
+  /* Print: one line pointing to the dossier (whose own print view is the one-page file). */
+  @media print {
+    .city > :not(.city__print),
+    .city-skip {
+      display: none !important;
+    }
+    .city__print {
+      display: block;
+    }
   }
 </style>
