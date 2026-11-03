@@ -4,7 +4,8 @@
 // - JS: every script the city page loads, followed through static and dynamic imports (the whole
 //   cost of opening the city, shared files included).
 // - CSS: stylesheets the city page links that no dossier page links (the dossier's own CSS is a
-//   fixed cost of every page, not the city's).
+//   fixed cost of every page, not the city's), plus the <style> blocks the build inlines in city
+//   pages and in no dossier page (Astro inlines small stylesheets), each distinct block once.
 // - Atlas data: every atlas*.json in the output.
 // - Images and fonts: any such file inside the city folder, or referenced by city-only JS or CSS.
 // With the city flag off there is no city route: nothing to check, and that passes.
@@ -81,7 +82,10 @@ export function cityBudget(dir) {
   const cityCss = [...pageCss(cityPages)].filter((f) => !dossierCss.has(f));
 
   report.js = [...cityJs].reduce((n, f) => n + gz(readFileSync(f)), 0);
-  report.css = cityCss.reduce((n, f) => n + gz(readFileSync(f)), 0);
+  const inline = (pages) => new Set(pages.flatMap((p) => [...readFileSync(p, "utf8").matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1])));
+  const dossierInline = inline(dossier);
+  const cityInline = [...inline(cityPages)].filter((css) => !dossierInline.has(css));
+  report.css = cityCss.reduce((n, f) => n + gz(readFileSync(f)), 0) + cityInline.reduce((n, css) => n + gz(Buffer.from(css)), 0);
   const atlas = walk(root).filter((f) => /^atlas.*\.json$/i.test(posix.basename(f.replace(/\\/g, "/"))));
   report.atlas = atlas.reduce((n, f) => n + gz(readFileSync(f)), 0);
   if (report.js > BUDGET.js) problems.push(`city JS ${report.js} B gzip > ${BUDGET.js} B`);

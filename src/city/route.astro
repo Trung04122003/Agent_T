@@ -1,0 +1,58 @@
+---
+// Agent T City route, /[lang]/city/ (ROADMAP-v4). Injected by astro.config.mjs only when the city
+// flag is on (src/lib/flags.ts), so with it off nothing of the city is even bundled. P31 stub plus
+// the P32 engine on an empty stage; the real shell (noindex, canonical, district list, Lite view) is P33.
+import Base from "../layouts/Base.astro";
+import { t } from "../lib/i18n";
+import { LOCALES, type Locale } from "../lib/locales";
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const title = await t("cityTitle", locale);
+const back = await t("cityBack", locale);
+const stub = await t("cityStub", locale);
+---
+
+<Base locale={locale} title={title}>
+  <section class="city-stub page" data-city>
+    <h1>{title}</h1>
+    <p>{stub}</p>
+    <p><a href={`/${locale}/`}>{back}</a></p>
+    {/* The city's stage: focusable so keys drive the city, not the page. Empty until P34. */}
+    <div class="city-stage" role="group" aria-label={title} tabindex="0" data-city-stage></div>
+  </section>
+</Base>
+
+<script>
+  import { bootCity } from "./main";
+  const stage = document.querySelector<HTMLElement>("[data-city-stage]");
+  if (stage) bootCity(stage);
+</script>
+
+<style>
+  .city-stage {
+    position: relative;
+    height: min(70vh, 720px);
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    touch-action: none; /* taps and drags belong to the city, not to page scroll and zoom */
+  }
+  .city-stage :global(.city-layer) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .city-stage :global(.city-fps) {
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-end: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+</style>

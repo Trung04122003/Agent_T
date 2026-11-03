@@ -3,6 +3,52 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P32 · City engine core, empty scene
+
+Reference machine: Intel Core i3-1115G4, 7.7 GB RAM, integrated graphics. `PUBLIC_CITY=1 pnpm build:prod`
++ `pnpm preview`, page `/vi/city/` (stage `min(70vh, 720px)` tall), Playwright Chromium, 3 runs each,
+median. The scene is empty (cleared every frame): this checks the engine, not the art.
+
+**Empty scene** (120 pointer moves over the stage, rAF intervals):
+
+| Viewport | CPU | First frame after DOM ready | p95 frame | Mean fps | Tier | Canvas backing store |
+|---|---|---|---|---|---|---|
+| 1366x768 | 1x | 9 ms | 16.8 ms | 60.0 | Medium | 17.9 MB (DPR 1) |
+| 1366x768 | 4x | 47 ms | 16.8 ms | 60.0 | Medium | 17.9 MB |
+| 1920x1080 | 1x | 2 ms | 16.8 ms | 58.0 | Medium | 18.6 MB |
+| 1920x1080 | 4x | 1 ms | 33.3 ms | 52.6 | Medium | 18.6 MB |
+
+All within budget (p95 <= 20 ms at 1x, <= 40 ms at 4x; first frame <= 1.5 s / 4 s). The capability check
+picks Medium on this machine, as the plan expects.
+
+**Hidden tab** (rAF requests counted by wrapping `requestAnimationFrame`): 61 per second visible, **0 in
+2 s hidden**, 61 per second when visible again.
+
+**Automatic step-down** (1366x768, 4x CPU, 15 s of pointer moves): without load the tier stays Medium
+(control); with `?burn=20` (20 ms busy-wait per frame) it steps down **once**, Medium -> Low at 5.1 s, and
+stays there.
+
+**Layer plan** (`planLayers`, full-window stage; backing store = width x height x 4 bytes):
+
+| Viewport | Device DPR | Used DPR | Dynamic | Darkness | Baked chunks | Total |
+|---|---|---|---|---|---|---|
+| 1366x768 | 1 | 1 | 1366x768, 4.0 MB | 683x384, 1.0 MB | 20 x 512x512, 20.0 MB | 25.0 MB |
+| 1366x768 | 1.25 | 1.25 | 1708x960, 6.3 MB | 854x480, 1.6 MB | 20 x 640x640, 31.3 MB | 39.1 MB |
+| 1366x768 | 1.5 | 1.5 | 2049x1152, 9.0 MB | 1025x576, 2.3 MB | 20 x 768x768, 45.0 MB | 56.3 MB |
+| 1366x768 | 2 | 1.5 | 2049x1152, 9.0 MB | 1025x576, 2.3 MB | 20 x 768x768, 45.0 MB | 56.3 MB |
+| 1920x1080 | 1 | 1 | 1920x1080, 7.9 MB | 960x540, 2.0 MB | 30 x 512x512, 30.0 MB | 39.9 MB |
+| 1920x1080 | 1.25 | 1.25 | 2400x1350, 12.4 MB | 1200x675, 3.1 MB | 30 x 640x640, 46.9 MB | 62.3 MB |
+| 1920x1080 | 1.5 | 1.25 | 2400x1350, 12.4 MB | 1200x675, 3.1 MB | 30 x 640x640, 46.9 MB | 62.3 MB |
+| 1920x1080 | 2 | 1.25 | 2400x1350, 12.4 MB | 1200x675, 3.1 MB | 30 x 640x640, 46.9 MB | 62.3 MB |
+
+The baked chunks dominate; the plan lowers the DPR rather than pass 64 MB. (P32 creates the dynamic and
+darkness canvases only; chunks come with the first art, P34.)
+
+**Sizes** (`pnpm city:budget` on the flag-on build): city JS 8 689 B gzip (budget 81 920 B), city CSS
+263 B (inlined by Astro; budget 8 192 B), atlas 0 B, no image or font. **Dossier with the flag off:** 21 JS
+files, 18 380 B gzip, byte for byte as the P31 baseline: +0 B, and no city code anywhere in `dist/` (the
+route is only injected with the flag on; a build test checks it).
+
 ## 2026-11-02 · P31.4 · Baseline of the dossier before Agent T City
 
 Reference machine (ROADMAP-v4 rule 3): Intel Core i3-1115G4 @ 3.00 GHz, 7.7 GB RAM, integrated

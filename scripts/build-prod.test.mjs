@@ -84,6 +84,10 @@ describe("PUBLIC_CITY build flag", () => {
     const out = "test-results/dist-fixture";
     for (const l of ["vi", "en"]) expect(existsSync(join(out, l, "city"))).toBe(false);
     for (const f of htmlFiles(out)) expect(readFileSync(f, "utf8"), f).not.toMatch(/href="[^"]*\/city\b/);
+    // Not even an orphan chunk: none of the city's code is bundled.
+    for (const f of readdirSync(join(out, "_astro")).filter((x) => x.endsWith(".js"))) {
+      expect(readFileSync(join(out, "_astro", f), "utf8"), f).not.toContain("city:first-frame");
+    }
   }, 120_000);
 
   it("on: the city route exists in every language", () => {

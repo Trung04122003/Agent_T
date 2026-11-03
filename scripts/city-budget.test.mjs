@@ -82,6 +82,21 @@ describe("city:budget", () => {
     expect(r.out).toContain("inline image or font");
   });
 
+  it("counts CSS the build inlined in city pages (each distinct block once), not the dossier's own", () => {
+    const shared = `body{${"x".repeat(50)}}`;
+    const city = `/*${noise(BUDGET.css)}*/`;
+    const r = run("inline-css", {
+      ...dossier,
+      "en/index.html": page("dossier", `<style>${shared}</style>`),
+      "vi/city/index.html": page("city", `<style>${shared}</style><style>${city}</style>`),
+      "en/city/index.html": page("city", `<style>${city}</style>`),
+    });
+    expect(r.code).toBe(1);
+    const css = Number(/city CSS ([0-9]+) B gzip >/.exec(r.out)?.[1]);
+    expect(css).toBeGreaterThan(BUDGET.css);
+    expect(css).toBeLessThan(BUDGET.css * 2); // the vi and en copies count once
+  });
+
   it("a share image in <meta> is not a city asset; an <img> is", () => {
     const meta = run("meta", { ...dossier, "vi/city/index.html": page("city", '<meta property="og:image" content="/og.png">') });
     expect(meta.code).toBe(0);

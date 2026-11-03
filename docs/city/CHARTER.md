@@ -50,7 +50,7 @@ Claude Code may decide alone on architecture, shapes, lighting, animation, parti
 | Rule | Enforced by |
 |---|---|
 | City data comes only from the filtered ledger data; every ledger entry has exactly one plot; no `hold` id in city data | `src/city/content-map.ts` + `src/city/content-map.test.ts` |
-| The city route is not built, and not linked, unless `PUBLIC_CITY` is on | `src/lib/flags.ts` + `scripts/build-prod.test.mjs` |
+| The city route is not built, and not linked, unless `PUBLIC_CITY` is on | route injected only with the flag (`astro.config.mjs`, same rule as `src/lib/flags.ts`) + `scripts/build-prod.test.mjs` (no route, no link, no city code in `dist/`) |
 | Size budgets; no image or font in the city bundle; no city file referenced by dossier pages | `pnpm city:budget` (`scripts/city-budget.mjs`) + its test |
 | No forbidden strings, foreign emails, phone numbers or `hold` ids in the city output | `pnpm check:leaks` (city route rules) + its test |
 | Hoang Sa / Truong Sa labels from the 2D map's source | P39 (atlas export) and P40 tests |
