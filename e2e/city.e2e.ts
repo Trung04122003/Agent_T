@@ -2,6 +2,8 @@ import { gzipSync } from "node:zlib";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { CITY, SITE } from "../playwright.config";
+import { toScreen } from "../src/city/engine/iso";
+import { assignLots, PLOT_LOTS, type CityData } from "../src/city/plan";
 
 // ROADMAP-v4 P33: Agent T City's route, entry, exit and fallback shell, on a real build with the
 // city flag on (CITY, port 4324). The gate is met as a first-time reader here (no e2e/test.ts).
@@ -229,6 +231,56 @@ test.describe("P35 night engine", () => {
       await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-rain", "0");
       await page.waitForTimeout(500);
       expect(await dynamicStates(page, 8000)).toBe(1);
+    });
+  });
+});
+
+test.describe("P36 Agent T", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mode", "mat"));
+  });
+  const stageOf = (page: Page) => page.locator("[data-city-stage]");
+
+  test("36.6 he waits hidden in the alley, steps out after about 1.2 s, and is in the city", async ({ page }) => {
+    await page.goto("/vi/city/");
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "hidden");
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "stepping", { timeout: 3000 });
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "done", { timeout: 4000 });
+  });
+
+  test("36.6 the first key starts the entrance, the next one skips it", async ({ page }) => {
+    await page.goto("/vi/city/");
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "hidden");
+    await stageOf(page).focus();
+    await page.keyboard.press("e");
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "stepping");
+    await page.keyboard.press("e");
+    await expect(stageOf(page)).toHaveAttribute("data-entrance", "done", { timeout: 500 });
+  });
+
+  test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("36.6 he starts standing at the alley's mouth", async ({ page }) => {
+      await page.goto("/vi/city/");
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      await expect(stageOf(page)).toHaveAttribute("data-entrance", "done");
+    });
+
+    test("36.2 a click on a building walks him to its door", async ({ page }) => {
+      await page.goto("/vi/city/");
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      const data = JSON.parse((await page.locator("[data-city-data]").textContent())!) as CityData;
+      const plot = assignLots(data).plots.find((p) => p.lot === "lot-a")!;
+      // The camera (no easing with reduced motion) is centred on him at the plaza alley's mouth.
+      const lot = PLOT_LOTS.find((l) => l.id === "lot-a")!.rect;
+      const cam = toScreen({ x: 26.5, y: 17.5 });
+      const aim = toScreen({ x: lot.x + lot.w / 2, y: lot.y + lot.d / 2, z: 1 });
+      const box = (await stageOf(page).boundingBox())!;
+      await stageOf(page).click({ position: { x: box.width / 2 + (aim.sx - cam.sx) * 0.6, y: box.height / 2 + (aim.sy - cam.sy) * 0.6 } });
+      await expect(stageOf(page)).toHaveAttribute("data-walking", "1");
+      await expect(stageOf(page)).toHaveAttribute("data-door", plot.id, { timeout: 20_000 });
+      await expect(stageOf(page)).toHaveAttribute("data-walking", "0");
     });
   });
 });

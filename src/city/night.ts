@@ -1,12 +1,13 @@
 // The night engine (ROADMAP-v4 P35, UX-v4 section 4): the Mat look's darkness, cut by light.
-// Two half-resolution canvases (layers.ts): an offscreen light mask (the lantern's cone, occluded by
-// buildings; streetlamp pools; sign glows) and the visible darkness (the night colour, a few haze
+// Two half-resolution canvases (layers.ts): an offscreen light mask (the lantern's cone, clipped to
+// its visibility polygon (visibility.ts), so buildings occlude it; streetlamp pools; sign glows) and the visible darkness (the night colour, a few haze
 // bands and a static grain, minus the mask; rain on top on the High tier). Every light is a sprite
 // baked once at start (pre-made gradients, stamped with drawImage): no blur, no canvas filter, no
 // gradient built per frame. The mask is rebuilt only when the view or the lantern moves; the hot
 // path allocates nothing (numbers and preallocated arrays only).
 import { Z_PX, TILE } from "./engine/iso";
 import { mix, TOKENS, type Palette } from "./palette";
+import { footprintSegments, insidePolygon, visibilityCache } from "./visibility";
 
 /** The lantern's reach: cone length and half angle (world units, radians), its own small circle. */
 export const LANTERN = { reach: 10, half: 0.6, ambient: 2.2 } as const;
@@ -19,7 +20,8 @@ const HY = TILE.h / 2;
 
 /** A building that casts the lantern's shadow: its footprint, and its screen silhouette (zoom 1). */
 export type Occluder = { x0: number; y0: number; x1: number; y1: number; hull: Float64Array };
-export type Lantern = { x: number; y: number; heading: number };
+/** `power`: 0 shut, 1 fully open (Agent T opens it as he steps out of the alley). */
+export type Lantern = { x: number; y: number; heading: number; power: number };
 /** Where the canvases look: the camera's top-left in zoom-1 px, the zoom, CSS px to mask px. */
 export type NightView = { ox: number; oy: number; zoom: number; k: number };
 
@@ -102,16 +104,11 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
   const cone = coneSprite(256, COLD);
   let pal = p0;
   const grain = dctx.createPattern(grainSprite(128, "#ffffff"), "repeat")!;
-  // Scratch space for one shadow polygon (4 points).
-  const poly = new Float64Array(8);
-  /** Pushes the shadow corner at poly[src] out to `far` from the lantern, into poly[dst]. */
-  const extend = (src: number, dst: number, lx: number, ly: number, far: number): void => {
-    const ex = poly[src]! - lx;
-    const ey = poly[src + 1]! - ly;
-    const l = Math.hypot(ex, ey) || 1;
-    poly[dst] = poly[src]! + (ex / l) * far;
-    poly[dst + 1] = poly[src + 1]! + (ey / l) * far;
-  };
+  // What the lantern can see, per quarter-tile cell (visibility.ts).
+  const seen = visibilityCache(footprintSegments(occluders), LANTERN.reach + 1);
+  /** Is a ground point inside the current visibility polygon? (Corners of a footprint, nudged out.) */
+  const sees = (poly: Float64Array, o: Occluder): boolean =>
+    insidePolygon(poly, o.x0 - 0.05, o.y0 - 0.05) || insidePolygon(poly, o.x1 + 0.05, o.y0 - 0.05) || insidePolygon(poly, o.x1 + 0.05, o.y1 + 0.05) || insidePolygon(poly, o.x0 - 0.05, o.y1 + 0.05);
 
   /** World point on the ground -> mask px. */
   let vx = 0;
@@ -163,53 +160,28 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
       mctx.globalCompositeOperation = "source-over";
       mctx.clearRect(0, 0, W, H);
       if (pal.nightAlpha === 0) return;
-      if (lantern) {
+      if (lantern && lantern.power > 0) {
         const { x: lx, y: ly, heading } = lantern;
-        stampCone(lx, ly, heading);
-        // Shadows: each footprint in reach hides the ground behind it from the lantern.
         const far = LANTERN.reach + 2;
-        mctx.globalCompositeOperation = "destination-out";
-        mctx.fillStyle = "#000";
-        for (let i = 0; i < occluders.length; i++) {
-          const o = occluders[i]!;
-          if (o.x1 < lx - far || o.x0 > lx + far || o.y1 < ly - far || o.y0 > ly + far) continue;
-          if (lx >= o.x0 && lx <= o.x1 && ly >= o.y0 && ly <= o.y1) continue;
-          // The two corners that bound the footprint as seen from the lantern.
-          const ca = Math.atan2((o.y0 + o.y1) / 2 - ly, (o.x0 + o.x1) / 2 - lx);
-          let lo = Infinity;
-          let hi = -Infinity;
-          for (let k = 0; k < 4; k++) {
-            const cx = k & 1 ? o.x1 : o.x0;
-            const cy = k & 2 ? o.y1 : o.y0;
-            let t = Math.atan2(cy - ly, cx - lx) - ca;
-            if (t > Math.PI) t -= 2 * Math.PI;
-            if (t < -Math.PI) t += 2 * Math.PI;
-            if (t < lo) {
-              lo = t;
-              poly[0] = cx;
-              poly[1] = cy;
-            }
-            if (t > hi) {
-              hi = t;
-              poly[6] = cx;
-              poly[7] = cy;
-            }
-          }
-          extend(0, 2, lx, ly, far);
-          extend(6, 4, lx, ly, far);
-          mctx.beginPath();
-          mctx.moveTo(mx(poly[0]!, poly[1]!), my(poly[0]!, poly[1]!));
-          mctx.lineTo(mx(poly[2]!, poly[3]!), my(poly[2]!, poly[3]!));
-          mctx.lineTo(mx(poly[4]!, poly[5]!), my(poly[4]!, poly[5]!));
-          mctx.lineTo(mx(poly[6]!, poly[7]!), my(poly[6]!, poly[7]!));
-          mctx.closePath();
-          mctx.fill();
+        // The cone, clipped to what the lantern can see: footprints in reach cast its shadows.
+        const poly = seen.get(lx, ly);
+        mctx.save();
+        mctx.beginPath();
+        for (let j = 0; j < poly.length; j += 2) {
+          if (j) mctx.lineTo(mx(poly[j]!, poly[j + 1]!), my(poly[j]!, poly[j + 1]!));
+          else mctx.moveTo(mx(poly[j]!, poly[j + 1]!), my(poly[j]!, poly[j + 1]!));
         }
+        mctx.closePath();
+        mctx.clip();
+        mctx.globalAlpha = lantern.power;
+        stampCone(lx, ly, heading);
+        mctx.restore();
         // The buildings themselves stand in the light: their faces toward the lantern stay lit.
         mctx.globalCompositeOperation = "source-over";
         for (let i = 0; i < occluders.length; i++) {
           const o = occluders[i]!;
           if (o.x1 < lx - far || o.x0 > lx + far || o.y1 < ly - far || o.y0 > ly + far) continue;
+          if (!sees(poly, o)) continue; // wholly behind another building
           const h = o.hull;
           mctx.save();
           mctx.beginPath();
@@ -221,11 +193,16 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
           }
           mctx.closePath();
           mctx.clip();
-          mctx.globalAlpha = 0.75;
+          mctx.globalAlpha = 0.75 * lantern.power;
           stampCone(lx, ly, heading);
           mctx.restore();
         }
         stampPool(lx, ly, LANTERN.ambient, cold);
+      } else if (lantern) {
+        // Lantern shut (Agent T still in the alley): only a faint circle at his feet.
+        mctx.globalAlpha = 0.25;
+        stampPool(lantern.x, lantern.y, LANTERN.ambient * 0.6, cold);
+        mctx.globalAlpha = 1;
       }
       for (let i = 0; i < lamps.length; i++) {
         const l = lamps[i]!;

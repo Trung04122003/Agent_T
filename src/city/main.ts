@@ -1,35 +1,40 @@
-// Agent T City runtime (ROADMAP-v4 P32, P34, P35): wires the engine together on the city route's
+// Agent T City runtime (ROADMAP-v4 P32, P34, P35, P36): wires the engine together on the city route's
 // stage. The city's plan and buildings are baked once per zoom step and mode (bake.ts) and copied to
-// the screen only when the view changes; signs draw over them (signs.ts). In Mat the night engine
-// (night.ts) lays the darkness on top, cut by a lantern, streetlamps and sign glows; rain falls on the
-// High tier (rain.ts). Until Agent T walks the city (P36) the lantern stands at the view's centre and
-// points at the mouse, and the camera pans with the arrow keys (Shift: faster), zooms with + and -.
+// the screen only when the view changes; signs (signs.ts) and Agent T (figure.ts, agent.ts) draw over
+// them, and the buildings standing in front of him are drawn again over him. In Mat the night engine
+// (night.ts) lays the darkness on top, cut by his lantern (clipped to what it can see, visibility.ts),
+// streetlamps and sign glows; rain falls on the High tier (rain.ts). The camera follows him (camera.ts);
+// + and - change the zoom step. He enters from the alley nearest the plaza (agent.ts).
 // Diagnostics: `?burn=<ms>` busy-waits that long every frame (P32.4 check); `?quality=high|medium|low`
 // sets the tier as the HUD's Quality control will (P35.4 check); the dev server shows a frames-per-
-// second counter. The stage's data-* attributes report bake times, the tier and the rain count.
+// second counter. The stage's data-* attributes report bake times, the tier, the rain count, the
+// entrance, whether he walks and the door he has reached.
+import { createAgent } from "./agent";
 import { building, heightOf } from "./archetypes";
 import { createStaticLayer, ZOOMS, type View } from "./bake";
+import { follow } from "./camera";
 import { decideTier, readCapabilities } from "./engine/capabilities";
 import { createInput } from "./engine/input";
 import { TILE } from "./engine/iso";
 import { planLayers, type LayerPlan } from "./engine/layers";
 import { createLoop } from "./engine/loop";
 import { createQuality, TIERS, type Tier } from "./engine/quality";
+import { drawFigure, drawShadow, FIGURE } from "./figure";
 import { createNight, hullOf, type Lantern, type NightView, type Occluder } from "./night";
 import { palette, type Mode } from "./palette";
-import { assignLots, LAMPS, PLAZA, type CityData, type Rect } from "./plan";
+import { ALLEYS, assignLots, LAMPS, PLAZA, type CityData, type Rect } from "./plan";
 import { createRain, glassWalls } from "./rain";
 import { cityScene } from "./render";
 import { createSigns } from "./signs";
+import { insidePolygon } from "./visibility";
+import { walkWorld } from "./walk";
 
 export type CityHandle = { stop(): void; readonly plan: LayerPlan | null; readonly tier: Tier | "lite" };
 
-/** Camera pan speed in CSS pixels per second; Shift doubles it. */
-const PAN = 520;
-/** Where the lantern points with no mouse to follow: up the screen (north). */
-const DEFAULT_HEADING = (-3 * Math.PI) / 4;
 const HX = TILE.w / 2;
 const HY = TILE.h / 2;
+/** His shadow falls away from the city's one light (render.ts LIGHT): to the screen's right. */
+const SHADOW_DIR = { x: 0.999, y: -0.05 } as const;
 
 export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   const start = decideTier(readCapabilities(window));
@@ -57,31 +62,41 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   let pal = palette(modeNow());
   const layer = createStaticLayer(scene, pal, 1, 1);
   const signs = createSigns(layout);
-  const occluders: Occluder[] = [
-    ...layout.plots.map((p) => ({ rect: p.rect, h: heightOf(building(p.archetype, p.rect, p.lot)) })),
-    ...layout.landmarks.map((l) => ({ rect: l.rect, h: heightOf(building(l.archetype, l.rect, l.id)) })),
-    ...(layout.vault ? [{ rect: layout.vault.rect, h: heightOf(building("vault-monolith", layout.vault.rect, "vault")) }] : []),
-  ].map(({ rect, h }: { rect: Rect; h: number }) => {
-    // The building's own footprint (lots keep a 0.5 tile sidewalk).
-    const x0 = rect.x + 0.5;
-    const y0 = rect.y + 0.5;
-    const x1 = rect.x + rect.w - 0.5;
-    const y1 = rect.y + rect.d - 0.5;
-    return { x0, y0, x1, y1, hull: hullOf(x0, y0, x1, y1, h) };
-  });
+  type Hit = Occluder & { id: string; depth: number };
+  const occluders: Hit[] = [
+    ...layout.plots.map((p) => ({ id: p.id, rect: p.rect, h: heightOf(building(p.archetype, p.rect, p.lot)) })),
+    ...layout.landmarks.map((l) => ({ id: l.id, rect: l.rect, h: heightOf(building(l.archetype, l.rect, l.id)) })),
+    ...(layout.vault ? [{ id: layout.vault.id, rect: layout.vault.rect, h: heightOf(building("vault-monolith", layout.vault.rect, "vault")) }] : []),
+  ]
+    .map(({ id, rect, h }: { id: string; rect: Rect; h: number }) => {
+      // The building's own footprint (lots keep a 0.5 tile sidewalk).
+      const x0 = rect.x + 0.5;
+      const y0 = rect.y + 0.5;
+      const x1 = rect.x + rect.w - 0.5;
+      const y1 = rect.y + rect.d - 0.5;
+      return { id, x0, y0, x1, y1, hull: hullOf(x0, y0, x1, y1, h), depth: (x0 + x1 + y0 + y1) / 2 };
+    })
+    .sort((a, b) => b.depth - a.depth); // nearest first, for picking
   const night = createNight(darkness, lightMask, LAMPS, occluders, pal);
   const rain = createRain(glassWalls(layout));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const world = walkWorld(layout);
+  // He enters from the alley whose mouth is nearest the plaza's centre (UX-v4 section 6b).
+  const pcx = PLAZA.x + PLAZA.w / 2;
+  const pcy = PLAZA.y + PLAZA.d / 2;
+  const alley = [...ALLEYS].sort((a, b) => Math.hypot(a.mouth.x - pcx, a.mouth.y - pcy) - Math.hypot(b.mouth.x - pcx, b.mouth.y - pcy))[0]!;
+  const agent = createAgent(world, alley, reduced.matches);
 
-  // The camera starts over the Atlas plaza, at the middle zoom step.
-  const cx = PLAZA.x + PLAZA.w / 2;
-  const cy = PLAZA.y + PLAZA.d / 2;
-  const cam: View = { x: (cx - cy) * HX, y: (cx + cy) * HY, zoom: ZOOMS[1], w: 0, h: 0 };
+  // The camera starts on him, at the middle zoom step.
+  const cam: View = { x: (agent.x - agent.y) * HX, y: (agent.x + agent.y) * HY, zoom: ZOOMS[1], w: 0, h: 0 };
+  /** The view the frame is drawn with: the camera's origin rounded to whole device pixels. */
+  const shown: View = { x: 0, y: 0, zoom: cam.zoom, w: 0, h: 0 };
   const nv: NightView = { ox: 0, oy: 0, zoom: cam.zoom, k: 0.5 };
-  const lantern: Lantern = { x: cx, y: cy, heading: DEFAULT_HEADING };
+  const lantern: Lantern = { x: agent.x, y: agent.y, heading: agent.heading, power: agent.power };
   let dirty = true;
   let lightDirty = true;
   let firstComposite = true;
+  let presses = 0;
 
   // Sizes come from the observer's entry, not from reading the layout.
   const resize = new ResizeObserver(([entry]) => {
@@ -96,8 +111,8 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
       el.height = c.h;
     }
     layer.resize(plan.dpr, plan.canvases.find((c) => c.name === "chunk")!.count);
-    cam.w = w;
-    cam.h = h;
+    cam.w = shown.w = w;
+    cam.h = shown.h = h;
     nv.k = w ? darkness.width / w : 0.5;
     dirty = lightDirty = true;
     stage.dataset["dpr"] = String(plan.dpr);
@@ -138,18 +153,46 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   const fps = import.meta.env.DEV ? devCounter(stage) : null;
   // Rain is painted over the darkness, in its pixels (one closure, made once).
   const paintRain = (c: CanvasRenderingContext2D): void => rain.draw(c, nv.k, nv.ox, nv.oy, nv.zoom, pal.rain, pal.glow);
+  let shownEntrance = "";
+  let shownWalking = "";
+  let shownDoor = "";
 
-  /** Keeps the view's centre over the city. */
-  const clamp = (): void => {
-    const b = scene.bounds;
-    cam.x = Math.min(b.x1, Math.max(b.x0, cam.x));
-    cam.y = Math.min(b.y1, Math.max(b.y0, cam.y));
+  /** Agent T, his shadow first, then the buildings that stand in front of him drawn over him. */
+  const drawAgent = (dpr: number): void => {
+    const sx = (agent.x - agent.y) * HX;
+    const sy = (agent.x + agent.y) * HY;
+    const s = shown.zoom * dpr * FIGURE.scale;
+    const X = (sx * shown.zoom - nv.ox) * dpr;
+    const Y = (sy * shown.zoom - nv.oy) * dpr;
+    const lit = agent.power > 0.5;
+    ctx.setTransform(s, 0, 0, s, X, Y);
+    drawShadow(ctx, agent.dir, agent.frame, pal.agent, SHADOW_DIR.x * pal.shadowLength, SHADOW_DIR.y * pal.shadowLength);
+    ctx.setTransform(s, 0, 0, s, X, Y);
+    drawFigure(ctx, agent.dir, agent.frame, pal.agent, lit);
+    // His screen box (zoom 1), then whatever is nearer than him and overlaps it.
+    const top = FIGURE.height * FIGURE.scale + 4;
+    const half = 14 * FIGURE.scale;
+    const depth = agent.x + agent.y;
+    const z = shown.zoom * dpr;
+    for (let i = 0; i < scene.items.length; i++) {
+      const it = scene.items[i]!;
+      if (it.depth <= depth || it.box.x1 < sx - half || it.box.x0 > sx + half || it.box.y1 < sy - top || it.box.y0 > sy + 4) continue;
+      ctx.save();
+      ctx.setTransform(z, 0, 0, z, -nv.ox * dpr, -nv.oy * dpr);
+      ctx.beginPath();
+      ctx.rect(sx - half, sy - top, 2 * half, top + 4);
+      ctx.clip();
+      it.draw(ctx, pal, 1 / shown.zoom);
+      ctx.restore();
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   };
 
   const loop = createLoop((dt, now) => {
     quality.sample(dt);
     if (burn) for (const until = performance.now() + burn; performance.now() < until; );
-    const cmds = input.state.commands;
+    const st = input.state;
+    const cmds = st.commands;
     for (let i = 0; i < cmds.length; i++) {
       const c = cmds[i];
       const z = ZOOMS.indexOf(cam.zoom as (typeof ZOOMS)[number]);
@@ -160,44 +203,55 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
       }
     }
     cmds.length = 0;
-    const held = input.state.held;
+    const pressed = st.presses !== presses;
+    presses = st.presses;
+    // Clicks and taps: on a building, walk to its door; on the ground, walk there.
+    for (let i = 0; i < st.taps.length; i++) {
+      const t = st.taps[i]!;
+      const sx = (t.x + nv.ox) / cam.zoom;
+      const sy = (t.y + nv.oy) / cam.zoom;
+      let hit: Hit | null = null;
+      for (let j = 0; j < occluders.length && !hit; j++) if (insidePolygon(occluders[j]!.hull, sx, sy)) hit = occluders[j]!;
+      if (hit) agent.goTo((hit.x0 + hit.x1) / 2, (hit.y0 + hit.y1) / 2);
+      else agent.goTo((sx / HX + sy / HY) / 2, (sy / HY - sx / HX) / 2);
+    }
+    st.taps.length = 0;
+    const held = st.held;
     const vx = (held.has("right") ? 1 : 0) - (held.has("left") ? 1 : 0);
     const vy = (held.has("down") ? 1 : 0) - (held.has("up") ? 1 : 0);
-    if (vx || vy) {
-      const step = (PAN * (held.has("fast") ? 2 : 1) * dt) / 1000 / cam.zoom;
-      cam.x += vx * step;
-      cam.y += vy * step;
-      clamp();
-      dirty = lightDirty = true;
-    }
-    // The lantern: on the ground under the view's centre, aimed at the mouse when it is over the city.
-    const a = cam.x / HX;
-    const b = cam.y / HY;
-    const lx = (a + b) / 2;
-    const ly = (b - a) / 2;
-    let heading = lantern.heading;
-    const p = input.state.pointer;
-    if (p.over && p.kind === "mouse") {
-      const pa = (cam.x + (p.x - cam.w / 2) / cam.zoom) / HX;
-      const pb = (cam.y + (p.y - cam.h / 2) / cam.zoom) / HY;
+    const changed = agent.update(dt, vx, vy, held.has("fast"), pressed);
+    // The camera follows him; reduced motion snaps it.
+    if (follow(cam, (agent.x - agent.y) * HX, (agent.x + agent.y) * HY, dt, reduced.matches, scene.bounds)) dirty = lightDirty = true;
+    // The lantern: in his hand; where he walks, or at the mouse while he stands (desktop).
+    let heading = agent.heading;
+    const p = st.pointer;
+    if (!agent.moving && p.over && p.kind === "mouse" && agent.entrance === "done") {
+      const pa = (p.x + nv.ox) / cam.zoom / HX;
+      const pb = (p.y + nv.oy) / cam.zoom / HY;
       const px = (pa + pb) / 2;
       const py = (pb - pa) / 2;
-      if (Math.abs(px - lx) + Math.abs(py - ly) > 0.3) heading = Math.atan2(py - ly, px - lx);
+      if (Math.abs(px - agent.x) + Math.abs(py - agent.y) > 0.3) heading = Math.atan2(py - agent.y, px - agent.x);
     }
-    if (lx !== lantern.x || ly !== lantern.y || heading !== lantern.heading) {
-      lantern.x = lx;
-      lantern.y = ly;
+    if (agent.x !== lantern.x || agent.y !== lantern.y || heading !== lantern.heading || agent.power !== lantern.power) {
+      lantern.x = agent.x;
+      lantern.y = agent.y;
       lantern.heading = heading;
+      lantern.power = agent.power;
       lightDirty = true;
     }
     const stirred = signs.update(now, pal.mode === "mat" && !reduced.matches);
     if (rain.count) rain.step(dt, cam.w, cam.h);
-    nv.ox = cam.x * cam.zoom - cam.w / 2;
-    nv.oy = cam.y * cam.zoom - cam.h / 2;
-    nv.zoom = cam.zoom;
-    if ((dirty || stirred) && plan) {
-      const missing = layer.composite(ctx, cam, firstComposite ? Infinity : 2);
+    // The drawn view: the camera's origin on whole device pixels, so the ground never shimmers.
+    const dpr = plan ? plan.dpr : 1;
+    nv.ox = Math.round((cam.x * cam.zoom - cam.w / 2) * dpr) / dpr;
+    nv.oy = Math.round((cam.y * cam.zoom - cam.h / 2) * dpr) / dpr;
+    nv.zoom = shown.zoom = cam.zoom;
+    shown.x = (nv.ox + cam.w / 2) / cam.zoom;
+    shown.y = (nv.oy + cam.h / 2) / cam.zoom;
+    if ((dirty || stirred || changed) && plan) {
+      const missing = layer.composite(ctx, shown, firstComposite ? Infinity : 2);
       signs.draw(ctx, nv.ox, nv.oy, cam.zoom, plan.dpr, pal);
+      drawAgent(plan.dpr);
       firstComposite = false;
       dirty = missing > 0;
       const s = layer.stats;
@@ -212,6 +266,13 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
     if (plan && lightDirty) night.light(nv, pal.mode === "mat" ? lantern : null, signs.centres, signs.count);
     if (plan && (lightDirty || rain.count)) night.paint(nv, rain.count ? paintRain : null);
     lightDirty = false;
+    // State for tests and tools, written only when it changes.
+    const walking = agent.moving ? "1" : "0";
+    if (agent.entrance !== shownEntrance) stage.dataset["entrance"] = shownEntrance = agent.entrance;
+    if (walking !== shownWalking) stage.dataset["walking"] = shownWalking = walking;
+    const door = agent.atDoor ?? "";
+    if (door !== shownDoor) stage.dataset["door"] = shownDoor = door;
+    if (agent.entrance !== "done" || agent.moving) loop.poke(); // keep full pace while he moves
     fps?.(now);
   });
   const input = createInput(stage, window, () => loop.poke());

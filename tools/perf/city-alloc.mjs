@@ -20,7 +20,7 @@ async function run(moving, query = "?quality=high") {
     localStorage.setItem("cursorFx", "system");
   });
   await page.goto(`${base}/vi/city/${query}`);
-  if (query !== "?lite") await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+  if (query !== "?lite") await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 10_000 });
   const stage = page.locator(query === "?lite" ? "[data-city-lite]" : "[data-city-stage]");
   await stage.scrollIntoViewIfNeeded();
   await stage.hover({ position: { x: 200, y: 150 } });

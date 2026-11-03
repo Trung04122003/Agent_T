@@ -15,6 +15,7 @@ const devPages = {
       injectRoute({ pattern: "/dev/rtl", entrypoint: "./src/dev/rtl.astro" });
       injectRoute({ pattern: "/dev/cursor", entrypoint: "./src/dev/cursor.astro" });
       injectRoute({ pattern: "/dev/city-sheet", entrypoint: "./src/dev/city-sheet.astro" });
+      injectRoute({ pattern: "/dev/agent-sheet", entrypoint: "./src/dev/agent-sheet.astro" });
     },
   },
 };

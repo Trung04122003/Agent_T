@@ -39,19 +39,33 @@ for (const mode of ["mat", "giai-mat"]) {
     await stage.screenshot({ path: file });
     shots.push(file);
   }
+  // His long shadow (36.5), close zoom, standing at the alley's mouth.
+  await page.goto(`${site}/vi/city/`);
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 8000 });
+  await stage.focus();
+  await page.keyboard.press("+");
+  await page.waitForTimeout(900);
+  const sh = join(out, `agent-shadow-${mode}.png`);
+  await stage.screenshot({ path: sh });
+  shots.push(sh);
   if (mode === "mat") {
-    // Signature moments (UX-v4 section 11): 1, the lantern's cone cut by buildings (the mouse aims it
-    // up and left, past the kiosk); 8, rain on the glass tower (High tier, the lantern on the tower).
+    // Signature moments (UX-v4 section 11): 11, Agent T stepping out of the alley into the light;
+    // 1, his lantern's cone cut by buildings (the mouse aims it); 8, rain on the glass tower (High).
     await page.goto(`${site}/vi/city/`);
-    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
-    await stage.hover({ position: { x: 150, y: 150 } });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "stepping", null, { timeout: 8000 });
+    await page.waitForTimeout(550);
+    const m11 = join(out, "moment-11-alley.png");
+    await stage.screenshot({ path: m11 });
+    shots.push(m11);
+    await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 8000 });
+    await stage.hover({ position: { x: 150, y: 470 } });
+    await page.waitForTimeout(700);
     const m1 = join(out, "moment-1-lantern.png");
     await stage.screenshot({ path: m1 });
     shots.push(m1);
     await page.goto(`${site}/vi/city/?quality=high`);
-    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
-    await stage.hover({ position: { x: 560, y: 400 } });
+    await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 8000 });
+    await stage.hover({ position: { x: 420, y: 520 } });
     await page.waitForTimeout(800);
     const m8 = join(out, "moment-8-rain.png");
     await stage.screenshot({ path: m8 });
@@ -71,6 +85,11 @@ if (dev) {
   const file = join(out, "city-sheet.png");
   await page.locator("[data-city-sheet]").screenshot({ path: file });
   shots.push(file);
+  await page.goto(`${dev}/dev/agent-sheet`);
+  await page.waitForSelector("[data-agent-sheet] canvas");
+  const agentFile = join(out, "agent-sheet.png");
+  await page.locator("[data-agent-sheet]").screenshot({ path: agentFile });
+  shots.push(agentFile);
 }
 await browser.close();
 console.log(shots.join("\n"));

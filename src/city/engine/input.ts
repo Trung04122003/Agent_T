@@ -38,6 +38,8 @@ export type InputState = {
   pointer: { x: number; y: number; over: boolean; down: boolean; kind: string };
   /** Taps and clicks on the stage, in stage pixels; taken by the loop. */
   taps: { x: number; y: number }[];
+  /** Counts key presses (not repeats) and taps: the loop compares it to tell a new press. */
+  presses: number;
 };
 
 type Listener = { target: EventTarget; type: string; fn: (e: Event) => void; opts: AddEventListenerOptions };
@@ -56,7 +58,7 @@ export type Input = {
  * `win`: the window (resize, scroll, blur). `onAny`: every input, to wake the loop from idle pace.
  */
 export function createInput(stage: HTMLElement, win: Window, onAny: () => void = () => {}): Input {
-  const state: InputState = { held: new Set(), commands: [], pointer: { x: 0, y: 0, over: false, down: false, kind: "mouse" }, taps: [] };
+  const state: InputState = { held: new Set(), commands: [], pointer: { x: 0, y: 0, over: false, down: false, kind: "mouse" }, taps: [], presses: 0 };
   let left = 0;
   let top = 0;
   const attached: Listener[] = [];
@@ -92,6 +94,7 @@ export function createInput(stage: HTMLElement, win: Window, onAny: () => void =
       const command = COMMANDS[key];
       if (!move && !command) return;
       if (move) state.held.add(move);
+      if (!k.repeat) state.presses++;
       if (command && !k.repeat) state.commands.push(command);
       if (move || key === "enter" || key === "escape") k.preventDefault();
       onAny();
@@ -117,6 +120,7 @@ export function createInput(stage: HTMLElement, win: Window, onAny: () => void =
     const p = e as PointerEvent;
     state.pointer.down = false;
     state.taps.push(at(p));
+    state.presses++;
     onAny();
   });
   on(stage, "pointercancel", () => (state.pointer.down = false));

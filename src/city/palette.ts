@@ -49,6 +49,10 @@ export type Palette = {
   nightAlpha: number;
   haze: string;
   rain: string;
+  /** Agent T (figure.ts): coat, rim light, brass kit, visor slit, lantern core, his cast shadow. */
+  agent: { coat: string; rim: string; brass: string; visor: string; glow: string; shadow: string };
+  /** His shadow's length: ground px per px of height (long in Mat, short in Giai mat). */
+  shadowLength: number;
 };
 
 export function palette(mode: Mode): Palette {
@@ -76,6 +80,8 @@ export function palette(mode: Mode): Palette {
       nightAlpha: 0.8,
       haze: alpha(t.inkMuted, 0.035),
       rain: alpha(t.inkMuted, 0.32),
+      agent: { coat: mix(t.bg, t.surface, 0.4), rim: alpha(t.accent, 0.75), brass: t.accent, visor: t.accent, glow: mix(t.ink, t.accent, 0.15), shadow: alpha(t.bg, 0.7) },
+      shadowLength: 1.6,
     };
   }
   // Dawn: warm paper, ink outlines, gold trim.
@@ -101,5 +107,7 @@ export function palette(mode: Mode): Palette {
     nightAlpha: 0,
     haze: alpha(t.inkMuted, 0),
     rain: alpha(t.inkMuted, 0),
+    agent: { coat: t.ink, rim: alpha(t.inkMuted, 0.6), brass: t.accent, visor: t.accent, glow: mix(t.accent, t.surface, 0.5), shadow: alpha(t.ink, 0.16) },
+    shadowLength: 0.55,
   };
 }

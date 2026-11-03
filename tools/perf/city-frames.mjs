@@ -1,6 +1,7 @@
 // Agent T City frame times (ROADMAP-v4 rule 3-4, docs/performance-playbook.md): on a flag-on build in
-// preview, page /vi/city/, Mat. Each run: first frame after DOM ready, then 6 s of panning with the
-// arrow keys (new chunks bake while it pans) and a zoom out and in; rAF intervals give p95 and long
+// preview, page /vi/city/, Mat. Each run: first frame after DOM ready, then 6 s of Agent T walking
+// with the arrow keys, the camera following (new chunks bake while it moves, the lantern's mask is
+// rebuilt every frame) and a zoom out and in; rAF intervals give p95 and long
 // frames. Reports the tier, the bake counters the stage exposes, and the JS heap. 1x and 4x CPU, median
 // of 3 runs. Usage: node tools/perf/city-frames.mjs [url] [query]   (default http://localhost:4324)
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -44,6 +45,8 @@ async function run(browser, [w, h], rate) {
   const stage = page.locator("[data-city-stage]");
   await stage.scrollIntoViewIfNeeded();
   await stage.focus();
+  // Since P36 the arrow keys walk Agent T (the camera follows): let his entrance finish first.
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 10_000 });
   await page.evaluate(() => (window.__frames = []));
   for (const key of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]) {
     await page.keyboard.down(key);

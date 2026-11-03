@@ -20,8 +20,12 @@ function norm([x, y, z]: Vec): Vec {
 const dot = (a: Vec, b: Vec): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 export type Box = { x0: number; y0: number; x1: number; y1: number };
-/** One thing to draw, with its screen box (zoom 1) so a chunk draws only what it overlaps. */
-export type Item = { box: Box; draw: (ctx: CanvasRenderingContext2D, p: Palette, lw: number) => void };
+/**
+ * One thing to draw, with its screen box (zoom 1) so a chunk draws only what it overlaps, and its
+ * depth (x + y of its footprint's centre; the ground is -Infinity) so moving things can be put
+ * behind what stands in front of them.
+ */
+export type Item = { box: Box; depth: number; draw: (ctx: CanvasRenderingContext2D, p: Palette, lw: number) => void };
 export type Scene = { items: Item[]; bounds: Box };
 
 type Face = { pts: World[]; n: Vec };
@@ -196,7 +200,7 @@ const corners = (r: Rect, z0 = 0, z1 = 0): World[] =>
 function buildingItem(solids: Solid[], lot: Rect): Item {
   const top = Math.max(...solids.map((s) => s.z + s.h));
   const ordered = [...solids].sort((a, b) => a.z - b.z || centre(a) - centre(b));
-  return { box: boxOf(corners(lot, 0, top)), draw: (ctx, p, lw) => ordered.forEach((s) => drawSolid(ctx, s, p, lw)) };
+  return { box: boxOf(corners(lot, 0, top)), depth: lot.x + lot.w / 2 + lot.y + lot.d / 2, draw: (ctx, p, lw) => ordered.forEach((s) => drawSolid(ctx, s, p, lw)) };
 }
 function centre(s: Solid): number {
   switch (s.type) {
@@ -230,6 +234,7 @@ export function cityScene(layout: CityLayout): Scene {
   const canal: Rect = { x: 0, y: CANAL.y[0], w: GRID, d: CANAL.y.length };
   const ground: Item = {
     box: boxOf(corners(grid)),
+    depth: -Infinity,
     draw(ctx, p, lw) {
       path(ctx, corners(grid).slice(0, 4));
       ctx.fillStyle = p.ground;

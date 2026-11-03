@@ -1,0 +1,59 @@
+---
+// Dev-only (ROADMAP-v4 36.1): Agent T v1 in all 8 facings, standing and in the 6 walk frames, with
+// his cast shadow, in both palettes (Mat on the night ground, Giai mat on the dawn ground).
+import Base from "../layouts/Base.astro";
+---
+
+<Base locale="en" title="Agent sheet (dev)">
+  <div class="sheet-page">
+    <h1>Agent sheet (dev)</h1>
+    <p>Rows: facings 0 (east) to 7, clockwise. Columns: standing, then walk frames 0 to 5. Drawn a little larger than at the city's close zoom.</p>
+    <div data-agent-sheet></div>
+  </div>
+</Base>
+
+<script>
+  import { drawFigure, drawShadow, FIGURE } from "../city/figure";
+  import { palette, type Mode } from "../city/palette";
+
+  const host = document.querySelector<HTMLElement>("[data-agent-sheet]")!;
+  const CELL = 120;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  // About 85 px tall: the city's close zoom (1) times his scale, a little larger.
+  const ZOOM = 1.1 * FIGURE.scale;
+  for (const mode of ["mat", "giai-mat"] as Mode[]) {
+    const p = palette(mode);
+    const canvas = document.createElement("canvas");
+    canvas.width = CELL * 7 * dpr;
+    canvas.height = CELL * 8 * dpr;
+    canvas.style.width = `${CELL * 7}px`;
+    canvas.style.height = `${CELL * 8}px`;
+    canvas.setAttribute("aria-label", `Agent T, ${mode}`);
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = p.ground;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let dir = 0; dir < 8; dir++) {
+      for (let col = 0; col < 7; col++) {
+        const frame = col - 1;
+        const set = () => ctx.setTransform(ZOOM * dpr, 0, 0, ZOOM * dpr, (col * CELL + CELL / 2) * dpr, (dir * CELL + CELL - 8) * dpr);
+        set();
+        drawShadow(ctx, dir, frame, p.agent, p.shadowLength * 0.999, p.shadowLength * -0.05);
+        set();
+        drawFigure(ctx, dir, frame, p.agent, true);
+      }
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    host.append(canvas);
+  }
+</script>
+
+<style>
+  .sheet-page {
+    padding: 24px;
+  }
+  [data-agent-sheet] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+</style>

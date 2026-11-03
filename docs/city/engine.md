@@ -38,7 +38,7 @@ The route `/[lang]/city/` is injected by `astro.config.mjs` only in `pnpm dev` o
 | `render.ts` | Ground (streets, plaza paving, canal banks, bridges, alleys), then buildings far to near; faces shaded from one fixed light, window grids on walls, glass mullions, rim light on top edges and the near vertical edge. | Back faces culled exactly (view axis (1, 1, 1) of the 2:1 projection). Drawn only into baked chunks, never per frame. |
 | `bake.ts` | The static layer: 512 px chunks per zoom step (0.32, 0.6, 1) and mode, LRU-cached to the layer plan's chunk count; copied to the stage only when the view changed. | At most 2 chunk bakes per frame after the first; bake counters on the stage (`data-bake-chunks`, `data-bake-ms`, `data-bake-max`). |
 
-Camera until Agent T exists (P36): arrow keys or WASD pan (Shift faster), `+` and `-` change the zoom step, the view's centre stays over the city. The dossier's mode switch repaints the city in the other palette.
+Camera: since P36 it follows Agent T (below); `+` and `-` change the zoom step; the view's centre stays over the city. The dossier's mode switch repaints the city in the other palette.
 
 Dev page: `/dev/city-sheet` (dev server only) draws every archetype in both palettes. Review images: `node tools/city-review.mjs <phase> <preview-url> [dev-url]`. Frame times: `node tools/perf/city-frames.mjs [preview-url]`.
 
@@ -51,4 +51,17 @@ Dev page: `/dev/city-sheet` (dev server only) draws every archetype in both pale
 | `rain.ts` | Slanted streaks over the view and drops running down the glass tower's walls, drawn over the darkness. | High tier only, Mat only, none with reduced motion; at most 120 particles (18 on the glass); switching tier sets the count to the new tier's cap (0 below High). Preallocated typed arrays. |
 | `plan.ts` (`LAMPS`) | Streetlamps every 6 tiles along each street, one at each plaza corner; baked as masts with a lit head. | Always on a street tile (test). |
 
-Until Agent T exists (P36) the lantern stands on the ground under the view's centre and points at the mouse when it is over the city (north otherwise). Diagnostic: `?quality=high|medium|low` sets the tier the way the HUD's Quality control will. Allocation check: `node tools/perf/city-alloc.mjs [preview-url]`.
+Since P36 the lantern is Agent T's (below). Diagnostic: `?quality=high|medium|low` sets the tier the way the HUD's Quality control will. Allocation check: `node tools/perf/city-alloc.mjs [preview-url]`.
+
+## Agent T v1 (P36)
+| Module | What it does | Rules it enforces |
+|---|---|---|
+| `figure.ts` | Agent T from polygons: long coat with five hem shards, high left collar, faceless visor with a brass slit turned toward his facing, flat-brimmed hat with a brass band, chelsea boots, lantern (left hand), briefcase (right hand). 8 facings; a 6-frame walk by transforms (bob, stride, lantern swing, hem lag). `drawShadow` skews the same silhouette onto the ground. | No image, no face, no weapon, no emblem. About 47 px tall at the middle zoom. Placeholder styling: the final look is P43. Dev page `/dev/agent-sheet`. |
+| `walk.ts` | Collision (footprints, the canal except its bridges, the grid's edge), sliding along walls, A* over the road graph (streets, plaza, bridges, alleys), nearest road tile, the never-stuck fallback. | Unit-tested on the real plan (`walk.test.ts`). |
+| `agent.ts` | Keyboard walk in screen directions (Shift faster); click the ground to walk there, click a building to walk to its door and face it; the entrance. | Keyboard cancels a path at once; no progress for 0.8 s on a path snaps him free; any position inside a footprint snaps free. |
+| `visibility.ts` | The lantern's visibility polygon: rays to every footprint corner in reach (and just either side) plus a 48-ray fan, against footprint edges. | Cached per quarter-tile cell (64 cells, LRU); turning the lantern never recomputes it. The cone sprite is clipped to it (`night.ts`). |
+| `camera.ts` | The view eases toward Agent T (time constant 160 ms), clamped to the city. | Exponential easing never overshoots, so pressing against the edge holds still; reduced motion snaps. The drawn origin is rounded to whole device pixels, so the ground never shimmers under him. |
+
+Drawing order on the dynamic layer: baked chunks, signs, his shadow, Agent T, then every scene item nearer than him that overlaps his box, redrawn over him (so buildings in front hide him).
+
+The entrance (UX-v4 section 6b): he waits two tiles inside the alley nearest the plaza, lantern shut; on the first key press or tap, or after 1.2 s, he steps out to its mouth (about 1.2 s) while the lantern opens; the next press skips to the end. Reduced motion: he starts at the mouth, lantern open. The stage reports `data-entrance` (hidden, stepping, done), `data-walking` and `data-door` (the building whose door he reached).

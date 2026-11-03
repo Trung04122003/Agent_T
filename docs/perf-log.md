@@ -3,6 +3,31 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P36 · Agent T v1: moving, seeing
+
+Same machine and method (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, `/vi/city/`, Mat, Medium,
+`node tools/perf/city-frames.mjs`, median of 3). The run now waits for his entrance, then walks him 6 s
+with the arrow keys: every frame the camera follows, the chunks are copied, Agent T and the buildings in
+front of him are drawn, and the lantern's mask is rebuilt (its visibility polygon from the cell cache).
+
+| Viewport | CPU | First frame | p95 frame | Max frame | Frames > 33 ms | Bake per chunk (avg / max) | Canvas backing store | JS heap |
+|---|---|---|---|---|---|---|---|---|
+| 1366x768 | 1x | 45 ms | 16.7 ms | 16.8 ms | 0 | 2.9 / 5.5 ms | 18.3 MB | 4.8 MB |
+| 1366x768 | 4x | 141 ms | 16.8 ms | 50.0 ms | 2 | 8.0 / 21.0 ms | 18.3 MB | 4.0 MB |
+| 1920x1080 | 1x | 38 ms | 16.7 ms | 16.8 ms | 0 | 2.2 / 6.0 ms | 19.1 MB | 4.3 MB |
+| 1920x1080 | 4x | 148 ms | **33.3 ms** | 33.5 ms | 5 | 6.6 / 18.8 ms | 19.1 MB | 4.5 MB |
+
+Within budget (p95 <= 20 ms at 1x; <= 40 ms at 4x). Note: at 4x on the larger stage the p95 is now 33.3 ms
+(half the frames at 30 fps while walking), against 16.8 ms in P35 when only the camera moved: walking does
+more per frame. Candidates for P50 if later phases push it: redraw only the front buildings' part over him
+when he crosses them (now the whole overlap each frame), cache the signs layer, bake lamp pools per chunk.
+
+**Allocation** (`node tools/perf/city-alloc.mjs`, after the entrance): mouse still 0 scavenges in 5 s (heap
+2.64 -> 3.37 MB), mouse moving 12 (2.64 -> 3.89 MB); Lite baseline 0. Same as P35.
+
+**Sizes** (`pnpm city:budget`): city JS **23 000 B gzip** (P35: 19 225 B; budget 81 920 B), city CSS
+**956 B**, atlas 0 B, no image or font.
+
 ## 2026-11-03 · P35 · Night engine (the Mat look)
 
 Same machine and method as P34 (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, `/vi/city/`, Mat,
