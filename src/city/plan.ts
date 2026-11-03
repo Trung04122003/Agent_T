@@ -76,6 +76,24 @@ export const ALLEYS: readonly Alley[] = [
   { id: "alley-south", mouth: { x: 30, y: 38 }, tiles: span(34, 37).reverse().map((y) => ({ x: 30, y })) },
 ];
 
+/**
+ * Streetlamps (UX-v4 section 4: they leave pools of light): every 6 tiles along each street, on the
+ * street just inside its edge, none on the plaza (it gets one at each corner instead).
+ */
+export const LAMPS: readonly { x: number; y: number }[] = (() => {
+  const out: { x: number; y: number }[] = [];
+  for (const r of STREETS) {
+    const along = r.w > r.d;
+    const len = along ? r.w : r.d;
+    for (let i = 3; i < len; i += 6) {
+      const p = along ? { x: r.x + i + 0.5, y: r.y + r.d - 0.15 } : { x: r.x + r.w - 0.15, y: r.y + i + 0.5 };
+      if (!inRect(PLAZA, Math.floor(p.x), Math.floor(p.y)) && !out.some((q) => Math.abs(q.x - p.x) + Math.abs(q.y - p.y) < 2)) out.push(p);
+    }
+  }
+  for (const [x, y] of [[0.3, 0.3], [PLAZA.w - 0.3, 0.3], [PLAZA.w - 0.3, PLAZA.d - 0.3], [0.3, PLAZA.d - 0.3]] as const) out.push({ x: PLAZA.x + x, y: PLAZA.y + y });
+  return out;
+})();
+
 const key = (x: number, y: number): string => `${x},${y}`;
 
 /** Tiles you can walk: the ring road, the avenues, the plaza and the bridges. */
@@ -85,7 +103,9 @@ export function walkable(x: number, y: number): boolean {
 export const isCanal = (x: number, y: number): boolean => (CANAL.y as readonly number[]).includes(y) && x >= 0 && x < GRID;
 /** A bridge is where a street crosses the canal. */
 export const isBridge = (x: number, y: number): boolean => isCanal(x, y) && walkable(x, y);
-export const inRect = (r: Rect, x: number, y: number): boolean => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.d;
+export function inRect(r: Rect, x: number, y: number): boolean {
+  return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.d;
+}
 
 export function rectTiles(r: Rect): Tile[] {
   return span(r.x, r.x + r.w - 1).flatMap((x) => span(r.y, r.y + r.d - 1).map((y) => ({ x, y })));

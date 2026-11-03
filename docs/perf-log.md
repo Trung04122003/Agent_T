@@ -3,6 +3,44 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P35 · Night engine (the Mat look)
+
+Same machine and method as P34 (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, `/vi/city/`, Mat,
+`node tools/perf/city-frames.mjs`, median of 3). While the camera pans, the lantern moves with it, so the
+light mask is rebuilt every frame.
+
+| Viewport | CPU | Tier | First frame | p95 frame | Max frame | Frames > 33 ms | Bake per chunk (avg / max) | Canvas backing store | JS heap |
+|---|---|---|---|---|---|---|---|---|---|
+| 1366x768 | 1x | Medium | 34 ms | 16.8 ms | 16.8 ms | 0 | 2.9 / 6.8 ms | 18.3 MB | 3.4 MB |
+| 1366x768 | 4x | Medium | 52 ms | 16.8 ms | 49.9 ms | 1 | 6.4 / 19.2 ms | 18.3 MB | 4.6 MB |
+| 1920x1080 | 1x | Medium | 32 ms | 16.7 ms | 16.8 ms | 0 | 3.1 / 7.5 ms | 19.1 MB | 3.6 MB |
+| 1920x1080 | 4x | Medium | 135 ms | 16.8 ms | 50.0 ms | 4 | 9.1 / 23.1 ms | 19.1 MB | 4.4 MB |
+| 1366x768 | 1x | High (`?quality=high`, rain) | 31 ms | 16.7 ms | 16.8 ms | 0 | 3.3 / 7.6 ms | 18.3 MB | 3.4 MB |
+| 1366x768 | 4x | High (rain) | 141 ms | 16.8 ms | 49.9 ms | 3 | 8.8 / 27.5 ms | 18.3 MB | 4.8 MB |
+| 1920x1080 | 1x | High (rain) | 57 ms | 16.7 ms | 16.8 ms | 0 | 3.9 / 14.3 ms | 19.1 MB | 3.4 MB |
+| 1920x1080 | 4x | High (rain) | 165 ms | 16.8 ms | 49.9 ms | 4 | 7.8 / 22.3 ms | 19.1 MB | 4.7 MB |
+
+All within budget (p95 <= 20 ms at 1x, <= 40 ms at 4x; first frame <= 1.5 s / 4 s; backing store <= 64 MB,
+the new light mask included). The few frames over 33 ms at 4x come with chunk bakes while panning (at most
+two per frame), as in P34.
+
+**Allocation** (`node tools/perf/city-alloc.mjs`, Chromium trace of 5 s, young-generation collections):
+
+| Run | Scavenges in 5 s | JS heap before -> after |
+|---|---|---|
+| Lite view, same page, no canvas world (baseline) | 0 | 2.01 -> 2.01 MB |
+| Mat, High, mouse still: rain and darkness repainted every frame, signs stirring | **0** (before the fix: 4) | 2.41 -> 2.83 MB |
+| Same, mouse moving: light mask rebuilt every frame | 12 (before: 18) | 2.40 -> 3.91 MB |
+
+The fix: fractional numbers handed to canvas calls (`moveTo`, `fillRect`, `drawImage`) are boxed, an
+allocation per argument; the rain and the darkness now pass whole pixels (rain alone went from ~320 KB/s to
+nothing), lamp pools are stretched squares instead of transformed sprites, and the input writes the pointer
+in place. What remains while still (~80 KB/s, never reaching a collection in 5 s) is numbers boxed across
+function calls; while the mouse moves, the cone's transform and pointer events themselves.
+
+**Sizes** (`pnpm city:budget`): city JS **19 225 B gzip** (P34: 14 982 B; budget 81 920 B), city CSS
+**956 B** (P34: 887 B; budget 8 192 B), atlas 0 B, no image or font.
+
 ## 2026-11-03 · P34 · City plan and procedural buildings
 
 Reference machine (i3-1115G4, 7.7 GB, integrated graphics). `PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`,

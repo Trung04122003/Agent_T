@@ -70,6 +70,15 @@ export function createInput(stage: HTMLElement, win: Window, onAny: () => void =
     top = r.top;
   };
   const at = (e: PointerEvent): { x: number; y: number } => ({ x: e.clientX - left, y: e.clientY - top });
+  /** Writes the pointer in place (no object per event: pointermove fires every frame while moving). */
+  const track = (e: PointerEvent, down: boolean | null): void => {
+    const s = state.pointer;
+    s.x = e.clientX - left;
+    s.y = e.clientY - top;
+    s.over = true;
+    s.kind = e.pointerType;
+    if (down !== null) s.down = down;
+  };
 
   // Keys: not passive on the stage, because arrows and space would otherwise scroll the page.
   on(
@@ -97,13 +106,11 @@ export function createInput(stage: HTMLElement, win: Window, onAny: () => void =
   on(win, "blur", () => state.held.clear());
 
   on(stage, "pointermove", (e) => {
-    const p = e as PointerEvent;
-    Object.assign(state.pointer, at(p), { over: true, kind: p.pointerType });
+    track(e as PointerEvent, null);
     onAny();
   });
   on(stage, "pointerdown", (e) => {
-    const p = e as PointerEvent;
-    Object.assign(state.pointer, at(p), { over: true, down: true, kind: p.pointerType });
+    track(e as PointerEvent, true);
     onAny();
   });
   on(stage, "pointerup", (e) => {

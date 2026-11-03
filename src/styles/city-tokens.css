@@ -1,0 +1,18 @@
+/* Agent T City tokens (UX-v4 section 4, ROADMAP-v4 35.1). Derived from tokens.css only: each one is
+   an alias of a dossier token (so it follows the mode), never a new hue. Loaded by the city route
+   only. scripts/check-contrast.mjs resolves these aliases in both modes and checks the HUD pairs:
+   keep one declaration per line, `--city-x: var(--token);`. */
+
+:root {
+  /* HUD and panels sit on a solid surface over the canvas (no backdrop-filter). */
+  --city-hud-bg: var(--surface);
+  --city-hud-ink: var(--ink);
+  --city-hud-muted: var(--ink-hud);
+  --city-hud-accent: var(--accent);
+  --city-hud-line: var(--line);
+  /* Signage: redaction bars and the brass tube around them. */
+  --city-redact: var(--redact);
+  --city-tube: var(--accent);
+  /* The night itself: the colour the darkness layer is filled with. */
+  --city-night: var(--bg);
+}

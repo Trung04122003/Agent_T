@@ -26,7 +26,7 @@ export type Solid =
   | { type: "box"; x: number; y: number; z: number; w: number; d: number; h: number; tone: Tone; windows?: boolean }
   | { type: "frustum"; cx: number; cy: number; z: number; r0: number; r1: number; h: number; sides: number; tone: Tone }
   | { type: "gable"; x: number; y: number; z: number; w: number; d: number; h: number; ridge: "x" | "y"; tone: Tone }
-  | { type: "mast"; x: number; y: number; z: number; h: number };
+  | { type: "mast"; x: number; y: number; z: number; h: number; lit?: boolean };
 
 /** Archetypes for an entry, preferred first (UX-v4 section 2). The first domain leads. */
 export function archetypesFor(kind: "role" | "education" | "project", domains: readonly string[]): Archetype[] {

@@ -12,7 +12,7 @@ describe("city palette", () => {
     for (const [mode, selector] of [["giai-mat", ':root[data-mode="giai-mat"]'], ["mat", ':root[data-mode="mat"]']] as const) {
       const b = block(selector);
       const t = TOKENS[mode];
-      expect({ bg: read(b, "bg"), surface: read(b, "surface"), ink: read(b, "ink"), inkMuted: read(b, "ink-muted"), line: read(b, "line"), accent: read(b, "accent") }).toEqual(t);
+      expect({ bg: read(b, "bg"), surface: read(b, "surface"), ink: read(b, "ink"), inkMuted: read(b, "ink-muted"), line: read(b, "line"), accent: read(b, "accent"), redact: read(b, "redact") }).toEqual(t);
     }
   });
 

@@ -41,3 +41,14 @@ The route `/[lang]/city/` is injected by `astro.config.mjs` only in `pnpm dev` o
 Camera until Agent T exists (P36): arrow keys or WASD pan (Shift faster), `+` and `-` change the zoom step, the view's centre stays over the city. The dossier's mode switch repaints the city in the other palette.
 
 Dev page: `/dev/city-sheet` (dev server only) draws every archetype in both palettes. Review images: `node tools/city-review.mjs <phase> <preview-url> [dev-url]`. Frame times: `node tools/perf/city-frames.mjs [preview-url]`.
+
+## Night engine, the Mat look (P35)
+| Module | What it does | Rules it enforces |
+|---|---|---|
+| `src/styles/city-tokens.css` | HUD, signage and night tokens, each an alias of a dossier token (`--city-hud-bg: var(--surface)`...). | No new hue. `pnpm check:contrast` resolves the aliases in both modes and checks the HUD pairs (text 4.5:1, redaction bars 3:1). |
+| `night.ts` | Two half-resolution canvases: an offscreen light mask (the lantern's cone, its shadows behind building footprints, building faces relit inside the cone, streetlamp pools, sign glows) and the visible darkness (night colour at 80%, three haze bands and a static grain, both fixed to the city, minus the mask, then the mask again at 20% as the light's tint). | Lights are sprites baked once at start (radial gradients made once, stamped with `drawImage`); no `filter`, no blur, no gradient per frame. The mask is rebuilt only when the view or the lantern moves. Whole-pixel arguments on the hot path. |
+| `signs.ts` | One sign per entry building: a dark panel on its lit wall, framed by a brass tube, three redaction bars. | The bars stir with the dossier's own `STIR` timing (`src/scripts/stir.ts`: 200 ms, redrawn every 50 ms), one sign at a time every 2.5 to 6.5 s; Mat only; frozen with reduced motion. No text, real or invented. |
+| `rain.ts` | Slanted streaks over the view and drops running down the glass tower's walls, drawn over the darkness. | High tier only, Mat only, none with reduced motion; at most 120 particles (18 on the glass); switching tier sets the count to the new tier's cap (0 below High). Preallocated typed arrays. |
+| `plan.ts` (`LAMPS`) | Streetlamps every 6 tiles along each street, one at each plaza corner; baked as masts with a lit head. | Always on a street tile (test). |
+
+Until Agent T exists (P36) the lantern stands on the ground under the view's centre and points at the mouse when it is over the city (north otherwise). Diagnostic: `?quality=high|medium|low` sets the tier the way the HUD's Quality control will. Allocation check: `node tools/perf/city-alloc.mjs [preview-url]`.

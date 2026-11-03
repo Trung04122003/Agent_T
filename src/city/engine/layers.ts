@@ -1,7 +1,8 @@
 // Layer stack of Agent T City (ROADMAP-v4 P32.3, rule 4): back to front
 // 1. static: the baked ground and buildings, drawn once per zoom bucket into offscreen chunks;
 // 2. dynamic: what moves (Agent T, lights, particles), redrawn each frame;
-// 3. darkness: the fog of war at half resolution, stretched over the scene;
+// 3. darkness: the fog of war at half resolution, stretched over the scene, cut by an offscreen light
+//    mask of the same size (lantern, lamps, signs);
 // 4. HUD: DOM, not canvas (accessible, and no backing store).
 // planLayers picks the device pixel ratio so the backing store of every canvas together stays under
 // 64 MB; the city then sizes its canvases from the plan and never on its own.
@@ -18,7 +19,7 @@ export const LAYERS = {
   dprStep: 0.25,
 } as const;
 
-export type CanvasPlan = { name: "dynamic" | "darkness" | "chunk"; w: number; h: number; count: number; bytes: number };
+export type CanvasPlan = { name: "dynamic" | "darkness" | "light" | "chunk"; w: number; h: number; count: number; bytes: number };
 export type LayerPlan = { dpr: number; canvases: CanvasPlan[]; total: number };
 
 const BYTES_PER_PIXEL = 4;
@@ -34,6 +35,8 @@ function planAt(cssW: number, cssH: number, dpr: number): LayerPlan {
   const canvases: CanvasPlan[] = [
     { name: "dynamic", w, h, count: 1, bytes: w * h * BYTES_PER_PIXEL },
     { name: "darkness", w: dw, h: dh, count: 1, bytes: dw * dh * BYTES_PER_PIXEL },
+    // The light mask the darkness is cut with (P35): same size, offscreen.
+    { name: "light", w: dw, h: dh, count: 1, bytes: dw * dh * BYTES_PER_PIXEL },
     { name: "chunk", w: side, h: side, count: chunks, bytes: side * side * BYTES_PER_PIXEL * chunks },
   ];
   return { dpr, canvases, total: canvases.reduce((n, c) => n + c.bytes, 0) };

@@ -5,7 +5,7 @@
 import { building, type Solid, type Tone } from "./archetypes";
 import { toScreen, type World } from "./engine/iso";
 import { mix, type Palette } from "./palette";
-import { ALLEYS, CANAL, GRID, isBridge, PLAZA, walkable, type CityLayout, type Rect, type Tile } from "./plan";
+import { ALLEYS, CANAL, GRID, isBridge, LAMPS, PLAZA, walkable, type CityLayout, type Rect, type Tile } from "./plan";
 
 /** Direction toward the light (unnormalised): high, from the screen's upper left. */
 const LIGHT = norm([-0.45, 0.55, 0.85]);
@@ -138,7 +138,13 @@ function drawSolid(ctx: CanvasRenderingContext2D, s: Solid, p: Palette, lw: numb
     ctx.moveTo(a.sx, a.sy);
     ctx.lineTo(b.sx, b.sy);
     ctx.stroke();
-    ctx.fillStyle = p.lamp; // a dead light on top; lit ones belong to the night engine (P35)
+    if (s.lit) {
+      // A streetlamp's head: a short arm and a lit shade (its pool of light is the night engine's).
+      ctx.fillStyle = p.glow;
+      ctx.fillRect(b.sx - 3 * lw, b.sy - 1.5 * lw, 6 * lw, 3 * lw);
+      return;
+    }
+    ctx.fillStyle = p.lamp; // a dead light on top
     ctx.fillRect(b.sx - 1.5 * lw, b.sy - 1.5 * lw, 3 * lw, 3 * lw);
     return;
   }
@@ -284,6 +290,7 @@ export function cityScene(layout: CityLayout): Scene {
     // The Atlas table's site at the plaza's heart (the table itself is P40): a low brass dais.
     { solids: [{ type: "frustum", cx: 22, cy: 22, z: 0, r0: 2.6, r1: 2.4, h: 0.18, sides: 16, tone: "trim" }], lot: { x: 19.4, y: 19.4, w: 5.2, d: 5.2 } },
     ...ALLEYS.map((a) => ({ solids: alleyProps(a.tiles), lot: rectAround(a.tiles.at(-1)!) })),
+    ...LAMPS.map((l): Placed => ({ solids: [{ type: "mast", x: l.x, y: l.y, z: 0, h: 1.6, lit: true }], lot: { x: l.x - 0.1, y: l.y - 0.1, w: 0.2, d: 0.2 } })),
   ];
   const ordered = placed.sort((a, b) => a.lot.x + a.lot.w / 2 + a.lot.y + a.lot.d / 2 - (b.lot.x + b.lot.w / 2 + b.lot.y + b.lot.d / 2));
   const items = [ground, ...ordered.map((b) => buildingItem(b.solids, b.lot))];

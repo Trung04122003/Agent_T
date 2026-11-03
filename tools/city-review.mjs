@@ -22,7 +22,10 @@ const browser = await chromium.launch();
 const shots = [];
 for (const mode of ["mat", "giai-mat"]) {
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
-  await context.addInitScript((m) => localStorage.setItem("mode", m), mode);
+  await context.addInitScript((m) => {
+    localStorage.setItem("mode", m);
+    localStorage.setItem("cursorFx", "system"); // the dossier's cursor layer stays out of the shots
+  }, mode);
   const page = await context.newPage();
   await page.goto(`${site}/vi/city/`);
   const stage = page.locator("[data-city-stage]");
@@ -35,6 +38,24 @@ for (const mode of ["mat", "giai-mat"]) {
     const file = join(out, `city-${name}-${mode}.png`);
     await stage.screenshot({ path: file });
     shots.push(file);
+  }
+  if (mode === "mat") {
+    // Signature moments (UX-v4 section 11): 1, the lantern's cone cut by buildings (the mouse aims it
+    // up and left, past the kiosk); 8, rain on the glass tower (High tier, the lantern on the tower).
+    await page.goto(`${site}/vi/city/`);
+    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+    await stage.hover({ position: { x: 150, y: 150 } });
+    await page.waitForTimeout(500);
+    const m1 = join(out, "moment-1-lantern.png");
+    await stage.screenshot({ path: m1 });
+    shots.push(m1);
+    await page.goto(`${site}/vi/city/?quality=high`);
+    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+    await stage.hover({ position: { x: 560, y: 400 } });
+    await page.waitForTimeout(800);
+    const m8 = join(out, "moment-8-rain.png");
+    await stage.screenshot({ path: m8 });
+    shots.push(m8);
   }
   // The Lite view, drawn from the same plan.
   await page.goto(`${site}/vi/city/?lite`);

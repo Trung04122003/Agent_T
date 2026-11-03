@@ -82,6 +82,37 @@ const mix = (hex, over) => {
   }
 }
 
+// Agent T City HUD (ROADMAP-v4 35.1): src/styles/city-tokens.css aliases dossier tokens; resolve the
+// aliases in each mode and check the HUD's own pairs. An alias to a missing token fails too.
+const CITY_PAIRS = [
+  ["city-hud-ink", "city-hud-bg", 4.5],
+  ["city-hud-muted", "city-hud-bg", 4.5],
+  ["city-hud-accent", "city-hud-bg", 4.5],
+  ["city-hud-ink", "city-night", 4.5],
+  ["city-redact", "city-hud-bg", 3],
+  ["city-redact", "city-night", 3],
+];
+if (!process.argv[2]) {
+  const cityCss = readFileSync(join(root, "src", "styles", "city-tokens.css"), "utf8");
+  const aliases = Object.fromEntries([...cityCss.matchAll(/--(city-[\w-]+):\s*var\(--([\w-]+)\)\s*;/g)].map((d) => [d[1], d[2]]));
+  for (const mode of ["mat", "giai-mat"]) {
+    const t = tokens(mode);
+    console.log(`[${mode}, city HUD]`);
+    for (const [fg, bg, min] of CITY_PAIRS) {
+      const a = t[aliases[fg]];
+      const b = t[aliases[bg]];
+      if (!a || !b) {
+        console.error(`  missing city token --${fg} or --${bg} (or the token it aliases)`);
+        failed++;
+        continue;
+      }
+      const r = ratio(a, b);
+      if (r < min) failed++;
+      console.log(`  ${r >= min ? "ok  " : "FAIL"} --${fg} on --${bg}: ${r.toFixed(2)}:1 (min ${min})`);
+    }
+  }
+}
+
 if (failed) {
   console.error(`check-contrast: ${failed} required pair(s) below WCAG AA.`);
   process.exit(1);

@@ -6,8 +6,8 @@ export type Mode = "mat" | "giai-mat";
 
 /** The dossier tokens the city uses, copied from tokens.css (a test keeps them equal). */
 export const TOKENS = {
-  mat: { bg: "#0a0a0b", surface: "#131316", ink: "#e8e6e1", inkMuted: "#9c9a94", line: "#26262b", accent: "#b8975a" },
-  "giai-mat": { bg: "#f3f1ea", surface: "#ffffff", ink: "#111111", inkMuted: "#55534e", line: "#d9d6cc", accent: "#7a5f2a" },
+  mat: { bg: "#0a0a0b", surface: "#131316", ink: "#e8e6e1", inkMuted: "#9c9a94", line: "#26262b", accent: "#b8975a", redact: "#7a735f" },
+  "giai-mat": { bg: "#f3f1ea", surface: "#ffffff", ink: "#111111", inkMuted: "#55534e", line: "#d9d6cc", accent: "#7a5f2a", redact: "#111111" },
 } as const;
 
 type Rgb = [number, number, number];
@@ -41,6 +41,14 @@ export type Palette = {
   window: string;
   edge: string;
   lamp: string;
+  /** A lamp's lit head, and the redaction bars on signs. */
+  glow: string;
+  redact: string;
+  /** The darkness (fill colour and how much of the city it hides), haze, rain. */
+  night: string;
+  nightAlpha: number;
+  haze: string;
+  rain: string;
 };
 
 export function palette(mode: Mode): Palette {
@@ -62,6 +70,12 @@ export function palette(mode: Mode): Palette {
       window: mix(t.surface, t.inkMuted, 0.12),
       edge: alpha(t.accent, 0.4),
       lamp: mix(t.line, t.inkMuted, 0.3),
+      glow: mix(t.accent, t.ink, 0.45),
+      redact: t.redact,
+      night: t.bg,
+      nightAlpha: 0.8,
+      haze: alpha(t.inkMuted, 0.035),
+      rain: alpha(t.inkMuted, 0.32),
     };
   }
   // Dawn: warm paper, ink outlines, gold trim.
@@ -80,5 +94,12 @@ export function palette(mode: Mode): Palette {
     window: mix(t.line, t.inkMuted, 0.35),
     edge: alpha(t.inkMuted, 0.5),
     lamp: t.inkMuted,
+    glow: t.accent,
+    redact: t.redact,
+    // Dawn has no darkness (the day engine is P38).
+    night: t.bg,
+    nightAlpha: 0,
+    haze: alpha(t.inkMuted, 0),
+    rain: alpha(t.inkMuted, 0),
   };
 }

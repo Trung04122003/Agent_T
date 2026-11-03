@@ -2,7 +2,7 @@
 // preview, page /vi/city/, Mat. Each run: first frame after DOM ready, then 6 s of panning with the
 // arrow keys (new chunks bake while it pans) and a zoom out and in; rAF intervals give p95 and long
 // frames. Reports the tier, the bake counters the stage exposes, and the JS heap. 1x and 4x CPU, median
-// of 3 runs. Usage: node tools/perf/city-frames.mjs [url]   (default http://localhost:4324)
+// of 3 runs. Usage: node tools/perf/city-frames.mjs [url] [query]   (default http://localhost:4324)
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -10,6 +10,8 @@ process.env["PLAYWRIGHT_BROWSERS_PATH"] ??= join("F:", "\\", "Dev", "Data", "pla
 const { chromium } = await import("@playwright/test");
 
 const base = process.argv[2] ?? "http://localhost:4324";
+/** Extra query, e.g. "?quality=high" to measure the High tier (rain) on purpose. */
+const query = process.argv[3] ?? "";
 const RUNS = 3;
 const viewports = [
   [1366, 768],
@@ -33,7 +35,7 @@ async function run(browser, [w, h], rate) {
     };
     requestAnimationFrame(tick);
   });
-  await page.goto(`${base}/vi/city/`);
+  await page.goto(`${base}/vi/city/${query}`);
   await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0, null, { timeout: 30_000 });
   const firstFrame = await page.evaluate(() => {
     const nav = performance.getEntriesByType("navigation")[0];
@@ -100,4 +102,4 @@ for (const vp of viewports) {
 }
 await browser.close();
 mkdirSync(".perf", { recursive: true });
-writeFileSync(join(".perf", "city-frames.json"), JSON.stringify(rows, null, 2));
+writeFileSync(join(".perf", `city-frames${query ? "-" + query.replace(/[^a-z0-9]+/gi, "-") : ""}.json`), JSON.stringify(rows, null, 2));

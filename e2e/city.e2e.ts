@@ -162,6 +162,77 @@ test("34 the city draws its plan, and repaints in the other palette on a mode sw
   expect(Object.keys(data.plots[0]).sort()).toEqual(["domains", "id", "kind"]);
 });
 
+/** Distinct pictures the dynamic layer showed, sampled every 50 ms for `ms`. */
+async function dynamicStates(page: Page, ms: number): Promise<number> {
+  return page.evaluate(async (ms) => {
+    const c = document.querySelector<HTMLCanvasElement>(".city-layer--dynamic")!;
+    const g = c.getContext("2d")!;
+    const seen = new Set<number>();
+    for (let t = 0; t < ms; t += 50) {
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      let h = 0;
+      for (let i = 0; i < d.length; i += 4 * 31) h = (Math.imul(h, 31) + d[i]! + d[i + 1]! * 7) | 0;
+      seen.add(h);
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return seen.size;
+  }, ms);
+}
+const darknessAlpha = (page: Page) =>
+  page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>(".city-layer--darkness")!;
+    const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+    let sum = 0;
+    for (let i = 3; i < d.length; i += 4) sum += d[i]!;
+    return sum / (d.length / 4) / 255;
+  });
+
+test.describe("P35 night engine", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mode", "mat"));
+  });
+
+  test("35.2 Mat lays the darkness over the city, cut by light; Giai mat lifts it", async ({ page }) => {
+    await page.goto("/vi/city/");
+    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+    await expect.poll(() => darknessAlpha(page)).toBeGreaterThan(0.5);
+    // Not uniform: lamps, the lantern and signs cut it.
+    expect(await darknessAlpha(page)).toBeLessThan(0.8);
+    await page.evaluate(() => (document.documentElement.dataset["mode"] = "giai-mat"));
+    await expect.poll(() => darknessAlpha(page)).toBe(0);
+  });
+
+  test("35.4 rain only on the High tier, capped at 120; none on Medium or in Giai mat", async ({ page }) => {
+    const stage = page.locator("[data-city-stage]");
+    await page.goto("/vi/city/?quality=high");
+    await expect(stage).toHaveAttribute("data-tier", "high");
+    await expect(stage).toHaveAttribute("data-rain", "120");
+    await page.evaluate(() => (document.documentElement.dataset["mode"] = "giai-mat"));
+    await expect(stage).toHaveAttribute("data-rain", "0");
+    await page.goto("/vi/city/?quality=medium");
+    await expect(stage).toHaveAttribute("data-tier", "medium");
+    await expect(stage).toHaveAttribute("data-rain", "0");
+  });
+
+  test("35.3 the sign bars stir in Mat", async ({ page }) => {
+    await page.goto("/vi/city/");
+    await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+    await page.waitForTimeout(1000); // the last chunks bake first
+    expect(await dynamicStates(page, 8000)).toBeGreaterThan(1);
+  });
+
+  test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+    test("35.3 freezes the bars and stops the rain", async ({ page }) => {
+      await page.goto("/vi/city/?quality=high");
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-rain", "0");
+      await page.waitForTimeout(500);
+      expect(await dynamicStates(page, 8000)).toBe(1);
+    });
+  });
+});
+
 test("33.5 a dossier page loads no city file; the city page does", async ({ page }) => {
   const js = async (path: string) => {
     const seen: string[] = [];

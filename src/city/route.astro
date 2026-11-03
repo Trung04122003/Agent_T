@@ -6,6 +6,7 @@
 // links, which is also what a reader without JS, a screen reader or a printer gets.
 // Data: the ledger's own entries (ledgerEntries), through the city content map; nothing else.
 import { getCollection } from "astro:content";
+import "../styles/city-tokens.css";
 import Base from "../layouts/Base.astro";
 import { t } from "../lib/i18n";
 import { ledgerEntries } from "../lib/ledger-entries";
@@ -158,7 +159,7 @@ const half = GRID * 32;
   .city__action {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
-    color: var(--accent);
+    color: var(--city-hud-accent);
     text-underline-offset: 3px;
   }
   .city__note {
@@ -170,8 +171,8 @@ const half = GRID * 32;
     position: relative;
     height: min(70vh, 720px);
     overflow: hidden;
-    background: var(--bg);
-    border: 1px solid var(--line);
+    background: var(--city-night);
+    border: 1px solid var(--city-hud-line);
     touch-action: none; /* taps and drags belong to the city, not to page scroll and zoom */
   }
   .city-stage :global(.city-layer) {
@@ -186,7 +187,7 @@ const half = GRID * 32;
     inset-inline-end: 6px;
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    color: var(--ink-muted);
+    color: var(--city-hud-muted);
   }
   /* Which view shows (shell.ts): the stage once JS has picked a tier, Lite on ?lite or a weak
      device, neither without JS (the district list carries everything). */
