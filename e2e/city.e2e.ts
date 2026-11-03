@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -32,7 +33,9 @@ test("33.2 the gate's JS is byte for byte the same with the city on, under 3.2 K
   };
   const on = await gateJs(CITY);
   const off = await gateJs(SITE);
-  expect(on).toEqual(off);
+  // Byte for byte, but for the content hashes in chunk names (the city's chunk changes the graph).
+  const unhash = (g: typeof on) => JSON.parse(JSON.stringify(g).replace(/\.[A-Za-z0-9_-]{8}\.js/g, ".js"));
+  expect(unhash(on)).toEqual(unhash(off));
   const size = gzipSync(on.head).length + [on.body, ...on.deps].reduce((n, b) => n + gzipSync(b).length, 0);
   test.info().annotations.push({ type: "size", description: `gate JS ${size} B gzip` });
   expect(size).toBeLessThanOrEqual(3.2 * 1024);
@@ -283,6 +286,134 @@ test.describe("P36 Agent T", () => {
       await expect(stageOf(page)).toHaveAttribute("data-walking", "0");
     });
   });
+});
+
+test.describe("P37 districts, missions, briefings", () => {
+  const stageOf = (page: Page) => page.locator("[data-city-stage]");
+  const textOf = (page: Page) => page.locator("[data-city-text]").textContent().then((t) => JSON.parse(t!) as { names: Record<string, string>; order: string[] });
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim();
+
+  test.describe("reduced motion (he starts at the alley's mouth)", () => {
+    test.use({ reducedMotion: "reduce" });
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("mode", "mat"));
+    });
+
+    test("37.1 F walks to the objective and opens its briefing; Esc closes it; E at the door opens it again", async ({ page }) => {
+      await page.goto("/vi/city/");
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      const { order, names } = await textOf(page);
+      const first = order[0]!;
+      await expect(page.locator("[data-hud-next]")).toHaveText(names[first]!);
+      await stageOf(page).focus();
+      await page.keyboard.press("f");
+      const dialog = page.locator(`dialog[data-brief="${first}"]`);
+      await expect(dialog).toHaveAttribute("open", "", { timeout: 25_000 });
+      await expect(page.locator("[data-hud-prompt]")).toContainText(names[first]!);
+      await expect(page.locator(`[data-log="${first}"]`)).toHaveAttribute("data-state", "briefed");
+      await page.keyboard.press("Escape");
+      await expect(dialog).not.toHaveAttribute("open");
+      await expect(stageOf(page)).toBeFocused();
+      await page.keyboard.press("e");
+      await expect(dialog).toHaveAttribute("open", "");
+      await page.locator(`dialog[data-brief="${first}"] [data-brief-close]`).click();
+      await expect(dialog).not.toHaveAttribute("open");
+    });
+  });
+
+  test("37.2 with storage blocked the city still works; content is never gated by state", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "sessionStorage", {
+        get() {
+          throw new DOMException("blocked", "SecurityError");
+        },
+      });
+    });
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto("/vi/city/#d-role-prudential"); // a sealed district, opened straight away
+    await expect(page.locator('dialog[data-brief="role-prudential"]')).toHaveAttribute("open", "");
+    await expect(page.locator('[data-log="role-prudential"]')).toHaveAttribute("data-state", "briefed");
+    expect(errors).toEqual([]);
+  });
+
+  for (const mode of ["mat", "giai-mat"] as const) {
+    test(`37.3 every briefing reads exactly as its ledger row, vi and en, ${mode}`, async ({ page }) => {
+      await page.addInitScript((m) => localStorage.setItem("mode", m), mode);
+      for (const l of ["vi", "en"]) {
+        await page.goto(`/${l}/#gate-codename`);
+        const ledger = await page.locator("[data-ledger] li.row").evaluateAll((rows) =>
+          rows.map((r) => {
+            r.classList.add("is-open");
+            return [(r as HTMLElement).dataset["claim"]!, (r as HTMLElement).innerText] as const;
+          }),
+        );
+        expect(ledger.length).toBeGreaterThan(0);
+        await page.goto(`/${l}/city/?lite`); // the dialogs, without the world
+        for (const [id, text] of ledger) {
+          const row = await page.evaluate((i) => {
+            const d = document.querySelector<HTMLDialogElement>(`dialog[data-brief="${i}"]`)!;
+            d.showModal();
+            const t = d.querySelector<HTMLElement>("li.row")!.innerText;
+            d.close();
+            return t;
+          }, id);
+          expect(norm(row), `${l} ${mode} ${id}`).toBe(norm(text));
+        }
+      }
+    });
+  }
+
+  for (const [lens, id] of [["partner", "role-bbe-ldc"], ["client", "role-prudential"], ["curious", "project-air-quality"]] as const) {
+    test(`37.4 the ${lens} lens points the compass to its first entry`, async ({ page }) => {
+      await page.goto(`/en/city/?lens=${lens}`);
+      const { names } = await textOf(page);
+      await expect(page.locator("[data-hud-next]")).toHaveText(names[id]!);
+      await expect(page.locator("[data-hud-light]")).toHaveText(/^Light level \d+ of \d+$/);
+    });
+  }
+
+  test("37.5 the Vault shows its type label only; the Dead Drop holds the one allowed address", async ({ page, request }) => {
+    await page.goto("/en/city/#d-classified-client-files");
+    const vault = page.locator('dialog[data-brief="classified-client-files"]');
+    await expect(vault).toHaveAttribute("open", "");
+    await expect(vault.locator("li.row")).toHaveAttribute("data-kind", "classified");
+    await expect(vault.locator(".row__summary, .row__teaser, .row__evidence")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await page.goto("/en/city/#d-dead-drop");
+    const drop = page.locator('dialog[data-brief="dead-drop"]');
+    await expect(drop).toHaveAttribute("open", "");
+    await expect(drop.locator("[data-request]")).toHaveCount(1);
+    const allowed = (JSON.parse(readFileSync("tools/leak-allow.json", "utf8")) as { emails: string[] }).emails;
+    for (const l of ["vi", "en"]) {
+      const html = await (await request.get(`/${l}/city/`)).text();
+      const found = new Set(html.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []);
+      expect([...found]).toEqual(allowed);
+    }
+  });
+});
+
+test("33.5 with the city on, dossier pages load the same JS as with it off, and no more of it", async ({ request }) => {
+  // Every script a dossier page loads, through its static imports, by name (hash removed) and size.
+  const reach = async (base: string, page: string) => {
+    const html = await (await request.get(`${base}${page}`)).text();
+    const queue = [...html.matchAll(/(?:src|href)="\/_astro\/([^"]+\.js)"/g)].map((m) => m[1]!);
+    const seen = new Map<string, number>();
+    while (queue.length) {
+      const f = queue.pop()!;
+      if (seen.has(f)) continue;
+      const body = await (await request.get(`${base}/_astro/${f}`)).text();
+      seen.set(f, gzipSync(body).length);
+      for (const m of body.matchAll(/(?:from|import)\s*\(?"\.\/([^"]+\.js)"/g)) queue.push(m[1]!);
+    }
+    return { names: [...seen.keys()].map((f) => f.replace(/\.[A-Za-z0-9_-]{8}\.js$/, "")).sort(), bytes: [...seen.values()].reduce((a, b) => a + b, 0) };
+  };
+  for (const page of ["/vi/", "/en/"]) {
+    const off = await reach(SITE, page);
+    const on = await reach(CITY, page);
+    expect(on.names, page).toEqual(off.names);
+    expect(on.bytes, page).toBeLessThanOrEqual(off.bytes);
+  }
 });
 
 test("33.5 a dossier page loads no city file; the city page does", async ({ page }) => {

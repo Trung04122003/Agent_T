@@ -88,7 +88,7 @@ describe("archetypes (34.2)", () => {
         "role-bbe-ldc": "market-hall @ market-hall",
         "role-bluesea": "market-hall @ lot-a",
         "role-dz-ta": "antenna-tower @ signal-room",
-        "role-jci": "pavilion-mast @ embassy-row",
+        "role-jci": "pavilion-mast @ liaison-house",
         "role-prudential": "glass-tower @ glass-tower",
       }
     `);

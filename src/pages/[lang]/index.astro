@@ -3,7 +3,8 @@ import CommitChart from "../../components/CommitChart.astro";
 import EvidenceFlow from "../../components/EvidenceFlow.astro";
 import CapabilityMatrix from "../../components/CapabilityMatrix.astro";
 import Gate from "../../components/Gate.astro";
-import Ledger, { type LedgerLabels } from "../../components/Ledger.astro";
+import Ledger from "../../components/Ledger.astro";
+import { ledgerLabels } from "../../lib/ledger-labels";
 import LensNav from "../../components/LensNav.astro";
 import Map from "../../components/Map.astro";
 import OnePage from "../../components/OnePage.astro";
@@ -11,7 +12,6 @@ import PrintButton from "../../components/PrintButton.astro";
 import RiskFactors from "../../components/RiskFactors.astro";
 import StatsBoard from "../../components/StatsBoard.astro";
 import Base from "../../layouts/Base.astro";
-import { t } from "../../lib/i18n";
 import { publicClaims } from "../../lib/ledger";
 import { ledgerEntries } from "../../lib/ledger-entries";
 import { LOCALES, type Locale } from "../../lib/locales";
@@ -22,19 +22,7 @@ export function getStaticPaths() {
 
 const locale = Astro.params.lang as Locale;
 const claims = await ledgerEntries();
-const labels: LedgerLabels = {
-  heading: await t("ledgerHeading", locale),
-  tiers: {
-    T1: await t("tierT1", locale),
-    T2: await t("tierT2", locale),
-    T3: await t("tierT3", locale),
-  },
-  viewDeclassified: await t("viewDeclassified", locale),
-  classifiedClosed: await t("classifiedClosed", locale),
-  redacted: await t("redactedLabel", locale),
-  present: await t("periodPresent", locale),
-  evidence: await t("evidenceHeading", locale),
-};
+const labels = await ledgerLabels(locale);
 ---
 
 <Base locale={locale} title="Cupid Dossier" path="/" gate>

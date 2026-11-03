@@ -93,6 +93,8 @@ export type Night = {
   /** Paints the darkness from the mask; `overlay` draws on top (rain). */
   paint(view: NightView, overlay: ((ctx: CanvasRenderingContext2D) => void) | null): void;
   setPalette(p: Palette): void;
+  /** Districts with their lights on (P37): x, y, radius (world), strength (0..1), four per district. */
+  setLit(pools: Float64Array): void;
   clear(): void;
 };
 
@@ -103,6 +105,7 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
   const cold = glowSprite(128, COLD);
   const cone = coneSprite(256, COLD);
   let pal = p0;
+  let lit: Float64Array = new Float64Array(0);
   const grain = dctx.createPattern(grainSprite(128, "#ffffff"), "repeat")!;
   // What the lantern can see, per quarter-tile cell (visibility.ts).
   const seen = visibilityCache(footprintSegments(occluders), LANTERN.reach + 1);
@@ -204,6 +207,12 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
         stampPool(lantern.x, lantern.y, LANTERN.ambient * 0.6, cold);
         mctx.globalAlpha = 1;
       }
+      // Lit districts stay lit (UX-v4 section 4): a warm pool over each, brighter once declassified.
+      for (let i = 0; i < lit.length; i += 4) {
+        mctx.globalAlpha = lit[i + 3]!;
+        stampPool(lit[i]!, lit[i + 1]!, lit[i + 2]!, glow);
+      }
+      mctx.globalAlpha = 1;
       for (let i = 0; i < lamps.length; i++) {
         const l = lamps[i]!;
         const px = mx(l.x, l.y);
@@ -259,6 +268,9 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
     },
     setPalette(p) {
       pal = p;
+    },
+    setLit(pools) {
+      lit = pools;
     },
     clear() {
       dctx.clearRect(0, 0, dark.width, dark.height);

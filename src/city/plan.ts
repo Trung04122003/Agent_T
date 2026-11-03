@@ -38,14 +38,14 @@ export const CANAL = { y: [31, 32] as const };
 
 export const PLOT_LOTS: readonly PlotLot[] = [
   // Drawn for an archetype (UX-v4 section 2's sketch: Academy and Signal Room north, Foundry
-  // north-east, Market Hall and Observatory west, Glass Tower and Embassy Row south-east).
+  // north-east, Market Hall and Observatory west, Glass Tower and Liaison House south-east).
   { id: "academy", rect: rect(6, 11, 6, 10), door: { x: 5, y: 8 }, suits: "campus-hall" },
   { id: "signal-room", rect: rect(6, 9, 13, 16), door: { x: 5, y: 14 }, suits: "antenna-tower" },
   { id: "foundry", rect: rect(31, 36, 6, 10), door: { x: 33, y: 5 }, suits: "server-hall" },
   { id: "market-hall", rect: rect(6, 11, 23, 28), door: { x: 5, y: 25 }, suits: "market-hall" },
   { id: "observatory", rect: rect(6, 10, 33, 37), door: { x: 5, y: 35 }, suits: "observatory" },
   { id: "glass-tower", rect: rect(33, 37, 24, 28), door: { x: 38, y: 26 }, suits: "glass-tower" },
-  { id: "embassy-row", rect: rect(23, 28, 33, 37), door: { x: 22, y: 35 }, suits: "pavilion-mast" },
+  { id: "liaison-house", rect: rect(23, 28, 33, 37), door: { x: 22, y: 35 }, suits: "pavilion-mast" },
   // Generic lots, nearest the plaza first: a second entry of an archetype goes here.
   { id: "lot-a", rect: rect(27, 31, 23, 26), door: { x: 26, y: 24 }, suits: null },
   { id: "lot-b", rect: rect(14, 20, 27, 30), door: { x: 21, y: 28 }, suits: null },

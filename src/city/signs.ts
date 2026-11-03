@@ -1,10 +1,10 @@
 // District signs (ROADMAP-v4 35.3, UX-v4 section 4 "sealed: sign shows redaction bars"): one per entry
 // building, a dark panel on its lit wall framed by a brass tube, holding three redaction bars. The
-// bars "stir" the way the dossier's do (src/scripts/stir.ts, the same STIR timing): now and then one
+// bars "stir" the way the dossier's do (src/scripts/stir.ts: its STIR timing, handed in by the route
+// at build time, so the city's code never shares a module with dossier pages): now and then one
 // sign seethes for 200 ms, its bars redrawn every 50 ms, then settles back. Mat only; never with
 // reduced motion. Nothing on a sign is text, real or invented. Drawn on the dynamic layer only when
 // something changed; the hot path allocates nothing.
-import { STIR } from "../scripts/stir";
 import { building, type Solid } from "./archetypes";
 import { TILE, Z_PX } from "./engine/iso";
 import type { Palette } from "./palette";
@@ -23,6 +23,8 @@ export type Signs = {
   /** Advances the stir; true when the bars changed and the layer needs redrawing. */
   update(now: number, enabled: boolean): boolean;
   draw(ctx: CanvasRenderingContext2D, ox: number, oy: number, zoom: number, dpr: number, p: Palette): void;
+  /** A declassified district's sign: its bars slid off (P37). Index as in the layout's plots. */
+  setClear(index: number, clear: boolean): void;
 };
 
 /** The wall a sign hangs on: the entry building's ground box, its face toward the light (+y). */
@@ -31,7 +33,10 @@ function wallOf(solids: readonly Solid[]): (Solid & { type: "box" }) | null {
   return null;
 }
 
-export function createSigns(layout: CityLayout): Signs {
+/** The dossier's stir timing (src/scripts/stir.ts STIR): how long a stir lasts, how often it redraws. */
+export type StirTiming = { ms: number; step: number };
+
+export function createSigns(layout: CityLayout, stir: StirTiming): Signs {
   const walls = layout.plots.map((p) => wallOf(building(p.archetype, p.rect, p.lot))).filter((w): w is Solid & { type: "box" } => w !== null);
   const n = walls.length;
   // Per sign: origin (bottom left), the panel's width vector and height vector, all zoom-1 screen px.
@@ -58,6 +63,7 @@ export function createSigns(layout: CityLayout): Signs {
   const rest = new Float64Array(n * BARS);
   for (let i = 0; i < rest.length; i++) rest[i] = [0.86, 0.62, 0.74][i % BARS]! - (Math.floor(i / BARS) % 3) * 0.06;
   const live = Float64Array.from(rest);
+  const clear = new Uint8Array(n);
   let seed = 12345;
   const rand = (): number => {
     seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
@@ -88,15 +94,18 @@ export function createSigns(layout: CityLayout): Signs {
       }
       if (active < 0 && now >= next) {
         active = Math.floor(rand() * n);
-        ends = now + STIR.ms;
+        ends = now + stir.ms;
         step = 0;
       }
       if (active >= 0 && now >= step) {
         for (let b = 0; b < BARS; b++) live[active * BARS + b] = 0.3 + rand() * 0.66;
-        step = now + STIR.step;
+        step = now + stir.step;
         return true;
       }
       return false;
+    },
+    setClear(index, c) {
+      if (index >= 0 && index < n) clear[index] = c ? 1 : 0;
     },
     draw(ctx, ox, oy, zoom, dpr, p) {
       const s = zoom * dpr;
@@ -120,6 +129,7 @@ export function createSigns(layout: CityLayout): Signs {
         ctx.fill();
         ctx.strokeStyle = p.glow;
         ctx.stroke();
+        if (clear[i]) continue;
         ctx.fillStyle = p.redact;
         ctx.beginPath();
         for (let b = 0; b < BARS; b++) {

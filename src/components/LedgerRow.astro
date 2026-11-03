@@ -1,0 +1,441 @@
+---
+// One ledger entry (SPEC sections 5-6, UX section 2), shared by the Ledger and by Agent T City's
+// briefings (ROADMAP-v4 37.3: "reuse the ledger entry component, do not copy markup"). Both modes
+// always show org, title and period of open entries; Mat adds teaser + redaction, Giai mat adds
+// summary + evidence. A classified entry only ever carries its category label.
+import { t, type Locale } from "../lib/i18n";
+import { evidenceName, tierOf } from "../lib/evidence";
+import { formatPeriod } from "../lib/ledger";
+import { hasTearSheet, type Claim } from "../lib/schema";
+import { BUILT, fileNumber } from "../lib/dossier";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { requestDocs } from "../lib/request";
+import { durationMonths } from "../lib/stats";
+import RequestDocs from "./RequestDocs.astro";
+import TearSheet from "./TearSheet.astro";
+import TierMeter from "./TierMeter.astro";
+import Aar from "./Aar.astro";
+import Redaction from "./Redaction.astro";
+import placesFile from "../../content/places.json";
+import type { LedgerLabels } from "./Ledger.astro";
+
+interface Props {
+  claim: Claim;
+  /** The row's file code ("01"...), its place in the ledger. */
+  code: string;
+  locale: Locale;
+  labels: LedgerLabels;
+  showUnverified: boolean;
+  seed?: string | undefined;
+  /** Months of the experience balance shown under the entry (Giai mat), when it has one. */
+  balance?: number | undefined;
+  /** Rendered open (the ledger opens rows with its script; a city briefing shows it open). */
+  open?: boolean;
+}
+const { claim: c, code, locale, labels, showUnverified, seed, balance, open = false } = Astro.props;
+// Owner, 2026-11-01: an entry's place links its row to the map (map-view.ts does the linking).
+const placeName = new Map(placesFile.map((p) => [p.id, p.label[locale]]));
+const onMap = await t("ledgerOnMap", locale);
+const stamp = await t("stampOpened", locale);
+// File number for the request mail's reference ("CUPID-2610" + the row code, ROADMAP 24.3).
+const fileNo = fileNumber(codenameFor(await getIdentity(), locale).name, BUILT);
+const [unit, pausedLabel, balanceLabel, sourceLabel, sourceSelf] = await Promise.all(
+  ["durationUnit", "pausedLabel", "balanceLabel", "sourceLabel", "sourceSelf"].map((k) => t(k, locale)),
+);
+---
+
+{
+  (() => {
+        const panelId = `panel-${c.id}`;
+        const period = c.period ? formatPeriod(c.period, labels.present) : null;
+
+        if (c.kind === "classified") {
+          return (
+            <li class:list={["row row--classified", open && "is-open"]} id={`claim-${c.id}`} data-claim={c.id} data-kind="classified">
+              <h3 class="row__head">
+                <button class="row__toggle" type="button" aria-expanded="true" aria-controls={panelId} data-row-toggle>
+                  <span class="row__code">{code}</span>
+                  <span class="row__period" dir="ltr">{period}</span>
+                  <span class="row__main">
+                    <Redaction barKey={c.id} label={c.label[locale]} seed={seed} />
+                  </span>
+                </button>
+              </h3>
+              <div class="row__panel" id={panelId}>
+                <div class="row__inner">
+                  <p class="row__closed">{labels.classifiedClosed}</p>
+                </div>
+              </div>
+            </li>
+          );
+        }
+
+        const bluf = c.bluf?.[locale];
+        // ROADMAP 20.1: the BLUF already says it, so Mat shows the teaser only when there is none.
+        const teaser = bluf ? undefined : c.teaser?.[locale];
+        const summary = c.summary?.[locale];
+        const hasPanel = Boolean(teaser || summary || c.evidence.length || hasTearSheet(c.tearSheet) || c.aar);
+        // ROADMAP 20.2: a paused entry shows "paused" instead of a running length.
+        const months = c.period && !c.paused ? durationMonths(c.period, BUILT) : null;
+        const tier = tierOf(c.evidence);
+        // ROADMAP 24.2: open entries with documents given on request get the request button.
+        const onRequest = requestDocs(c.evidence, locale);
+        const cells = (
+          <>
+            <span class="row__code">{code}</span>
+            <span class="row__period" dir="ltr">
+              {period}
+              {months !== null && <span class="row__dur only-giai-mat">{months} {unit}</span>}
+              {c.paused && <span class="row__dur only-giai-mat" data-paused>{pausedLabel}</span>}
+              {balance !== undefined && (
+                <span class="row__balance only-giai-mat" data-balance={balance}>
+                  {balanceLabel} {balance} {unit}
+                </span>
+              )}
+            </span>
+            <span class="row__main">
+              {c.org && <span class="row__org">{c.org[locale]}</span>}
+              {c.title && <span class="row__title">{c.title[locale]}</span>}
+              {/* Bottom line up front (ROADMAP 11.2): both modes, only when the owner wrote one. */}
+              {bluf && <span class="row__bluf">{bluf}</span>}
+              {/* Source line (ROADMAP 28.6): the evidence by name and its tier, Giai mat only. */}
+              <span class="row__source only-giai-mat" data-source>
+                {sourceLabel} · {tier}: {c.evidence.length ? c.evidence.map((e) => evidenceName(e.note[locale])).join(" · ") : sourceSelf}
+              </span>
+            </span>
+            <span class="row__tier" data-tier={tier}>
+              <span class="row__tier-word">{labels.evidence}</span>{" "}
+              <TierMeter tier={tier} />
+              {tier}
+            </span>
+            {showUnverified && c.status !== "confirmed" && <span class="row__badge">UNCONFIRMED</span>}
+          </>
+        );
+
+        return (
+          <li class:list={["row", open && "is-open"]} id={`claim-${c.id}`} data-claim={c.id} data-kind={c.kind} data-place-ref={c.place}>
+            <h3 class="row__head">
+              {hasPanel ? (
+                <button class="row__toggle" type="button" aria-expanded="true" aria-controls={panelId} data-row-toggle>
+                  {cells}
+                </button>
+              ) : (
+                <span class="row__static">{cells}</span>
+              )}
+            </h3>
+            {hasPanel && (
+              <div class="row__panel" id={panelId}>
+                <div class="row__inner">
+                  {/* Stamp on opening (ROADMAP 13.3), Mat only; decorative. */}
+                  <p class="only-mat row__stamp" aria-hidden="true" data-stamp>
+                    <span>{stamp}</span>
+                    <span>{code}</span>
+                  </p>
+                  {/* Never both at once (ROADMAP 9.2): teaser is Mat only, summary is Giai mat only. */}
+                  {teaser && <p class="only-mat row__teaser">{teaser}</p>}
+                  {summary && (
+                    <div class="only-mat row__redacted">
+                      <Redaction barKey={c.id} label={labels.redacted} seed={seed} />
+                      <a class="row__declassify" href={`#claim-${c.id}`} data-declassify={c.id}>
+                        {labels.viewDeclassified}
+                      </a>
+                    </div>
+                  )}
+                  {summary && <p class="only-giai-mat row__summary">{summary}</p>}
+                  {/* Owner-written blocks (ROADMAP 17.1-17.2): nothing renders until they exist. */}
+                  <TearSheet claim={c} locale={locale} />
+                  {c.aar && <Aar aar={c.aar} locale={locale} />}
+                  {c.evidence.length > 0 && (
+                    <div class="only-giai-mat row__evidence">
+                      <p class="row__evidence-heading">{labels.evidence}</p>
+                      <ul>
+                        {c.evidence.map((e) => (
+                          <li>
+                            {e.type === "link" && e.url ? <a href={e.url}>{e.note[locale]}</a> : e.note[locale]}
+                            {/* ROADMAP 28.7: the owner's redacted preview, only when there is one. */}
+                            {e.preview && (
+                              <figure class="row__preview" data-preview>
+                                <img src={e.preview.src} alt={e.preview.alt[locale]} loading="lazy" decoding="async" />
+                              </figure>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      {onRequest.length > 0 && <RequestDocs locale={locale} fileRef={`${fileNo}-${code}`} docs={onRequest} />}
+                    </div>
+                  )}
+                  {/* To the map: picks the place there (map-view.ts); without JS, a plain jump. */}
+                  {c.place && placeName.has(c.place) && (
+                    <p class="row__place">
+                      <a href="#map-title" data-goto-place={c.place}>
+                        <span aria-hidden="true">⌖</span> {placeName.get(c.place)} · {onMap}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </li>
+        );
+  })()
+}
+
+<style>
+  .row__code,
+  .row__period,
+  .row__tier,
+  .row__badge,
+  .row__place {
+    margin: calc(var(--space) * 1.5) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+  .row__place a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  .row__evidence-heading {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .row {
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: calc(var(--space) * 2);
+  }
+  .row__head {
+    margin: 0;
+    font: inherit;
+  }
+  .row__toggle,
+  .row__static {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr);
+    gap: var(--space) calc(var(--space) * 2);
+    align-items: baseline;
+    width: 100%;
+    min-height: var(--target);
+    padding: calc(var(--space) * 2) 0;
+    font: inherit;
+    text-align: start;
+    color: inherit;
+    background: none;
+    border: 0;
+  }
+  .row__toggle {
+    cursor: pointer;
+  }
+  @media (min-width: 720px) {
+    .row__toggle,
+    .row__static {
+      /* Wide enough for the price-board padding and rule (code 5ch, period 22ch). */
+      grid-template-columns: 5ch 22ch minmax(0, 1fr) auto;
+    }
+  }
+  /* Price-board columns (UX-v2 section 3): code and period read as a ticker table. */
+  .row__code,
+  .row__period {
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+  @media (min-width: 720px) {
+    .row__code,
+    .row__period {
+      align-self: stretch;
+      padding-inline-end: calc(var(--space) * 2);
+      border-inline-end: 1px solid var(--line);
+    }
+  }
+  .row__main {
+    display: grid;
+    gap: 2px;
+    grid-column: 2 / -1;
+  }
+  @media (min-width: 720px) {
+    .row__main {
+      grid-column: auto;
+    }
+  }
+  .row__org {
+    font-weight: 700;
+  }
+  .row__title {
+    color: var(--ink-muted);
+  }
+  .row__bluf {
+    margin-top: calc(var(--space) * 0.5);
+    max-width: var(--measure);
+    color: var(--ink);
+  }
+  .row__tier,
+  .row__badge {
+    justify-self: start;
+    padding: 2px 6px;
+    border: 1px solid currentColor;
+  }
+  .row__tier {
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .row__badge {
+    color: var(--ink-muted);
+    border-style: dashed;
+  }
+  /* ROADMAP 28.4/28.6: the running balance under the length, the source under the entry. */
+  .row__balance {
+    display: block;
+    margin-block-start: 2px;
+    font-size: 0.75rem; /* as .row__dur, just above it */
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+  .row__source {
+    display: block;
+    margin-block-start: calc(var(--space) * 0.75);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .row__preview {
+    margin: var(--space) 0 0;
+    padding: var(--space);
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .row__preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+  }
+  .row__dur {
+    display: block;
+    margin-block-start: 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  @media not print {
+    :global(:root[data-mode="giai-mat"]) .row__toggle,
+    :global(:root[data-mode="giai-mat"]) .row__static {
+      padding-block: calc(var(--space) * 1.25);
+    }
+    :global(:root[data-mode="giai-mat"]) .row__head:hover {
+      background: var(--surface);
+    }
+    /* The bar and "T2" say it all here; the word stays for screen readers. */
+    :global(:root[data-mode="giai-mat"]) .row__tier-word {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    :global(:root[data-mode="giai-mat"]) .row__tier {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+  /* Open / close: grid-template-rows 0fr <-> 1fr (UX section 3). Without JS every row is open. */
+  .row__panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 250ms ease;
+  }
+  .row__inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  :global(:root[data-js]) .row:not(.is-open) .row__panel {
+    grid-template-rows: 0fr;
+  }
+  :global(:root[data-js]) .row:not(.is-open) .row__inner {
+    visibility: hidden;
+  }
+  @media print {
+    :global(:root[data-js]) .row:not(.is-open) .row__panel {
+      grid-template-rows: 1fr;
+    }
+    :global(:root[data-js]) .row:not(.is-open) .row__inner {
+      visibility: visible;
+    }
+  }
+  .row__inner > * {
+    max-width: var(--measure);
+    margin: 0 0 calc(var(--space) * 2);
+  }
+  @media (min-width: 720px) {
+    .row__inner {
+      padding-inline-start: calc(5ch + 22ch + var(--space) * 4);
+    }
+  }
+  /* Stamp (ROADMAP 13.3): a double-ruled brass box set at an angle. In the flow on phones, in the
+     free space right of the text on wide screens. Animated by ledger.ts on opening. */
+  .row__stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space);
+    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 3px double var(--accent);
+    rotate: -6deg;
+  }
+  .row__stamp span + span {
+    padding-inline-start: var(--space);
+    border-inline-start: 1px solid var(--accent);
+  }
+  .row__inner > .row__stamp {
+    margin-block-start: var(--space);
+  }
+  @media (min-width: 1100px) {
+    /* A column kept free for the stamp: text and redaction bars never run under it. */
+    .row__inner {
+      position: relative;
+      padding-inline-end: 168px;
+    }
+    .row__inner > .row__stamp {
+      position: absolute;
+      top: var(--space);
+      inset-inline-end: calc(var(--space) * 3);
+      margin: 0;
+    }
+  }
+  .row__redacted {
+    display: grid;
+    gap: var(--space);
+  }
+  .row__declassify,
+  .row__evidence a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  .row__declassify {
+    justify-self: start;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    min-height: var(--target);
+    display: inline-flex;
+    align-items: center;
+  }
+  .row__evidence ul {
+    margin: var(--space) 0 0;
+    padding-inline-start: 1.25em;
+  }
+  .row__evidence :global(.request) {
+    margin-top: calc(var(--space) * 1.5);
+  }
+  .row__closed {
+    color: var(--ink-muted);
+  }
+</style>

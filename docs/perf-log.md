@@ -3,6 +3,33 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P37 · Districts, missions, briefings
+
+Same method as P36 (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Mat, Medium, walking 6 s after the
+entrance; `node tools/perf/city-frames.mjs`, median of 3). New per frame: door, scout and compass checks
+(eight districts, numbers only); HUD writes only on change.
+
+| Viewport | CPU | First frame | p95 frame | Max frame | Frames > 33 ms | Tier (3 runs) | Canvas backing store | JS heap |
+|---|---|---|---|---|---|---|---|---|
+| 1366x768 | 1x | 57 ms | 16.8 ms | 16.8 ms | 0 | Medium | 18.3 MB | 4.5 MB |
+| 1366x768 | 4x | 251 ms | 16.8 ms | 66.7 ms | 3 | Medium | 18.3 MB | 4.7 MB |
+| 1920x1080 | 1x | 48 ms | 16.7 ms | 16.8 ms | 0 | Medium | 19.1 MB | 4.9 MB |
+| 1920x1080 | 4x | 275 ms | 33.2 ms | 50.0 ms | 4 | Low / Medium / Medium | 19.1 MB | 4.5 MB |
+
+Within budget (p95 <= 20 ms at 1x; <= 40 ms at 4x after the automatic step-down, which one of the three
+4x runs on the large stage took). First frame rose (the page now carries eight briefings and the HUD) but
+stays far under 1.5 s / 4 s.
+
+**Dossier pages with the city on** (found and fixed this phase): since P35 the city's code imported
+`STIR` from `src/scripts/stir.ts`, and P37 first imported `orderByLens`; Rollup split each shared module
+into its own chunk, so dossier pages of a flag-on build loaded two more files (+295 B gzip). Both are now
+computed at build time in `route.astro` and handed to the page as data. With the city on, dossier pages
+load the same 19 files as with it off (13 949 B against 13 951 B gzip: only `LangSwitch`'s import order
+differs). A new e2e test checks this on every run.
+
+**Sizes** (`pnpm city:budget`): city JS **24 565 B gzip** (P36: 23 000 B; budget 81 920 B), city CSS
+**1 606 B** (P36: 956 B; budget 8 192 B), atlas 0 B, no image or font.
+
 ## 2026-11-03 · P36 · Agent T v1: moving, seeing
 
 Same machine and method (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, `/vi/city/`, Mat, Medium,

@@ -71,6 +71,27 @@ for (const mode of ["mat", "giai-mat"]) {
     await stage.screenshot({ path: m8 });
     shots.push(m8);
   }
+  // P37: the HUD, a briefing (the ledger's own row), and a district left lit after its briefing.
+  await page.goto(`${site}/vi/city/?lens=client`);
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done", null, { timeout: 8000 });
+  const hudShot = join(out, `hud-${mode}.png`);
+  await stage.screenshot({ path: hudShot });
+  shots.push(hudShot);
+  await page.goto(`${site}/vi/city/?lens=client#d-role-prudential`);
+  await page.waitForSelector('dialog[data-brief="role-prudential"][open]');
+  await page.waitForTimeout(300);
+  const brief = join(out, `briefing-${mode}.png`);
+  await page.screenshot({ path: brief });
+  shots.push(brief);
+  if (mode === "mat") {
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    const lit = join(out, "district-lit-mat.png");
+    await page.keyboard.press("-");
+    await page.waitForTimeout(600);
+    await stage.screenshot({ path: lit });
+    shots.push(lit);
+  }
   // The Lite view, drawn from the same plan.
   await page.goto(`${site}/vi/city/?lite`);
   const lite = join(out, `city-lite-${mode}.png`);

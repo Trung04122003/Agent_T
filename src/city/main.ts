@@ -4,7 +4,8 @@
 // them, and the buildings standing in front of him are drawn again over him. In Mat the night engine
 // (night.ts) lays the darkness on top, cut by his lantern (clipped to what it can see, visibility.ts),
 // streetlamps and sign glows; rain falls on the High tier (rain.ts). The camera follows him (camera.ts);
-// + and - change the zoom step. He enters from the alley nearest the plaza (agent.ts).
+// + and - change the zoom step. He enters from the alley nearest the plaza (agent.ts). Districts,
+// the HUD and the briefings are DOM (hud.ts); their states only light the city.
 // Diagnostics: `?burn=<ms>` busy-waits that long every frame (P32.4 check); `?quality=high|medium|low`
 // sets the tier as the HUD's Quality control will (P35.4 check); the dev server shows a frames-per-
 // second counter. The stage's data-* attributes report bake times, the tier, the rain count, the
@@ -26,6 +27,7 @@ import { ALLEYS, assignLots, LAMPS, PLAZA, type CityData, type Rect } from "./pl
 import { createRain, glassWalls } from "./rain";
 import { cityScene } from "./render";
 import { createSigns } from "./signs";
+import { activeLens, createHud, createStates, nextObjective, RANK, type CityText } from "./hud";
 import { insidePolygon } from "./visibility";
 import { walkWorld } from "./walk";
 
@@ -36,7 +38,11 @@ const HY = TILE.h / 2;
 /** His shadow falls away from the city's one light (render.ts LIGHT): to the screen's right. */
 const SHADOW_DIR = { x: 0.999, y: -0.05 } as const;
 
-export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
+/** Close enough to a door for its prompt, in tiles; near enough to a district to have scouted it. */
+const AT_DOOR = 1.3;
+const SCOUT = 6;
+
+export function bootCity(stage: HTMLElement, data: CityData, text: CityText): CityHandle {
   const start = decideTier(readCapabilities(window));
   stage.dataset["tier"] = start;
   // Lite: no canvas world at all; the route shows its static plan instead (shell.ts).
@@ -61,7 +67,7 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   const modeNow = (): Mode => (root.dataset["mode"] === "giai-mat" ? "giai-mat" : "mat");
   let pal = palette(modeNow());
   const layer = createStaticLayer(scene, pal, 1, 1);
-  const signs = createSigns(layout);
+  const signs = createSigns(layout, text.stir);
   type Hit = Occluder & { id: string; depth: number };
   const occluders: Hit[] = [
     ...layout.plots.map((p) => ({ id: p.id, rect: p.rect, h: heightOf(building(p.archetype, p.rect, p.lot)) })),
@@ -87,6 +93,45 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   const alley = [...ALLEYS].sort((a, b) => Math.hypot(a.mouth.x - pcx, a.mouth.y - pcy) - Math.hypot(b.mouth.x - pcx, b.mouth.y - pcy))[0]!;
   const agent = createAgent(world, alley, reduced.matches);
 
+  // Districts (P37): what can be opened, their states, the objective the compass points to.
+  const classified = new Set(layout.vault ? [layout.vault.id] : []);
+  const targets = world.footprints
+    .filter((f) => f.id in text.names)
+    .map((f) => ({ id: f.id, dx: f.door.x + 0.5, dy: f.door.y + 0.5, cx: (f.x0 + f.x1) / 2, cy: (f.y0 + f.y1) / 2, r: (f.x1 - f.x0 + f.y1 - f.y0) / 3 }));
+  const states = createStates(text.order, () => {
+    try {
+      return sessionStorage;
+    } catch {
+      return null;
+    }
+  });
+  const lens = activeLens(location.search, text.lenses);
+  let objective = nextObjective(text, lens, states, classified);
+  const hud = createHud(stage, text, states, (id) => {
+    if (id === "dead-drop") return;
+    // Opened in Giai mat, the summary is what shows: the district is declassified (the Vault never is).
+    const to = !classified.has(id) && modeNow() === "giai-mat" ? "declassified" : "briefed";
+    if (states.raise(id, to)) stateChanged();
+  });
+  /** Lights and signs follow the states: briefed districts glow, declassified ones glow brighter, bars off. */
+  const applyLit = (): void => {
+    const pools: number[] = [];
+    layout.plots.forEach((p, i) => {
+      const st = states.get(p.id);
+      const t = targets.find((x) => x.id === p.id);
+      if (t && RANK[st] >= RANK.briefed) pools.push(t.cx, t.cy, t.r, st === "declassified" ? 1 : 0.55);
+      signs.setClear(i, st === "declassified");
+    });
+    night.setLit(Float64Array.from(pools));
+  };
+  function stateChanged(): void {
+    objective = nextObjective(text, lens, states, classified);
+    hud.refresh(objective);
+    applyLit();
+    dirty = lightDirty = true;
+    loop.poke();
+  }
+
   // The camera starts on him, at the middle zoom step.
   const cam: View = { x: (agent.x - agent.y) * HX, y: (agent.x + agent.y) * HY, zoom: ZOOMS[1], w: 0, h: 0 };
   /** The view the frame is drawn with: the camera's origin rounded to whole device pixels. */
@@ -97,6 +142,7 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   let lightDirty = true;
   let firstComposite = true;
   let presses = 0;
+  let atHand: string | null = null;
 
   // Sizes come from the observer's entry, not from reading the layout.
   const resize = new ResizeObserver(([entry]) => {
@@ -140,6 +186,9 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
   // The dossier's mode switch repaints the city in the other palette (and lifts the night).
   const modeWatch = new MutationObserver(() => {
     pal = palette(modeNow());
+    // Switching to Giai mat with a briefing open shows its summary: that district is declassified.
+    const open = hud.openId;
+    if (open && open !== "dead-drop" && !classified.has(open) && pal.mode === "giai-mat" && states.raise(open, "declassified")) stateChanged();
     layer.setPalette(pal);
     night.setPalette(pal);
     applyTier();
@@ -195,6 +244,12 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
     const cmds = st.commands;
     for (let i = 0; i < cmds.length; i++) {
       const c = cmds[i];
+      // E or Enter at a door opens it; F walks to the next objective (and opens it on arrival).
+      if (c === "interact" && atHand) hud.open(atHand);
+      if (c === "next" && objective && agent.entrance === "done") {
+        const t = targets.find((x) => x.id === objective);
+        if (t) agent.goTo(t.cx, t.cy);
+      }
       const z = ZOOMS.indexOf(cam.zoom as (typeof ZOOMS)[number]);
       const next = c === "zoom-in" ? z + 1 : c === "zoom-out" ? z - 1 : z;
       if (next !== z && ZOOMS[next]) {
@@ -220,6 +275,25 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
     const vx = (held.has("right") ? 1 : 0) - (held.has("left") ? 1 : 0);
     const vy = (held.has("down") ? 1 : 0) - (held.has("up") ? 1 : 0);
     const changed = agent.update(dt, vx, vy, held.has("fast"), pressed);
+    // The door at hand (prompt), districts scouted on the way, the compass.
+    let best = AT_DOOR;
+    let hand: string | null = null;
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i]!;
+      const d = Math.hypot(agent.x - t.dx, agent.y - t.dy);
+      if (agent.entrance === "done" && d < best) {
+        best = d;
+        hand = t.id;
+      }
+      if (t.id !== "dead-drop" && states.get(t.id) === "sealed" && Math.hypot(agent.x - t.cx, agent.y - t.cy) < SCOUT && states.raise(t.id, "scouted")) stateChanged();
+      if (t.id === objective) {
+        const ex = t.dx - agent.x;
+        const ey = t.dy - agent.y;
+        hud.point(Math.atan2((ex + ey) * HY, (ex - ey) * HX));
+      }
+    }
+    atHand = hand;
+    hud.prompt(hand);
     // The camera follows him; reduced motion snaps it.
     if (follow(cam, (agent.x - agent.y) * HX, (agent.x + agent.y) * HY, dt, reduced.matches, scene.bounds)) dirty = lightDirty = true;
     // The lantern: in his hand; where he walks, or at the mouse while he stands (desktop).
@@ -271,12 +345,25 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
     if (agent.entrance !== shownEntrance) stage.dataset["entrance"] = shownEntrance = agent.entrance;
     if (walking !== shownWalking) stage.dataset["walking"] = shownWalking = walking;
     const door = agent.atDoor ?? "";
-    if (door !== shownDoor) stage.dataset["door"] = shownDoor = door;
+    if (door !== shownDoor) {
+      stage.dataset["door"] = shownDoor = door;
+      // Walked to a door (a click or F): open what is behind it.
+      if (door) hud.open(door);
+    }
     if (agent.entrance !== "done" || agent.moving) loop.poke(); // keep full pace while he moves
     fps?.(now);
   });
   const input = createInput(stage, window, () => loop.poke());
   applyTier();
+  applyLit();
+  hud.refresh(objective);
+  // Deep link (UX-v4 section 1): /city/#d-<id> opens that briefing directly.
+  const openFromHash = (): void => {
+    const deep = /^#d-(.+)$/.exec(location.hash)?.[1];
+    if (deep) hud.open(decodeURIComponent(deep));
+  };
+  openFromHash();
+  addEventListener("hashchange", openFromHash);
   resize.observe(stage);
   loop.start();
 
@@ -288,6 +375,8 @@ export function bootCity(stage: HTMLElement, data: CityData): CityHandle {
       modeWatch.disconnect();
       reduced.removeEventListener("change", onReduced);
       layer.dispose();
+      hud.dispose();
+      removeEventListener("hashchange", openFromHash);
     },
     get plan() {
       return plan;

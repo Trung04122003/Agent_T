@@ -30,14 +30,14 @@ describe("signs (35.3)", () => {
   };
 
   it("one per entry building, each with a glow position", () => {
-    const s = createSigns(assignLots(data));
+    const s = createSigns(assignLots(data), STIR);
     expect(s.count).toBe(3);
     expect(s.centres).toHaveLength(6);
     expect([...s.centres].every(Number.isFinite)).toBe(true);
   });
 
   it("stir like the dossier's bars: redrawn every 50 ms for 200 ms, then still", () => {
-    const s = createSigns(assignLots(data));
+    const s = createSigns(assignLots(data), STIR);
     // Nothing before the first pause ends.
     expect(settle(s, 0, 1400, true)).toBe(0);
     // A stir: 4 redraws (0, 50, 100, 150 ms) and one settle back at 200 ms.
@@ -45,7 +45,7 @@ describe("signs (35.3)", () => {
   });
 
   it("frozen with reduced motion (or in Giai mat): never stirs", () => {
-    const s = createSigns(assignLots(data));
+    const s = createSigns(assignLots(data), STIR);
     expect(settle(s, 0, 60_000, false)).toBe(0);
   });
 });

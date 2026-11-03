@@ -14,6 +14,17 @@ import { LOCALES, type Locale } from "../lib/locales";
 import { cityContentMap } from "./content-map";
 import { toScreen } from "./engine/iso";
 import { assignLots, CANAL, GRID, LANDMARK_LOTS, PLAZA, STREETS, type CityData, type Rect } from "./plan";
+import LedgerRow from "../components/LedgerRow.astro";
+import RequestDocs from "../components/RequestDocs.astro";
+import { BUILT, fileNumber } from "../lib/dossier";
+import { codenameFor, getIdentity } from "../lib/identity";
+import { fileCode, publicClaims } from "../lib/ledger";
+import { ledgerLabels } from "../lib/ledger-labels";
+import { getLenses } from "../lib/lenses";
+import { orderByLens, publicWeights } from "../lib/lens";
+import { STIR } from "../scripts/stir";
+import { experienceBalance } from "../lib/stats";
+import type { CityText } from "./hud";
 
 export function getStaticPaths() {
   return LOCALES.map((lang) => ({ params: { lang } }));
@@ -27,7 +38,12 @@ const nameOf = (id: string): string => {
   const c = byId.get(id)!;
   return c.kind === "classified" ? c.label[locale] : ((c.org ?? c.title)?.[locale] ?? id);
 };
-const keys = ["cityTitle", "cityBack", "citySkip", "cityDistricts", "cityOpenInDossier", "cityVault", "cityLite", "cityLiteMap", "cityNoScript", "cityPrint"] as const;
+const keys = [
+  "cityTitle", "cityBack", "citySkip", "cityDistricts", "cityOpenInDossier", "cityVault", "cityLite", "cityLiteMap", "cityNoScript", "cityPrint",
+  "cityNameplate", "cityLog", "cityNext", "cityClose", "cityHint", "cityDropNote", "modeMat", "modeGiaiMat",
+  "cityStateSealed", "cityStateScouted", "cityStateBriefed", "cityStateDeclassified",
+  "cityNear", "cityPrompt", "cityPromptDrop", "cityLight", "cityAllLit", "cityQuietSealed", "cityQuietLit",
+] as const;
 const s = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const))) as Record<(typeof keys)[number], string>;
 // Back to the dossier lands past its gate (any hash skips it) on the page's heading.
 const dossier = `/${locale}/`;
@@ -61,6 +77,42 @@ const lots = [
 ];
 const landmarks = LANDMARK_LOTS.filter((l) => layout.landmarks.some((m) => m.id === l.id));
 const half = GRID * 32;
+
+// Briefings (ROADMAP-v4 37.3): each entry's own ledger row (LedgerRow, shared with the dossier), with
+// the code it has in the ledger. District codenames name the place (its lot), never the entry.
+const labels = await ledgerLabels(locale);
+const ledgerRows = publicClaims(entries);
+const balance = experienceBalance(entries, BUILT);
+const fileNo = fileNumber(codenameFor(await getIdentity(), locale).name, BUILT);
+// ui.json keys are camelCase: lot "signal-room" reads "cityLotSignalRoom".
+const camel = (id: string) => id.replace(/(^|-)([a-z0-9])/g, (_, __, c: string) => c.toUpperCase());
+const lotName = Object.fromEntries(await Promise.all(layout.plots.map(async (p) => [p.id, await t(`cityLot${camel(p.lot)}`, locale)] as const)));
+const briefings = ledgerRows.map((c, i) => ({
+  claim: c,
+  code: fileCode(i),
+  codename: c.kind === "classified" ? s.cityVault : lotName[c.id]!,
+}));
+const hasDrop = layout.landmarks.some((l) => l.id === "dead-drop");
+const dropName = hasDrop ? await t("cityLandmarkDeadDrop", locale) : "";
+// Lenses for the compass (37.4): each lens's order of the ids the city shows, made here with the
+// dossier's own lens logic. Client code of the city never imports a module dossier pages load
+// (a shared module would be split into a chunk those pages then fetch: +0 B rule).
+const shownIds = ledgerRows.map((c) => c.id);
+const text: CityText = {
+  names: Object.fromEntries([...briefings.map((b) => [b.claim.id, b.codename] as const), ...(hasDrop ? [["dead-drop", dropName] as const] : [])]),
+  states: { sealed: s.cityStateSealed, scouted: s.cityStateScouted, briefed: s.cityStateBriefed, declassified: s.cityStateDeclassified },
+  near: s.cityNear,
+  prompt: s.cityPrompt,
+  promptDrop: s.cityPromptDrop,
+  light: s.cityLight,
+  allLit: s.cityAllLit,
+  quietSealed: s.cityQuietSealed,
+  quietLit: s.cityQuietLit,
+  order: shownIds,
+  lenses: Object.fromEntries(getLenses().map((l) => [l.id, orderByLens(shownIds, publicWeights(l, shownIds))])),
+  stir: { ms: STIR.ms, step: STIR.step },
+};
+const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
 ---
 
 <Base locale={locale} title={s.cityTitle} noindex canonical={dossier}>
@@ -74,7 +126,69 @@ const half = GRID * 32;
     <noscript><p class="city__note">{s.cityNoScript}</p></noscript>
 
     {/* The world (JS only, not Lite). Empty until P34. */}
-    <div class="city-stage" role="group" aria-label={s.cityTitle} tabindex="0" data-city-stage></div>
+    <div class="city-stage" role="group" aria-label={s.cityTitle} tabindex="0" data-city-stage>
+      {/* HUD (UX-v4 section 7, ROADMAP-v4 37.4): DOM over the canvas, so it is read and reached. */}
+      <div class="city-hud" data-city-hud>
+        <p class="city-hud__plate">
+          <span>{s.cityNameplate}</span>
+          <span class="city-hud__mode"><span class="only-mat">{s.modeMat}</span><span class="only-giai-mat">{s.modeGiaiMat}</span></span>
+        </p>
+        <p class="city-hud__light" data-hud-light></p>
+        <section class="city-hud__log" aria-labelledby="city-log-title">
+          <h2 id="city-log-title" class="city-hud__label">{s.cityLog}</h2>
+          <ol aria-live="polite" data-hud-log>
+            {
+              briefings.map((b) => (
+                <li data-log={b.claim.id} data-state="sealed">
+                  <span class="city-hud__dot" aria-hidden="true" />
+                  <span>{b.codename}</span>
+                  <span class="city-hud__state" data-log-state>{s.cityStateSealed}</span>
+                </li>
+              ))
+            }
+          </ol>
+        </section>
+        <p class="city-hud__compass" data-hud-compass>
+          <span class="city-hud__arrow" aria-hidden="true" data-hud-arrow></span>
+          <span class="city-hud__label">{s.cityNext}</span>
+          <span data-hud-next></span>
+        </p>
+        <button type="button" class="city-hud__prompt" data-hud-prompt hidden></button>
+        <p class="visually-hidden" aria-live="polite" data-hud-near></p>
+        <p class="city-hud__hint">{s.cityHint}</p>
+      </div>
+    </div>
+
+    {/* Briefings: the entry's ledger row, exactly as the dossier shows it (37.3, 37.5). */}
+    {
+      briefings.map((b) => (
+        <dialog class="city-brief" id={`brief-${b.claim.id}`} data-brief={b.claim.id} aria-labelledby={`brief-${b.claim.id}-title`}>
+          <div class="city-brief__bar">
+            <h2 id={`brief-${b.claim.id}-title`} class="city-brief__title">{b.codename}</h2>
+            <button type="button" class="city-brief__close" data-brief-close>{s.cityClose}</button>
+          </div>
+          <ol class="city-brief__row">
+            <LedgerRow claim={b.claim} code={b.code} locale={locale} labels={labels} showUnverified={import.meta.env.DEV} balance={balance.get(b.claim.id)} open />
+          </ol>
+          <p class="city-brief__foot">
+            <a href={`${dossier}#claim-${b.claim.id}`} data-city-dossier-link>{s.cityOpenInDossier}</a>
+          </p>
+        </dialog>
+      ))
+    }
+    {
+      hasDrop && (
+        <dialog class="city-brief" id="brief-dead-drop" data-brief="dead-drop" aria-labelledby="brief-dead-drop-title">
+          <div class="city-brief__bar">
+            <h2 id="brief-dead-drop-title" class="city-brief__title">{dropName}</h2>
+            <button type="button" class="city-brief__close" data-brief-close>{s.cityClose}</button>
+          </div>
+          <p class="city-brief__note">{s.cityDropNote}</p>
+          {/* The dossier's own request, unchanged: the only thing in the city that touches email. */}
+          <RequestDocs locale={locale} fileRef={fileNo} />
+        </dialog>
+      )
+    }
 
     {/* Lite view: a static plan, each district a link to its entry in the list below. */}
     <figure class="city-lite" data-city-lite>
@@ -100,7 +214,8 @@ const half = GRID * 32;
       </svg>
     </figure>
 
-    <script type="application/json" data-city-data set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />
+    <script type="application/json" data-city-data set:html={json(data)} />
+    <script type="application/json" data-city-text set:html={json(text)} />
 
     <nav class="city__districts" aria-labelledby="city-districts">
       <h2 id="city-districts">{s.cityDistricts}</h2>
@@ -127,7 +242,8 @@ const half = GRID * 32;
   const section = document.querySelector<HTMLElement>("[data-city]");
   const stage = document.querySelector<HTMLElement>("[data-city-stage]");
   const data = document.querySelector("[data-city-data]")?.textContent;
-  if (section && stage && data) showView(section, bootCity(stage, JSON.parse(data)).tier);
+  const text = document.querySelector("[data-city-text]")?.textContent;
+  if (section && stage && data && text) showView(section, bootCity(stage, JSON.parse(data), JSON.parse(text)).tier);
 </script>
 
 <style>
@@ -273,6 +389,164 @@ const half = GRID * 32;
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     color: var(--accent);
+  }
+  /* HUD (UX-v4 section 7): solid panels over the canvas, corners of the stage, no backdrop-filter. */
+  .city-hud {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--city-hud-ink);
+  }
+  .city-hud > * {
+    position: absolute;
+    margin: 0;
+    padding: 6px 10px;
+    background: var(--city-hud-bg);
+    border: 1px solid var(--city-hud-line);
+  }
+  .city-hud__plate {
+    inset-block-start: 10px;
+    inset-inline-start: 10px;
+    display: flex;
+    gap: var(--space);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .city-hud__mode {
+    color: var(--city-hud-accent);
+  }
+  .city-hud__light {
+    inset-block-start: 10px;
+    inset-inline-end: 10px;
+  }
+  .city-hud__hint {
+    inset-block-start: 46px;
+    inset-inline-end: 10px;
+    color: var(--city-hud-muted);
+  }
+  .city-hud__log {
+    inset-block-end: 10px;
+    inset-inline-start: 10px;
+    max-width: min(46%, 300px);
+  }
+  .city-hud__label {
+    margin: 0 0 4px;
+    font: inherit;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--city-hud-muted);
+  }
+  .city-hud__log ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .city-hud__log li {
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+  }
+  .city-hud__dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--city-hud-accent);
+  }
+  .city-hud__log li[data-state="scouted"] .city-hud__dot {
+    background: linear-gradient(90deg, var(--city-hud-accent) 50%, transparent 50%);
+  }
+  .city-hud__log li[data-state="briefed"] .city-hud__dot,
+  .city-hud__log li[data-state="declassified"] .city-hud__dot {
+    background: var(--city-hud-accent);
+  }
+  .city-hud__log li[data-state="declassified"] .city-hud__dot {
+    border-radius: 50%;
+  }
+  .city-hud__state {
+    color: var(--city-hud-muted);
+  }
+  .city-hud__compass {
+    inset-block-end: 10px;
+    inset-inline-end: 10px;
+    display: flex;
+    gap: var(--space);
+    align-items: center;
+  }
+  .city-hud__compass .city-hud__label {
+    margin: 0;
+  }
+  .city-hud__arrow {
+    width: 0;
+    height: 0;
+    border-block: 5px solid transparent;
+    border-inline-start: 10px solid var(--city-hud-accent);
+  }
+  .city-hud__prompt {
+    inset-block-end: 56px;
+    inset-inline-start: 50%;
+    translate: -50% 0;
+    min-height: var(--target);
+    font: inherit;
+    color: var(--city-hud-ink);
+    cursor: pointer;
+    pointer-events: auto;
+    border-color: var(--city-hud-accent);
+  }
+  .city-hud__prompt[hidden] {
+    display: none;
+  }
+  /* Briefings: native modal dialogs (focus kept inside, Esc closes). */
+  .city-brief {
+    width: min(92vw, 960px);
+    max-height: 86vh;
+    padding: calc(var(--space) * 2) calc(var(--space) * 3);
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--city-hud-accent);
+  }
+  .city-brief::backdrop {
+    background: color-mix(in srgb, var(--city-night) 72%, transparent);
+  }
+  .city-brief__bar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space);
+  }
+  .city-brief__title {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--city-hud-accent);
+  }
+  .city-brief__close {
+    min-height: var(--target);
+    padding: 0 calc(var(--space) * 1.5);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink);
+    background: none;
+    border: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .city-brief__row {
+    margin: var(--space) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--accent);
+  }
+  .city-brief__foot a {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--accent);
+  }
+  .city-brief__note {
+    max-width: var(--measure);
   }
   .city__print {
     display: none;
