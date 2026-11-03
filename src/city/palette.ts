@@ -53,6 +53,13 @@ export type Palette = {
   agent: { coat: string; rim: string; brass: string; visor: string; glow: string; shadow: string };
   /** His shadow's length: ground px per px of height (long in Mat, short in Giai mat). */
   shadowLength: number;
+  /** Buildings' cast shadows (P38): colour, and length per unit of height (long at night, short at dawn). */
+  cast: { color: string; length: number };
+  /** Dawn only (P38): the low sun's warm wash, glass sheen, the veil over sealed and scouted districts, the gold of declassified ones. */
+  sun: number;
+  sheen: number;
+  veil: { sealed: number; scouted: number; color: string };
+  gold: string;
 };
 
 export function palette(mode: Mode): Palette {
@@ -82,6 +89,12 @@ export function palette(mode: Mode): Palette {
       rain: alpha(t.inkMuted, 0.32),
       agent: { coat: mix(t.bg, t.surface, 0.4), rim: alpha(t.accent, 0.75), brass: t.accent, visor: t.accent, glow: mix(t.ink, t.accent, 0.15), shadow: alpha(t.bg, 0.7) },
       shadowLength: 1.6,
+      // Night: long shadows (UX-v4 section 4); district states show as light (night.ts), not veils.
+      cast: { color: alpha(t.bg, 0.5), length: 1 },
+      sun: 0,
+      sheen: 0,
+      veil: { sealed: 0, scouted: 0, color: t.bg },
+      gold: alpha(t.accent, 0),
     };
   }
   // Dawn: warm paper, ink outlines, gold trim.
@@ -109,5 +122,12 @@ export function palette(mode: Mode): Palette {
     rain: alpha(t.inkMuted, 0),
     agent: { coat: t.ink, rim: alpha(t.inkMuted, 0.6), brass: t.accent, visor: t.accent, glow: mix(t.accent, t.surface, 0.5), shadow: alpha(t.ink, 0.16) },
     shadowLength: 0.55,
+    // Dawn: short soft shadows, a low warm sun, glass that catches it; a paper veil over what is
+    // still sealed, gold on what is declassified.
+    cast: { color: alpha(t.ink, 0.06), length: 0.4 },
+    sun: 0.2,
+    sheen: 0.45,
+    veil: { sealed: 0.35, scouted: 0.18, color: t.bg },
+    gold: alpha(t.accent, 0.16),
   };
 }

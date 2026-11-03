@@ -3,6 +3,39 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-03 · P38 · Day engine (the Giai mat look)
+
+Same method (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Medium, walking 6 s after the entrance;
+`node tools/perf/city-frames.mjs`, `CITY_MODE=giai-mat` for dawn; median of 3).
+
+| Mode | Viewport | CPU | First frame | p95 frame | Max frame | Frames > 33 ms | Tier (3 runs) | Bake per chunk (avg / max) |
+|---|---|---|---|---|---|---|---|---|
+| Mat | 1366x768 | 1x | 53 ms | 16.7 ms | 16.8 ms | 0 | Medium | 2.6 / 7.1 ms |
+| Mat | 1366x768 | 4x | 273 ms | 16.8 ms | 50.0 ms | 4 | Medium | 10.8 / 30.5 ms |
+| Mat | 1920x1080 | 1x | 61 ms | 16.8 ms | 16.8 ms | 0 | Medium | 2.7 / 7.1 ms |
+| Mat | 1920x1080 | 4x | 232 ms | 33.3 ms | 83.3 ms | 7 | Low (all 3) | 11.7 / 32.0 ms |
+| Giai mat | 1366x768 | 1x | 44 ms | 16.7 ms | 16.8 ms | 0 | Medium | 3.3 / 7.7 ms |
+| Giai mat | 1366x768 | 4x | 197 ms | 16.8 ms | 66.7 ms | 4 | Medium | 12.1 / 30.2 ms |
+| Giai mat | 1920x1080 | 1x | 59 ms | 16.7 ms | 16.8 ms | 0 | Medium | 2.6 / 9.4 ms |
+| Giai mat | 1920x1080 | 4x | 221 ms | 16.8 ms | 83.4 ms | 3 | Medium | 8.9 / 32.3 ms |
+
+All within budget (p95 <= 20 ms at 1x; <= 40 ms at 4x after the step-down). A repeat of the Mat run gave
+1366x768 4x p95 33.3 ms (Medium) and 1920x1080 4x p95 33.3 ms (Medium, Medium, Low): at 4x the frame
+sits right at the 16.7 ms vsync step, so the p95 lands on 16.8 or 33.3 ms from one run to the next. 1x is
+16.7-16.8 ms in every run. Bakes cost more than in P37 (cast shadows, sheen and veils are baked in), still
+a fraction of a frame at 1x.
+
+**Found and fixed during the phase:** the first version rebaked every chunk in one frame whenever a
+district changed state (scouting happens while walking): at 4x that cost frames up to 150 ms and a step-down
+to Low in every run. Now only dawn rebakes (night bakes nothing that depends on states), a few chunks a
+frame, each old chunk shown until its replacement is ready.
+
+**Allocation** (`node tools/perf/city-alloc.mjs`): mouse still 2 scavenges in 5 s (P37: 0), heap
+2.89 -> 3.12 MB (+0.23 MB, P37: +0.7 MB); mouse moving 14 (P37: 12); Lite baseline 0.
+
+**Sizes** (`pnpm city:budget`): city JS **26 027 B gzip** (P37: 24 565 B; budget 81 920 B), city CSS
+**1 606 B**, atlas 0 B, no image or font.
+
 ## 2026-11-03 · P37 · Districts, missions, briefings
 
 Same method as P36 (`PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Mat, Medium, walking 6 s after the

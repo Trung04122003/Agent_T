@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dropHeld, publicClaims } from "../lib/ledger";
 import { orderByLens, publicWeights } from "../lib/lens";
@@ -76,5 +76,15 @@ describe("compass (37.4)", () => {
     expect(next).toBe(order[0]);
     for (const id of order) if (!classified.has(id)) s.raise(id, "declassified");
     expect(nextObjective(text, null, s, classified)).toBeNull();
+  });
+});
+
+describe("mode (38.2)", () => {
+  it("the city keeps no mode of its own: it never writes the saved mode, mode.ts does", () => {
+    const files = readdirSync("src/city").filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+    for (const f of files) {
+      const src = readFileSync(`src/city/${f}`, "utf8");
+      expect(src, f).not.toMatch(/MODE_KEY|setItem\(\s*["']mode["']|dataset\[?["']?mode["']?\]?\s*=[^=]/);
+    }
   });
 });

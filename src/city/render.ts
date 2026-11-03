@@ -25,7 +25,10 @@ export type Box = { x0: number; y0: number; x1: number; y1: number };
  * depth (x + y of its footprint's centre; the ground is -Infinity) so moving things can be put
  * behind what stands in front of them.
  */
-export type Item = { box: Box; depth: number; draw: (ctx: CanvasRenderingContext2D, p: Palette, lw: number) => void };
+/** `bare`: without its cast shadow (drawn again over a moving figure, the shadow stays under him). */
+export type Item = { box: Box; depth: number; draw: (ctx: CanvasRenderingContext2D, p: Palette, lw: number, rank?: Rank, bare?: boolean) => void };
+/** A district's state rank (0 sealed .. 3 declassified, hud.ts), or -1 if the id is not a district. */
+export type Rank = (id: string) => number;
 export type Scene = { items: Item[]; bounds: Box };
 
 type Face = { pts: World[]; n: Vec };
@@ -80,6 +83,96 @@ function faces(s: Solid): Face[] {
       break;
   }
   return out;
+}
+
+/** Where the top of a unit of height falls on the ground, away from the light (world units). */
+const SUN = { x: -LIGHT[0] / LIGHT[2], y: -LIGHT[1] / LIGHT[2] } as const;
+
+/** Convex hull of screen points (x, y pairs), as a closed path's points. */
+function convexHull(pts: [number, number][]): [number, number][] {
+  const s = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list: [number, number][]) => {
+    const out: [number, number][] = [];
+    for (const p of list) {
+      while (out.length >= 2 && cross(out.at(-2)!, out.at(-1)!, p) <= 0) out.pop();
+      out.push(p);
+    }
+    return out.slice(0, -1);
+  };
+  return [...half(s), ...half(s.reverse())];
+}
+/** A solid's ground footprint (world), for its cast shadow and silhouette. */
+function footprintOf(s: Solid): { x0: number; y0: number; x1: number; y1: number; z: number; h: number } | null {
+  switch (s.type) {
+    case "box":
+    case "gable":
+      return { x0: s.x, y0: s.y, x1: s.x + s.w, y1: s.y + s.d, z: s.z, h: s.h };
+    case "frustum": {
+      const r = Math.max(s.r0, s.r1);
+      return { x0: s.cx - r, y0: s.cy - r, x1: s.cx + r, y1: s.cy + r, z: s.z, h: s.h };
+    }
+    case "mast":
+      return null;
+  }
+}
+/** The shadow a solid casts on the ground (screen points): its footprint swept away from the light. */
+function shadowOf(s: Solid, length: number): [number, number][] | null {
+  const f = footprintOf(s);
+  if (!f) return null;
+  const top = (f.z + f.h) * length;
+  const pts: [number, number][] = [];
+  for (const [x, y] of [[f.x0, f.y0], [f.x1, f.y0], [f.x1, f.y1], [f.x0, f.y1]] as const) {
+    for (const d of [0, top]) {
+      const q = toScreen({ x: x + SUN.x * d, y: y + SUN.y * d });
+      pts.push([q.sx, q.sy]);
+    }
+  }
+  return convexHull(pts);
+}
+function poly(ctx: CanvasRenderingContext2D, pts: readonly [number, number][]): void {
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+}
+
+/**
+ * A building's screen silhouette (zoom 1): one convex hull per solid, to be filled as one path (a hull
+ * of the whole building would cover the sky beside a setback). Dawn veils, night window glow.
+ */
+export function silhouette(solids: readonly Solid[]): [number, number][][] {
+  return solids.flatMap((s) => {
+    const f = footprintOf(s);
+    if (!f) return [];
+    const pts = [f.z, f.z + f.h].flatMap((z) =>
+      ([[f.x0, f.y0], [f.x1, f.y0], [f.x1, f.y1], [f.x0, f.y1]] as const).map(([x, y]): [number, number] => {
+        const q = toScreen({ x, y, z });
+        return [q.sx, q.sy];
+      }),
+    );
+    return [convexHull(pts)];
+  });
+}
+
+/** A diagonal sheen, made once (browser only), stretched over glass walls at dawn. */
+let sheenSprite: HTMLCanvasElement | null = null;
+function sheen(): HTMLCanvasElement {
+  if (sheenSprite) return sheenSprite;
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const g = c.getContext("2d")!;
+  const lin = g.createLinearGradient(0, 64, 64, 0);
+  lin.addColorStop(0, "rgba(255,255,255,0)");
+  lin.addColorStop(0.42, "rgba(255,255,255,0)");
+  lin.addColorStop(0.5, "rgba(255,255,255,0.9)");
+  lin.addColorStop(0.6, "rgba(255,255,255,0.15)");
+  lin.addColorStop(0.68, "rgba(255,255,255,0.6)");
+  lin.addColorStop(0.74, "rgba(255,255,255,0)");
+  lin.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = lin;
+  g.fillRect(0, 0, 64, 64);
+  sheenSprite = c;
+  return c;
 }
 
 /** How lit a face is: never fully black, so the shapes stay readable in the dark. */
@@ -159,6 +252,20 @@ function drawSolid(ctx: CanvasRenderingContext2D, s: Solid, p: Palette, lw: numb
     ctx.fill();
     // A wall's first two points are its bottom edge (faces() lists them so).
     if (s.type === "box" && s.windows && f.n[2] === 0 && s.h >= 0.8) windows(ctx, p, lw, f.pts[0]!, f.pts[1]!, s.z, s.h, s.tone);
+    // Dawn: the low sun glances off glass walls (a pre-made gradient, stretched onto the wall).
+    if (s.tone === "glass" && p.sheen > 0 && f.n[2] === 0 && f.pts.length === 4) {
+      const a = toScreen(f.pts[0]!);
+      const b = toScreen(f.pts[1]!);
+      const d = toScreen(f.pts[3]!);
+      ctx.save();
+      path(ctx, f.pts);
+      ctx.clip();
+      ctx.globalAlpha = p.sheen * (f.n[1] > 0 ? 1 : 0.55);
+      ctx.transform((b.sx - a.sx) / 64, (b.sy - a.sy) / 64, (d.sx - a.sx) / 64, (d.sy - a.sy) / 64, a.sx, a.sy);
+      ctx.drawImage(sheen(), 0, 0);
+      ctx.restore();
+      path(ctx, f.pts);
+    }
     if (f.n[2] > 0.99) {
       // Rim light along the top edges.
       ctx.strokeStyle = p.edge;
@@ -197,11 +304,59 @@ const corners = (r: Rect, z0 = 0, z1 = 0): World[] =>
   ]);
 
 /** A building as one item: solids by height, then nearer first within the same height. */
-function buildingItem(solids: Solid[], lot: Rect): Item {
+function buildingItem(solids: Solid[], lot: Rect, district?: string): Item {
   const top = Math.max(...solids.map((s) => s.z + s.h));
   const ordered = [...solids].sort((a, b) => a.z - b.z || centre(a) - centre(b));
-  return { box: boxOf(corners(lot, 0, top)), depth: lot.x + lot.w / 2 + lot.y + lot.d / 2, draw: (ctx, p, lw) => ordered.forEach((s) => drawSolid(ctx, s, p, lw)) };
+  const box = boxOf(corners(lot, 0, top));
+  // Room for the longest cast shadow (Mat), which falls to the screen's right.
+  box.x1 += (SUN.x - SUN.y) * HXR * top * 1.15;
+  // The silhouette, for the dawn veil and gold over a district (38.3).
+  const outline = district ? silhouette(solids) : null;
+  // Shadow outlines per length, made on first use (two lengths per palette).
+  const cache = new Map<number, [number, number][][]>();
+  const shadows = (length: number) => {
+    let list = cache.get(length);
+    if (!list) cache.set(length, (list = solids.map((s) => shadowOf(s, length)).filter((x): x is [number, number][] => x !== null)));
+    return list;
+  };
+  return {
+    box,
+    depth: lot.x + lot.w / 2 + lot.y + lot.d / 2,
+    draw(ctx, p, lw, rank, bare) {
+      // Cast shadows first, soft-edged: a slightly longer pale one under the true one.
+      if (p.cast.length > 0 && !bare) {
+        ctx.fillStyle = p.cast.color;
+        for (const sh of shadows(p.cast.length * 1.12)) {
+          poly(ctx, sh);
+          ctx.fill();
+        }
+        for (const sh of shadows(p.cast.length)) {
+          poly(ctx, sh);
+          ctx.fill();
+        }
+      }
+      ordered.forEach((s) => drawSolid(ctx, s, p, lw));
+      if (!outline || !rank) return;
+      const r = rank(district!);
+      if (r < 0) return;
+      // Dawn (38.3): still sealed reads faded behind paper; declassified catches gold.
+      const veil = r === 0 ? p.veil.sealed : r === 1 ? p.veil.scouted : 0;
+      if (veil <= 0 && r !== 3) return;
+      ctx.beginPath();
+      for (const h of outline) h.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      if (veil > 0) {
+        ctx.globalAlpha = veil;
+        ctx.fillStyle = p.veil.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = p.gold;
+        ctx.fill();
+      }
+    },
+  };
 }
+const HXR = 32; // half a tile on screen, as in iso.ts (TILE.w / 2)
 function centre(s: Solid): number {
   switch (s.type) {
     case "box":
@@ -287,9 +442,9 @@ export function cityScene(layout: CityLayout): Scene {
       ctx.fill();
     },
   };
-  type Placed = { solids: Solid[]; lot: Rect };
+  type Placed = { solids: Solid[]; lot: Rect; district?: string };
   const placed: Placed[] = [
-    ...layout.plots.map((pl) => ({ solids: building(pl.archetype, pl.rect, pl.lot), lot: pl.rect })),
+    ...layout.plots.map((pl) => ({ solids: building(pl.archetype, pl.rect, pl.lot), lot: pl.rect, district: pl.id })),
     ...layout.landmarks.map((l) => ({ solids: building(l.archetype, l.rect, l.id), lot: l.rect })),
     ...(layout.vault ? [{ solids: building("vault-monolith", layout.vault.rect, "vault"), lot: layout.vault.rect }] : []),
     // The Atlas table's site at the plaza's heart (the table itself is P40): a low brass dais.
@@ -298,7 +453,7 @@ export function cityScene(layout: CityLayout): Scene {
     ...LAMPS.map((l): Placed => ({ solids: [{ type: "mast", x: l.x, y: l.y, z: 0, h: 1.6, lit: true }], lot: { x: l.x - 0.1, y: l.y - 0.1, w: 0.2, d: 0.2 } })),
   ];
   const ordered = placed.sort((a, b) => a.lot.x + a.lot.w / 2 + a.lot.y + a.lot.d / 2 - (b.lot.x + b.lot.w / 2 + b.lot.y + b.lot.d / 2));
-  const items = [ground, ...ordered.map((b) => buildingItem(b.solids, b.lot))];
+  const items = [ground, ...ordered.map((b) => buildingItem(b.solids, b.lot, b.district))];
   const bounds = items.reduce((u, i) => ({ x0: Math.min(u.x0, i.box.x0), y0: Math.min(u.y0, i.box.y0), x1: Math.max(u.x1, i.box.x1), y1: Math.max(u.y1, i.box.y1) }), {
     x0: Infinity,
     y0: Infinity,
@@ -331,11 +486,11 @@ function alleyProps(tiles: readonly Tile[]): Solid[] {
 }
 
 /** Draws the items overlapping `view` (zoom-1 screen box). */
-export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, p: Palette, view: Box, lw: number): number {
+export function drawScene(ctx: CanvasRenderingContext2D, scene: Scene, p: Palette, view: Box, lw: number, rank?: Rank): number {
   let n = 0;
   for (const it of scene.items) {
     if (it.box.x1 < view.x0 || it.box.x0 > view.x1 || it.box.y1 < view.y0 || it.box.y0 > view.y1) continue;
-    it.draw(ctx, p, lw);
+    it.draw(ctx, p, lw, rank);
     n++;
   }
   return n;

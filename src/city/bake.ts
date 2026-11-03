@@ -4,7 +4,7 @@
 // missing chunks (the first frame bakes all it needs), so panning never stalls on a burst of bakes.
 import { ChunkCache, LAYERS } from "./engine/layers";
 import type { Palette } from "./palette";
-import { drawScene, type Scene } from "./render";
+import { drawScene, type Rank, type Scene } from "./render";
 
 /** The three zoom steps (UX-v4 section 3): far shows the whole city, close a block. */
 export const ZOOMS = [0.32, 0.6, 1] as const;
@@ -18,6 +18,11 @@ export type StaticLayer = {
   /** Copies the chunks in view onto `ctx` (device pixels); returns how many are still missing. */
   composite(ctx: CanvasRenderingContext2D, view: View, budget: number): number;
   setPalette(p: Palette): void;
+  /**
+   * District states changed (P38: dawn veils are baked): chunks are baked again, a few per frame,
+   * the older ones shown until their replacement is ready (no hole, no long frame).
+   */
+  setRank(rank: Rank): void;
   resize(dpr: number, chunks: number): void;
   readonly stats: BakeStats;
   dispose(): void;
@@ -27,6 +32,10 @@ export function createStaticLayer(scene: Scene, p0: Palette, dpr0: number, chunk
   const S = LAYERS.chunk;
   let pal = p0;
   let dpr = dpr0;
+  let rank: Rank | undefined;
+  // Version of the district states baked in; `oldest`: the oldest still in the cache (after a clear).
+  let ver = 0;
+  let oldest = 0;
   const stats: BakeStats = { baked: 0, ms: 0, maxMs: 0 };
   const bake = (key: string): Chunk => {
     const t0 = performance.now();
@@ -37,7 +46,7 @@ export function createStaticLayer(scene: Scene, p0: Palette, dpr0: number, chunk
     const ctx = canvas.getContext("2d")!;
     ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -cx * S * dpr, -cy * S * dpr);
     ctx.lineJoin = "round";
-    drawScene(ctx, scene, pal, { x0: (cx * S) / zoom, y0: (cy * S) / zoom, x1: ((cx + 1) * S) / zoom, y1: ((cy + 1) * S) / zoom }, 1 / zoom);
+    drawScene(ctx, scene, pal, { x0: (cx * S) / zoom, y0: (cy * S) / zoom, x1: ((cx + 1) * S) / zoom, y1: ((cy + 1) * S) / zoom }, 1 / zoom, rank);
     const ms = performance.now() - t0;
     stats.baked++;
     stats.ms += ms;
@@ -61,10 +70,18 @@ export function createStaticLayer(scene: Scene, p0: Palette, dpr0: number, chunk
       let missing = 0;
       for (let cy = Math.floor(oy / S); cy * S < oy + v.h; cy++) {
         for (let cx = Math.floor(ox / S); cx * S < ox + v.w; cx++) {
-          const key = `${pal.mode}:${zi}:${cx}:${cy}`;
+          const key = `${pal.mode}:${zi}:${cx}:${cy}:${ver}`;
           if (!cache.has(key)) {
             if (budget <= 0) {
               missing++;
+              // Show an earlier bake of this chunk meanwhile, if there is one.
+              for (let v2 = ver - 1; v2 >= oldest; v2--) {
+                const old = `${pal.mode}:${zi}:${cx}:${cy}:${v2}`;
+                if (cache.has(old)) {
+                  ctx.drawImage(cache.get(old).canvas, Math.round((cx * S - ox) * dpr), Math.round((cy * S - oy) * dpr));
+                  break;
+                }
+              }
               continue;
             }
             budget--;
@@ -78,10 +95,16 @@ export function createStaticLayer(scene: Scene, p0: Palette, dpr0: number, chunk
       if (p.mode === pal.mode) return;
       pal = p;
       cache.clear();
+      oldest = ver;
+    },
+    setRank(r) {
+      rank = r;
+      ver++;
     },
     resize(d, chunks) {
       dpr = d;
       cache.clear();
+      oldest = ver;
       cache = new ChunkCache<Chunk>(chunks, bake, free);
     },
     get stats() {
@@ -89,6 +112,7 @@ export function createStaticLayer(scene: Scene, p0: Palette, dpr0: number, chunk
     },
     dispose() {
       cache.clear();
+      oldest = ver;
     },
   };
 }

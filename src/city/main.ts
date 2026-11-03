@@ -25,9 +25,10 @@ import { createNight, hullOf, type Lantern, type NightView, type Occluder } from
 import { palette, type Mode } from "./palette";
 import { ALLEYS, assignLots, LAMPS, PLAZA, type CityData, type Rect } from "./plan";
 import { createRain, glassWalls } from "./rain";
-import { cityScene } from "./render";
+import { cityScene, silhouette } from "./render";
 import { createSigns } from "./signs";
 import { activeLens, createHud, createStates, nextObjective, RANK, type CityText } from "./hud";
+import { switchMode } from "../scripts/declassify";
 import { insidePolygon } from "./visibility";
 import { walkWorld } from "./walk";
 
@@ -67,7 +68,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   const modeNow = (): Mode => (root.dataset["mode"] === "giai-mat" ? "giai-mat" : "mat");
   let pal = palette(modeNow());
   const layer = createStaticLayer(scene, pal, 1, 1);
-  const signs = createSigns(layout, text.stir);
+  const signs = createSigns(layout, text.stir, layout.plots.map((p) => text.names[p.id] ?? ""));
   type Hit = Occluder & { id: string; depth: number };
   const occluders: Hit[] = [
     ...layout.plots.map((p) => ({ id: p.id, rect: p.rect, h: heightOf(building(p.archetype, p.rect, p.lot)) })),
@@ -113,21 +114,41 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     const to = !classified.has(id) && modeNow() === "giai-mat" ? "declassified" : "briefed";
     if (states.raise(id, to)) stateChanged();
   });
-  /** Lights and signs follow the states: briefed districts glow, declassified ones glow brighter, bars off. */
+  /** A district's state rank for the baked dawn veils (-1: not a district). */
+  const plotIds = new Set(layout.plots.map((p) => p.id));
+  // Each district building's silhouette, for its windows' glow at night.
+  const shapes = new Map(layout.plots.map((p) => [p.id, silhouette(building(p.archetype, p.rect, p.lot)).map((h) => Float64Array.from(h.flat()))]));
+  const rank = (id: string): number => (plotIds.has(id) ? RANK[states.get(id)] : -1);
+  /**
+   * Lights and signs follow the states, in both modes (38.3). Night: briefed districts glow,
+   * declassified ones glow brighter and their bars are off. Dawn: signs read clearly once briefed;
+   * the veils and gold are baked into the static layer.
+   */
   const applyLit = (): void => {
     const pools: number[] = [];
+    const day = modeNow() === "giai-mat";
     layout.plots.forEach((p, i) => {
       const st = states.get(p.id);
       const t = targets.find((x) => x.id === p.id);
-      if (t && RANK[st] >= RANK.briefed) pools.push(t.cx, t.cy, t.r, st === "declassified" ? 1 : 0.55);
-      signs.setClear(i, st === "declassified");
+      // Night: a briefed district's windows glow; a declassified one is fully lit, its pool wider.
+      if (t && RANK[st] >= RANK.briefed) pools.push(t.cx, t.cy, t.r * (st === "declassified" ? 1.7 : 1.3), st === "declassified" ? 1 : 0.7);
+      signs.setClear(i, day ? RANK[st] >= RANK.briefed : st === "declassified");
     });
     night.setLit(Float64Array.from(pools));
+    night.setLitBuildings(
+      layout.plots
+        .filter((p) => RANK[states.get(p.id)] >= RANK.scouted)
+        // Scouted: a faint rim of light (UX-v4 section 4); briefed: windows on; declassified: fully lit.
+        .map((p) => ({ shape: shapes.get(p.id)!, strength: [0, 0.18, 0.45, 0.85][RANK[states.get(p.id)]]! })),
+    );
   };
   function stateChanged(): void {
     objective = nextObjective(text, lens, states, classified);
     hud.refresh(objective);
     applyLit();
+    // Dawn bakes the veils into the static layer: rebake, a few chunks a frame. Night bakes none of
+    // it (the light shows the states), and switching to dawn rebakes everything anyway.
+    if (pal.mode === "giai-mat") layer.setRank(rank);
     dirty = lightDirty = true;
     loop.poke();
   }
@@ -192,6 +213,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     layer.setPalette(pal);
     night.setPalette(pal);
     applyTier();
+    applyLit();
+    firstComposite = true;
     dirty = lightDirty = true;
     loop.poke();
   });
@@ -231,7 +254,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
       ctx.beginPath();
       ctx.rect(sx - half, sy - top, 2 * half, top + 4);
       ctx.clip();
-      it.draw(ctx, pal, 1 / shown.zoom);
+      it.draw(ctx, pal, 1 / shown.zoom, rank, true);
       ctx.restore();
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -244,6 +267,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     const cmds = st.commands;
     for (let i = 0; i < cmds.length; i++) {
       const c = cmds[i];
+      // M: the dossier's own mode switch (mode.ts is the one source of truth, 38.2).
+      if (c === "mode") switchMode(modeNow() === "mat" ? "giai-mat" : "mat", stage);
       // E or Enter at a door opens it; F walks to the next objective (and opens it on arrival).
       if (c === "interact" && atHand) hud.open(atHand);
       if (c === "next" && objective && agent.entrance === "done") {
@@ -355,6 +380,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   });
   const input = createInput(stage, window, () => loop.poke());
   applyTier();
+  layer.setRank(rank);
   applyLit();
   hud.refresh(objective);
   // Deep link (UX-v4 section 1): /city/#d-<id> opens that briefing directly.

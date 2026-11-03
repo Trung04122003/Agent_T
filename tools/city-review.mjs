@@ -1,16 +1,16 @@
 // Owner-review screenshots of Agent T City (ROADMAP-v4 rule 9): fixed camera, both modes, into
 // docs/city/review/<phase>/. Run against a flag-on build in preview, and optionally the dev server
 // for the dev-only city sheet:
-//   node tools/city-review.mjs <phase> <preview-url> [dev-url]
+//   node tools/city-review.mjs <phase> <preview-url> [dev-url] [district-id]
 // e.g. node tools/city-review.mjs P34 http://localhost:4324 http://localhost:4325
 // Browsers come from drive F (same path as scripts/playwright.mjs).
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 process.env["PLAYWRIGHT_BROWSERS_PATH"] ??= join("F:", "\\", "Dev", "Data", "playwright");
 const { chromium } = await import("@playwright/test");
 
-const [phase, site, dev] = process.argv.slice(2);
+const [phase, site, dev, district = "role-prudential"] = process.argv.slice(2);
 if (!phase || !site) {
   console.error("usage: node tools/city-review.mjs <phase> <preview-url> [dev-url]");
   process.exit(1);
@@ -98,6 +98,45 @@ for (const mode of ["mat", "giai-mat"]) {
   await page.locator("[data-city-lite]").screenshot({ path: lite });
   shots.push(lite);
   await context.close();
+}
+// P38: one district in its four states, night and dawn (still frames), and night beside dawn.
+{
+  const states = ["sealed", "scouted", "briefed", "declassified"];
+  const cells = [];
+  for (const mode of ["mat", "giai-mat"]) {
+    for (const state of states) {
+      const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      await context.addInitScript(([m, s]) => {
+        localStorage.setItem("mode", m);
+        localStorage.setItem("cursorFx", "system");
+        sessionStorage.setItem("city:districts", s);
+      }, [mode, JSON.stringify({ [district]: state })]);
+      const page = await context.newPage();
+      await page.goto(`${site}/vi/city/?quality=medium`);
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      const stage = page.locator("[data-city-stage]");
+      await stage.focus();
+      await page.keyboard.press("+");
+      await page.waitForTimeout(500);
+      cells.push({ label: `${mode} · ${state}`, src: `data:image/png;base64,${(await stage.screenshot()).toString("base64")}` });
+      await context.close();
+    }
+  }
+  const page = await browser.newPage({ viewport: { width: 1640, height: 800 }, deviceScaleFactor: 1 });
+  const grid = (list, cols, w) =>
+    `<body style="margin:0;background:#888;font:14px monospace"><div style="display:grid;grid-template-columns:repeat(${cols},${w}px);gap:6px;padding:6px">${list
+      .map((c) => `<figure style="margin:0"><img src="${c.src}" style="width:${w}px;display:block"><figcaption style="padding:2px 4px;background:#fff">${c.label}</figcaption></figure>`)
+      .join("")}</div></body>`;
+  await page.setContent(grid(cells, 4, 400));
+  const statesFile = join(out, "district-states.png");
+  await page.locator("div").first().screenshot({ path: statesFile });
+  shots.push(statesFile);
+  const read = (f) => `data:image/png;base64,${readFileSync(join(out, f)).toString("base64")}`;
+  await page.setContent(grid([{ label: "Mat (night)", src: read("city-plaza-mat.png") }, { label: "Giai mat (dawn)", src: read("city-plaza-giai-mat.png") }], 2, 700));
+  const sideFile = join(out, "night-dawn.png");
+  await page.locator("div").first().screenshot({ path: sideFile });
+  shots.push(sideFile);
+  await page.close();
 }
 if (dev) {
   const page = await browser.newPage({ viewport: { width: 1640, height: 900 }, deviceScaleFactor: 1 });

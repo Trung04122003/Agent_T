@@ -13,6 +13,8 @@ const { chromium } = await import("@playwright/test");
 const base = process.argv[2] ?? "http://localhost:4324";
 /** Extra query, e.g. "?quality=high" to measure the High tier (rain) on purpose. */
 const query = process.argv[3] ?? "";
+/** CITY_MODE=giai-mat measures the dawn look (default: Mat). */
+const MODE = process.env["CITY_MODE"] ?? "mat";
 const RUNS = 3;
 const viewports = [
   [1366, 768],
@@ -25,8 +27,8 @@ async function run(browser, [w, h], rate) {
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate });
-  await page.addInitScript(() => {
-    localStorage.setItem("mode", "mat");
+  await page.addInitScript((m) => {
+    localStorage.setItem("mode", m);
     window.__frames = [];
     let last = performance.now();
     const tick = (t) => {
@@ -35,7 +37,7 @@ async function run(browser, [w, h], rate) {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  });
+  }, MODE);
   await page.goto(`${base}/vi/city/${query}`);
   await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0, null, { timeout: 30_000 });
   const firstFrame = await page.evaluate(() => {
@@ -105,4 +107,4 @@ for (const vp of viewports) {
 }
 await browser.close();
 mkdirSync(".perf", { recursive: true });
-writeFileSync(join(".perf", `city-frames${query ? "-" + query.replace(/[^a-z0-9]+/gi, "-") : ""}.json`), JSON.stringify(rows, null, 2));
+writeFileSync(join(".perf", `city-frames-${MODE}${query ? "-" + query.replace(/[^a-z0-9]+/gi, "-") : ""}.json`), JSON.stringify(rows, null, 2));

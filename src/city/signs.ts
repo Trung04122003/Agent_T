@@ -36,7 +36,11 @@ function wallOf(solids: readonly Solid[]): (Solid & { type: "box" }) | null {
 /** The dossier's stir timing (src/scripts/stir.ts STIR): how long a stir lasts, how often it redraws. */
 export type StirTiming = { ms: number; step: number };
 
-export function createSigns(layout: CityLayout, stir: StirTiming): Signs {
+/**
+ * `names`: each plot's district codename (copy-review.md), written on its sign once the bars are off:
+ * a place name, never a fact about the entry.
+ */
+export function createSigns(layout: CityLayout, stir: StirTiming, names: readonly string[] = []): Signs {
   const walls = layout.plots.map((p) => wallOf(building(p.archetype, p.rect, p.lot))).filter((w): w is Solid & { type: "box" } => w !== null);
   const n = walls.length;
   // Per sign: origin (bottom left), the panel's width vector and height vector, all zoom-1 screen px.
@@ -129,7 +133,24 @@ export function createSigns(layout: CityLayout, stir: StirTiming): Signs {
         ctx.fill();
         ctx.strokeStyle = p.glow;
         ctx.stroke();
-        if (clear[i]) continue;
+        if (clear[i]) {
+          // Clear signage: the codename along the panel, fitted to it.
+          const name = names[i];
+          if (!name) continue;
+          const L = Math.hypot(ux, uy);
+          const h = -zy;
+          ctx.save();
+          ctx.transform(ux / L, uy / L, 0, 1, x, y + zy * 0.5);
+          ctx.font = `600 ${Math.round(h * 0.5)}px "IBM Plex Mono", ui-monospace, monospace`;
+          const w = ctx.measureText(name).width;
+          const fit = Math.min(1, (L * 0.86) / w);
+          ctx.scale(fit, 1);
+          ctx.fillStyle = p.glow;
+          ctx.textBaseline = "middle";
+          ctx.fillText(name, (L * 0.07) / fit, 0);
+          ctx.restore();
+          continue;
+        }
         ctx.fillStyle = p.redact;
         ctx.beginPath();
         for (let b = 0; b < BARS; b++) {

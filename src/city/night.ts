@@ -71,6 +71,18 @@ function coneSprite(size: number, hex: string): HTMLCanvasElement {
     }
   });
 }
+/** The dawn sun's wash: warm at the upper left, fading across (made once, Giai mat tokens). */
+function sunSprite(): HTMLCanvasElement {
+  return sprite(128, (ctx) => {
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 180);
+    g.addColorStop(0, rgba(TOKENS["giai-mat"].accent, 0.9));
+    g.addColorStop(0.45, rgba(TOKENS["giai-mat"].accent, 0.35));
+    g.addColorStop(1, rgba(TOKENS["giai-mat"].surface, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  });
+}
+
 /** Static film grain: made once from a fixed seed, tiled as a pattern (no per-frame noise). */
 function grainSprite(size: number, ink: string): HTMLCanvasElement {
   return sprite(size, (ctx) => {
@@ -95,6 +107,8 @@ export type Night = {
   setPalette(p: Palette): void;
   /** Districts with their lights on (P37): x, y, radius (world), strength (0..1), four per district. */
   setLit(pools: Float64Array): void;
+  /** Their buildings lit too (P38: the windows on): each building's silhouette (render.ts), and its strength. */
+  setLitBuildings(list: { shape: Float64Array[]; strength: number }[]): void;
   clear(): void;
 };
 
@@ -104,8 +118,10 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
   const glow = glowSprite(128, WARM);
   const cold = glowSprite(128, COLD);
   const cone = coneSprite(256, COLD);
+  const sun = sunSprite();
   let pal = p0;
   let lit: Float64Array = new Float64Array(0);
+  let litBuildings: { shape: Float64Array[]; strength: number }[] = [];
   const grain = dctx.createPattern(grainSprite(128, "#ffffff"), "repeat")!;
   // What the lantern can see, per quarter-tile cell (visibility.ts).
   const seen = visibilityCache(footprintSegments(occluders), LANTERN.reach + 1);
@@ -207,7 +223,26 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
         stampPool(lantern.x, lantern.y, LANTERN.ambient * 0.6, cold);
         mctx.globalAlpha = 1;
       }
-      // Lit districts stay lit (UX-v4 section 4): a warm pool over each, brighter once declassified.
+      // Lit districts stay lit (UX-v4 section 4): their buildings glow, windows on, brighter once
+      // declassified; and a warm pool on the ground around each.
+      mctx.fillStyle = WARM;
+      for (let i = 0; i < litBuildings.length; i++) {
+        const b = litBuildings[i]!;
+        mctx.globalAlpha = b.strength;
+        mctx.beginPath();
+        for (let k = 0; k < b.shape.length; k++) {
+          const h = b.shape[k]!;
+          for (let j = 0; j < h.length; j += 2) {
+            const px = ((h[j]! * vz - vx) * vk) | 0;
+            const py = ((h[j + 1]! * vz - vy) * vk) | 0;
+            if (j) mctx.lineTo(px, py);
+            else mctx.moveTo(px, py);
+          }
+          mctx.closePath();
+        }
+        mctx.fill();
+      }
+      mctx.globalAlpha = 1;
       for (let i = 0; i < lit.length; i += 4) {
         mctx.globalAlpha = lit[i + 3]!;
         stampPool(lit[i]!, lit[i + 1]!, lit[i + 2]!, glow);
@@ -236,7 +271,16 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
       dctx.globalCompositeOperation = "source-over";
       dctx.globalAlpha = 1;
       dctx.clearRect(0, 0, W, H);
-      if (pal.nightAlpha === 0) return;
+      if (pal.nightAlpha === 0) {
+        // Dawn (38.1): a low warm sun from the upper left, stretched from a small pre-made gradient.
+        if (pal.sun > 0) {
+          dctx.globalAlpha = pal.sun;
+          dctx.drawImage(sun, 0, 0, W, H);
+          dctx.globalAlpha = 1;
+        }
+        if (overlay) overlay(dctx);
+        return;
+      }
       dctx.globalAlpha = pal.nightAlpha;
       dctx.fillStyle = pal.night;
       dctx.fillRect(0, 0, W, H);
@@ -271,6 +315,9 @@ export function createNight(dark: HTMLCanvasElement, mask: HTMLCanvasElement, la
     },
     setLit(pools) {
       lit = pools;
+    },
+    setLitBuildings(list) {
+      litBuildings = list;
     },
     clear() {
       dctx.clearRect(0, 0, dark.width, dark.height);

@@ -204,7 +204,8 @@ test.describe("P35 night engine", () => {
     // Not uniform: lamps, the lantern and signs cut it.
     expect(await darknessAlpha(page)).toBeLessThan(0.8);
     await page.evaluate(() => (document.documentElement.dataset["mode"] = "giai-mat"));
-    await expect.poll(() => darknessAlpha(page)).toBe(0);
+    // No night left; only the dawn sun's faint wash (P38) on that layer.
+    await expect.poll(() => darknessAlpha(page)).toBeLessThan(0.1);
   });
 
   test("35.4 rain only on the High tier, capped at 120; none on Medium or in Giai mat", async ({ page }) => {
@@ -389,6 +390,52 @@ test.describe("P37 districts, missions, briefings", () => {
       const html = await (await request.get(`/${l}/city/`)).text();
       const found = new Set(html.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []);
       expect([...found]).toEqual(allowed);
+    }
+  });
+});
+
+test.describe("P38 day engine", () => {
+  // Still frames: no entrance walk, no stirring bars, no rain, instant mode switches.
+  test.use({ reducedMotion: "reduce" });
+
+  test("38.2 M in the city switches the dossier's own mode, which the dossier then shows", async ({ page }) => {
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("seeded")) {
+        localStorage.setItem("mode", "mat");
+        sessionStorage.setItem("seeded", "1");
+      }
+    });
+    await page.goto("/vi/city/");
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "mat");
+    await page.locator("[data-city-stage]").focus();
+    await page.keyboard.press("m");
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+    await page.goto("/vi/#gate-codename");
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "giai-mat");
+    // And back: the dossier's toggle, then the city follows.
+    await page.locator("[data-mode-toggle]").first().click();
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "mat");
+    await page.goto("/vi/city/");
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "mat");
+  });
+
+  test("38.3 district states show in both modes: dawn veils sealed districts, night lights briefed ones", async ({ page }) => {
+    const shot = async (mode: string, state: string) => {
+      await page.addInitScript(([m, s]) => {
+        localStorage.setItem("mode", m);
+        sessionStorage.setItem("city:districts", s);
+      }, [mode, JSON.stringify({ "role-bluesea": state })] as const);
+      await page.goto("/vi/city/?quality=medium");
+      await page.waitForFunction(() => performance.getEntriesByName("city:first-frame").length > 0);
+      await page.waitForTimeout(400);
+      return page.locator("[data-city-stage]").screenshot();
+    };
+    for (const mode of ["giai-mat", "mat"]) {
+      const sealed = await shot(mode, "sealed");
+      const again = await shot(mode, "sealed");
+      const declassified = await shot(mode, "declassified");
+      expect(sealed.equals(again), `${mode}: the same state draws the same frame`).toBe(true);
+      expect(sealed.equals(declassified), `${mode}: the state shows`).toBe(false);
     }
   });
 });
