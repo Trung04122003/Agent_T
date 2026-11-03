@@ -57,6 +57,7 @@ Checkpoint: chủ dự án bấm thử khung trống và phương án dự phòn
 - 34.2 Các kiểu nhà: sảnh học viện bậc thang, tháp ăng-ten / nhà máy chủ, sảnh chợ, tháp kính, gian thấp có cột cờ (trừu tượng, không cờ hay huy hiệu), đài quan sát, khối Hầm, các ki-ốt địa danh (Hộp thư chết, Phòng tổng kết, Tháp lưu trữ, Sổ rủi ro, Phòng thí nghiệm). Chọn theo `kind` và domain, không bao giờ theo bậc, số liệu hay trọng số lens. -> verify: ảnh chụp kiểu nhà cho từng mục; test cho thấy độ cao đường chân trời không tương quan với bậc bằng chứng.
 - 34.3 Đổ bóng mặt từ một hướng sáng cố định, lưới cửa sổ, đồ trang trí mái, viền sáng cạnh; lớp tĩnh nướng một lần cho mỗi nấc zoom. -> verify: ghi lại thời gian nướng và bộ nhớ.
 - 34.4 Trang dev `/dev/city-sheet` hiện mọi kiểu nhà cạnh nhau ở cả hai bảng màu. -> verify: ảnh chụp trong `docs/city/review/P34/`.
+- 34.5 Bộ ngõ hẻm: ít nhất ba ngõ hẹp, một ngõ nhìn thấy từ quảng trường, mỗi ngõ là một túi tối có hốc cửa và một cột đèn tắt, không biển hiệu thương hiệu hay chữ; đó là các lối vào của Agent T. -> verify: test bất biến (mọi ngõ nối với đồ thị đường, ít nhất một ngõ nằm trong tầm nhìn từ quảng trường), ảnh chụp.
 Checkpoint (gu thẩm mỹ): chủ dự án chọn giữa hai hướng đường chân trời nếu Claude Code làm hai hướng.
 
 ### P35 — Engine ban đêm (diện mạo Mật)
@@ -73,7 +74,8 @@ Checkpoint: **khoảnh khắc đặc trưng 1 và 8** sẵn sàng chụp ảnh; 
 - 36.3 Chùm sáng của đèn bị chân tòa nhà che (đa giác nhìn thấy 2D, bắn tia với các cạnh chân tòa, lưu theo ô vị trí). -> verify: unit test trên một bố cục đã biết; thời gian khung khi bật chùm sáng.
 - 36.4 Camera đi theo có làm mượt, giới hạn, ba mức zoom. -> verify: không giật ở biên zoom; giảm chuyển động thì bỏ làm mượt.
 - 36.5 Bóng đổ dài từ hướng sáng cố định. -> verify: ảnh chụp.
-Checkpoint: **khoảnh khắc đặc trưng 1** chạy được; chủ dự án tự đi dạo trong thành phố.
+- 36.6 Cảnh mở đầu: Agent T bắt đầu ẩn trong ngõ gần nhất và bước ra ánh sáng không một tiếng động ở thao tác đầu tiên (hoặc sau khoảng 1,2 giây); bỏ qua được; khi giảm chuyển động thì bắt đầu ở trạng thái đứng ngay cửa ngõ. -> verify: e2e cho màn xuất hiện, việc bỏ qua và chế độ giảm chuyển động.
+Checkpoint: **khoảnh khắc đặc trưng 1 và 11** chạy được; chủ dự án tự đi dạo trong thành phố.
 
 ### P37 — Khu phố, nhiệm vụ, bản tóm tắt
 - 37.1 Gợi ý khi lại gần và ở cửa; tương tác bằng `E`/`Enter`/bấm. -> verify: e2e.
@@ -120,11 +122,12 @@ Checkpoint: chủ dự án duyệt Hồi II từ đầu đến cuối.
 ## Hồi III — Agent T, nhân vật
 
 ### P43 — Nhân vật bản 2: dấu ấn riêng
-- 43.1 Chiếc áo khoác dài với năm mảnh gấu trễ trên chuỗi lò xo; cổ áo bất đối xứng. -> verify: bảng sprite dev, 8 hướng × đi/nghỉ.
-- 43.2 Mặt nạ (khe đồng thau theo hướng nhìn, tia sáng định kỳ) và Chiếc đèn (đung đưa, giơ lên ở cửa). -> verify: bảng ảnh chụp.
-- 43.3 Cái bóng với gợi ý khi nghỉ quay về khu niêm phong gần nhất sau ~8 giây. -> verify: unit test chọn đúng lô niêm phong gần nhất; giảm chuyển động thì không quay.
-- 43.4 Dải ruy băng (thanh che ở Mật, sợi vàng ở Giải mật), vòng thông hành (ký hiệu T1/T2/T3), hai kiểu nhàn rỗi và hai cử chỉ. -> verify: chi phí vẽ mỗi khung cho cả nhân vật ≤ 1,0 ms trên máy i3 ở mức Cao.
-- 43.5 Ghi chú nguyên bản trong `docs/city/creative-log.md`: điều gì làm bóng dáng này nguyên bản và đã tránh những gì (xem UX-v4 mục 6, quy tắc 9). -> verify: ghi chú có đó.
+- 43.1 Áo pardessus (áo khoác dài) với năm mảnh gấu trễ trên chuỗi lò xo và cổ áo bất đối xứng; mũ đặc vụ (thân thấp, vành phẳng, dải đồng thau mảnh, khía bên trái, vành mũ phủ bóng lên mặt nạ); giày chelsea boots (mảnh chun hai bên nhìn thấy trong bóng dáng). -> verify: bảng sprite dev, 8 hướng × đi/nghỉ, đọc được ở 48 px.
+- 43.2 Mặt nạ (khe đồng thau theo hướng nhìn, tia sáng định kỳ dưới vành mũ), chiếc đèn (đung đưa, giơ lên ở cửa), chiếc vali (màu mực mờ, góc đồng thau, một chốt, không bao giờ mở ra cho thấy đồ bên trong), chiếc tẩu (đạo cụ trong bóng dáng, ánh than hồng là điểm sáng ấm nhỏ, tối đa thỉnh thoảng một sợi khói mảnh, không hoạt ảnh rít hơi, không đám khói lớn). -> verify: bảng ảnh chụp.
+- 43.3 Dáng đi nhẹ và không tiếng động: lướt nhẹ với một nhịp nhún nhỏ, không tiếng bước chân, không dấu chân. -> verify: một bài test chứng minh không có lời gọi âm thanh bước chân nào.
+- 43.4 Các trạng thái tính cách. Mật: tĩnh và tiết kiệm, không đùa. Giải mật: đùa mặt lạnh, đúng hai trò (chạm mũ chào một tòa nhà đang sáng; chốt vali bật mở bằng một ngón tay, lóe ánh vàng, đóng lại rồi nhìn đi chỗ khác). -> verify: e2e cho thấy hai trò đùa không bao giờ chạy ở Mật; giảm chuyển động thì không trò nào chạy dưới dạng hoạt ảnh.
+- 43.5 Cái bóng với gợi ý khi nghỉ (khoảng 8 giây, khu niêm phong gần nhất), dải ruy băng (thanh che ở Mật, sợi vàng ở Giải mật), vòng thông hành (ký hiệu T1/T2/T3), các cử chỉ lúc nghỉ ở Mật (áo buông xuống, vòng cổ tay nhấp nháy). -> verify: unit test chọn đúng lô niêm phong gần nhất; chi phí vẽ mỗi khung cho cả nhân vật ≤ 1,0 ms trên máy i3 ở mức Cao.
+- 43.6 Ghi chú nguyên bản trong `docs/city/creative-log.md`: điều gì làm bóng dáng này nguyên bản và đã tránh những gì (UX-v4 mục 6, "Quy tắc nguyên bản"). -> verify: ghi chú có đó.
 Checkpoint (gu và an toàn): chủ dự án tìm ảnh theo bóng dáng và chọn giữa hai hướng thiết kế nếu có. **Khoảnh khắc đặc trưng 4 và 5 bắt đầu từ đây.**
 
 ### P44 — Chuỗi giải mật
@@ -134,7 +137,7 @@ Checkpoint (gu và an toàn): chủ dự án tìm ảnh theo bóng dáng và ch�
 Checkpoint: **khoảnh khắc đặc trưng 3 và 4 hoàn chỉnh**; chủ dự án quyết định chuỗi có quá dài không.
 
 ### P45 — Âm thanh tạo bằng code
-- 45.1 Tổng hợp Web Audio cho bước chân, tiếng bật đèn, chuông cửa, tiếng quét giải mật, tiếng thành phố. Không file mẫu. Mặc định tắt, một công tắc. -> verify: `dist/` không có file âm thanh nào từ thành phố; test cho thấy âm thanh tắt lúc nạp.
+- 45.1 Tổng hợp Web Audio cho tiếng bật đèn, chuông cửa, chốt vali, tiếng quét giải mật và tiếng thành phố. **Không tiếng bước chân**: Agent T đi trong im lặng và tiếng ù nền dịu xuống một chút khi nhân vật di chuyển. Không file mẫu. Mặc định tắt, một công tắc. -> verify: `dist/` không có file âm thanh nào từ thành phố; test cho thấy âm thanh tắt lúc nạp và không có tiếng bước chân nào.
 - 45.2 Nối với cổng nhạc: nhạc nền chỉ xuất hiện nếu `check:audio` đạt (giấy phép). -> verify: không giấy phép thì không có bài và không có công tắc bài.
 - 45.3 Âm thanh không bao giờ bắt đầu trước thao tác của người dùng; đóng context khi tab ẩn lâu. -> verify: thủ công và unit test với context giả.
 Checkpoint: chủ dự án nghe thử có tai nghe và không tai nghe.
@@ -145,6 +148,13 @@ Checkpoint: chủ dự án nghe thử có tai nghe và không tai nghe.
 - 46.1 Vệt đèn xe trên đường (tối đa 6), hai đèn pha quét từ tháp, ăng-ten nhấp nháy, giấy/tro bay (có trần theo mức). Không người, không đám đông (không vẽ người thật). -> verify: test bộ đếm theo từng mức.
 - 46.2 Mọi chuyển động nền tắt ở mức Thấp, đứng yên khi giảm chuyển động, giảm tốc khi nghỉ. -> verify: vết khi nghỉ ≤ ~20 fps.
 Checkpoint: chủ dự án đánh giá thành phố có sống động mà không rối.
+
+### P46b — Sự kiện Kẻ đột nhập (tùy chọn, không bạo lực)
+- 46b.1 Bộ điều phối sự kiện: tối đa ba phút một lần, chỉ sau 6 giây người chơi đứng yên, không bao giờ trong lúc mở bản tóm tắt, lao xuống Atlas hay Giải mật, không bao giờ ở mức Thấp hoặc khi giảm chuyển động, tắt trong Thành phố yên tĩnh. -> verify: unit test của bộ điều phối.
+- 46b.2 "Nghi phạm": một bóng đen không đặc điểm ở rìa ánh sáng, không vũ khí, không trang phục, không chữ, không bao giờ gắn với một mục hay một bậc. Dòng HUD "Có chuyển động ở rìa ánh sáng." soạn vào `docs/city/copy-review.md`. -> verify: ảnh chụp; kiểm tra từ bị cấm trên mọi chuỗi của sự kiện.
+- 46b.3 Agent T đáp lại: bước vào túi tối gần nhất rồi bước ra từ ngõ gần nghi phạm nhất (đoạn cắt được bóng tối che, khoảng 400 ms); đèn bắt lấy nghi phạm, bóng đó tan thành các thanh che; chốt vali lóe sáng; ở Giải mật nhân vật chạm mũ; quyền điều khiển trả lại. Tối đa 4 giây, bấm phím bất kỳ để bỏ qua. -> verify: e2e cho kích hoạt, bỏ qua và trả lại quyền điều khiển; thời gian khung trong vết.
+- 46b.4 Test rào chắn: không nêu tội danh, không nêu tên người, nhóm hay nơi chốn, không màu báo động đỏ, không âm thanh nào to hơn tiếng ù nền, không vũ khí, rượt đuổi hay hình ảnh bắt giữ. -> verify: test trên các chuỗi và bảng màu.
+Checkpoint: **khoảnh khắc đặc trưng 11** trong ngữ cảnh; chủ dự án quyết định sự kiện giữ nguyên, chuyển vào Thành phố yên tĩnh, hay cắt.
 
 ### P47 — Cảnh kết và phần thưởng
 - 47.1 Khi mọi khu đã giải mật: thành phố trọn ánh sáng, cột sáng đứng yên, một bảng kết điềm đạm chỉ dựng từ nội dung ("Mở dossier đầy đủ", "In", "Yêu cầu giải mật"). Không điểm số, không pháo giấy. -> verify: e2e; chữ trong bảng chỉ từ nội dung.

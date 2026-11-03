@@ -33,6 +33,7 @@ Suggested layout (Claude Code may refine, keep the logic):
 - Building archetype is picked from `kind` and `domain` (from `content/domains.json`), never from the person: education = stepped campus hall; technology = antenna tower or server hall; business = market hall; finance-insurance = glass tower (no logo, plain org text on the sign); external relations = low pavilion with a mast (abstract, **no national symbols, no flags, no emblems**); project = observatory or sensor mast.
 - Landmarks for existing dossier components: Archive Tower (ledger), Debrief Room (AAR), Risk Registry (risks), Lab (capability matrix and evidence trace), **Dead Drop** (contact: a phone-booth/mailbox kiosk that opens "Request declassification", the only thing that touches email). A landmark appears only if its content exists and is not null.
 - A river or canal and a few bridges are allowed for silhouette variety. No coastline claims inside the city (the Atlas has the real coast).
+- **Alleys:** at least three narrow alleys, one visible from the plaza (see section 6b). They are where Agent T enters the city.
 - Skyline rule: the tallest building is not the "most important" claim. Height comes from archetype, never from tier, metrics or lens weight.
 
 ## 3. Projection, camera, controls
@@ -67,17 +68,36 @@ Progress counter "light level n of N" in the HUD, never a percent bar, never a s
 - Before/after the 2025 provincial merger: follow whatever `Map.astro` does for each mode. Do not invent a new rule.
 
 ## 6. Agent T: character bible
-Goal: unusual, memorable, unmistakably a spy, and 100% original. Built procedurally from polygons (no sprites, no images), 8 directions, readable at 48 px tall.
-1. **The Long Coat.** A long dark overcoat. The hem is split into five trailing shards that lag behind movement on a spring chain, like torn dossier pages. The collar is asymmetric: the left side high and stiff like a file tab, the right side low.
-2. **The Visor.** A smooth, matte, faceless head with one thin horizontal brass slit. The slit shifts toward the facing direction (this is also the facing cue). A glint sweeps across it every few seconds. No face, no photo, no real likeness: the mask is the persona.
-3. **The Lantern.** A small brass cylinder in the hand that makes the light cone. It swings with the gait and is raised when he reaches a door.
-4. **The Shadow.** The cast shadow is a skewed copy of the silhouette. After ~8 s idle the shadow slowly turns its head toward the nearest sealed district (a quiet hint, and a signature moment). Nothing else about it is supernatural.
-5. **The Ribbon.** Behind him a thin ribbon: in Mat it is black bars (the path being redacted behind him, ground behind him darkens back down); in Giai mat a gold hairline. It fades after a few seconds. Decorative only: no axis, no values, no upward-trend reading.
-6. **Clearance ring** at his feet: a thin ellipse whose dash pattern shows the clearance of the zone he stands in (T1, T2, T3 glyphs, from computed evidence tiers).
-7. **Idle and gestures** (two idles, two gestures, no more): checks his wrist (brass ring pulses); tips the collar; raises the lantern at a door; touches the earpiece at the Dead Drop.
-8. **Declassify transformation:** the five hem shards flip like pages, one after another from collar to hem (about 60 ms apart), revealing a **gold lining**; the visor slit opens to a lens ring with a warm glint; the lantern turns from cold white to warm gold; the nameplate changes from "Agent T" to "Le Thai Trung" (same two labels as the portrait frame). He stays masked in both modes.
-9. **Originality rule.** Avoid looks tied to existing characters: dark suit with dark sunglasses and white shirt; fedora and trench coat in red; barcode on a bald head; hooded assassin. Write a short originality note in `docs/city/creative-log.md`. The owner will do an image search on the silhouette at the P43 checkpoint; change the design if anything matches.
-10. No weapons, no uniform, no emblem, no military garment. The character is an observer who carries a light.
+Goal: unusual, memorable, unmistakably a spy, and 100% original. The owner described the character himself; no existing film, game or comic character is a model for it, and none may be used as one. Built procedurally from polygons (no sprites, no images), 8 directions, readable at 48 px tall.
+
+**Personality (it drives every animation and every line of copy):** cold in the dark, funny in the light, mysterious in both.
+- Mat (dark): still, economical, no wasted motion. Idles are stillness and a coat settling. No jokes. Copy is terse.
+- Giai mat (light): the same man, but with dry, deadpan humour: small gestures that undercut his own seriousness. Two jokes at most (below). Copy may be wry, never silly.
+- Both: you never see a face. The hat brim and the visor keep it dark. The briefcase is never shown open with its contents. He never explains himself.
+
+**The outfit and kit (the owner's list):**
+1. **The pardessus.** A long dark overcoat. The hem is split into five trailing shards that lag behind movement on a spring chain, like torn dossier pages. The collar is asymmetric: the left side high and stiff like a file tab, the right side low.
+2. **The hat.** A shallow-crown hat with a flat brim in matte ink, a thin brass band, and a small notch on the left that echoes the high left collar. The brim throws the visor into shadow.
+3. **Chelsea boots.** Ankle boots with the elastic side gusset readable in silhouette. They make no sound.
+4. **The visor.** A smooth, matte, faceless head with one thin horizontal brass slit under the brim. The slit shifts toward the facing direction (also the facing cue). A glint sweeps across it every few seconds. No face, no photo, no real likeness.
+5. **The briefcase.** Matte ink with brass corners and one latch, carried in the right hand. Never shown open with contents; when it opens, only gold light spills out.
+6. **The pipe.** A silhouette prop under the visor and a tiny warm light: the only warm point in the Mat night. Show an ember glow and, rarely, one thin wisp. No puffing animation, no smoke clouds.
+7. **The lantern.** A small brass cylinder in the left hand that makes the light cone. It swings with the gait and is raised when he reaches a door.
+8. **The silent walk.** A soft glide with a small bob. No footstep sound, no footprints. The hem lag is the only motion that "speaks". While he walks, the ambient hum dips a little, as if the city held its breath.
+9. **The shadow.** The cast shadow is a skewed copy of the silhouette. After about 8 s idle it slowly turns its head toward the nearest sealed district (a quiet hint). Nothing else about it is supernatural.
+10. **The ribbon.** Behind him a thin ribbon: in Mat black bars (the path being redacted behind him, the ground behind him darkens back down); in Giai mat a gold hairline. It fades after a few seconds. Decorative only: no axis, no values, no upward-trend reading.
+11. **Clearance ring** at his feet: a thin ellipse whose dash pattern shows the clearance of the zone he stands in (T1, T2, T3 glyphs, from computed evidence tiers).
+12. **Gestures.** Mat: the coat settles, the wrist ring pulses, the lantern is raised at a door. Giai mat adds the only two jokes: he tips the hat to a lit building as if greeting it; the briefcase latch clicks open a finger's width, a gold glint, he closes it at once and looks away. Nothing else.
+13. **Declassify transformation.** The five hem shards flip like pages, one after another from collar to hem (about 60 ms apart), revealing a **gold lining**; the visor slit opens to a lens ring with a warm glint; the lantern turns from cold white to warm gold; the briefcase latch glints; the nameplate changes from "Agent T" to "Le Thai Trung" (same two labels as the portrait frame). He keeps the hat and the mask in both modes.
+14. **Originality rule.** Avoid looks tied to existing characters: dark suit with dark sunglasses and white shirt; fedora and trench coat in red; barcode on a bald head; hooded assassin; and any character from a film, series, game or comic the owner has seen. The coat is ink black with gold lining; the face is a mask; the kit is the owner's list. Write a short originality note in `docs/city/creative-log.md`. The owner will do an image search on the silhouette at the P43 checkpoint; change the design if anything matches.
+15. No weapons, no uniform, no emblem, no military garment. The character is an observer who carries a light and a case.
+
+## 6b. Alleys, the entrance and the Intruder event
+- **Alleys.** The plan has at least three narrow alleys (one visible from the plaza): dark pockets with a doorway recess and a dead lamp. No brand signage, no graffiti text.
+- **Opening shot.** When the city opens, Agent T is already inside the nearest alley. On the first input (or after about 1.2 s) he steps out silently into the light. Skippable; under reduced motion he starts standing at the alley mouth.
+- **The Intruder event** (optional, rare, non-violent). It can start at most once every 3 minutes, only after the player has been idle for 6 s (control is never taken mid-walk), never during a briefing, the Atlas dive or Declassify, never on the Low tier or with reduced motion, and never in Quiet city. A "suspect" appears at the edge of the light: a featureless dark silhouette with no weapon, no costume and no text. A HUD line says "Movement at the edge of the light." (draft copy for review). Agent T answers: he steps into the nearest dark pocket and comes out of the alley closest to the suspect (the cut is hidden by darkness, about 400 ms). The lantern catches the suspect, who dissolves into redaction bars and is gone; the briefcase latch glints; in Giai mat he tips the hat. Control returns. Total at most 4 s, any key skips. It adds no score and gates nothing.
+- **Guardrails.** The suspect never represents any real person, group, nationality, profession, client or organisation. No crime is named. No violence, no chase, no arrest imagery, no red alarm colour, no sound louder than the ambient hum. It is never tied to a claim or to an evidence tier.
+
 
 ## 7. HUD and panels
 - HUD (DOM, not canvas, so it is accessible): top-left "AGENT T" nameplate and mode; top-right mode switch, sound toggle, quality, controls help, "Back to dossier"; bottom-left mission log (one line per dossier, state icon); bottom-right compass with next objective ordered by the **lens** weights in `content/lenses.json` (a Partner sees the Partner route first). Compass is a hint, not a gate.
@@ -100,7 +120,7 @@ Goal: unusual, memorable, unmistakably a spy, and 100% original. Built procedura
 Timeline (ms, suggested): 0 hold breath (ambient dips) · 0–300 lantern flares · 300–1700 sunrise wave expands from Agent T across the city as a clip/composite sweep, buildings change palette as it passes, bars slide off signs · 400–900 coat lining flips · 1700–2100 settle, nameplate swaps · total ≤ 2.1 s on high tier, ≤ 1.2 s on low tier, instant on reduced motion. Any key or click skips to the end state. Never run two such transitions at once. Only `transform`, `opacity` and canvas compositing; no layout.
 
 ## 10. Sound
-Procedural Web Audio only (no sample files): footsteps (soft ticks), lantern click, door chime, declassify sweep, distant city hum. Default muted, one control, volume low, `prefers-reduced-motion` does not change audio but the toggle is always reachable. The background track stays under the existing music gate (`check:audio`, license required).
+Procedural Web Audio only (no sample files): lantern click, door chime, briefcase latch, declassify sweep, distant city hum. **Agent T makes no footstep sound**: while he walks the ambient hum dips slightly. Default muted, one control, volume low, `prefers-reduced-motion` does not change audio but the toggle is always reachable. The background track stays under the existing music gate (`check:audio`, license required).
 
 ## 11. Signature moments (one per phase at least)
 1. The lantern cutting a cone through the dark, occluded by buildings.
@@ -113,6 +133,7 @@ Procedural Web Audio only (no sample files): footsteps (soft ticks), lantern cli
 8. Rain on the glass tower (high tier only).
 9. All districts lit: the city at full light, beacon steady.
 10. The Dead Drop: the only place where the world touches the real inbox.
+11. Agent T stepping silently out of an alley into the light.
 
 ## 12. Accessibility and fallbacks
 - Whole content reachable without the canvas: static district list (links), landmarks list, same panels.
@@ -132,7 +153,7 @@ Procedural Web Audio only (no sample files): footsteps (soft ticks), lantern cli
 Auto-downgrade on a rolling frame average (never auto-upgrade in the same session); manual "Quality" control in the HUD. Pause everything when `document.hidden`; drop ambient to ~20 fps after 20 s without input.
 
 ## 14. Cut list and kill criteria
-If a feature misses its budget after reasonable optimisation, it is cut in this order: rain, reflections, ambient traffic, searchlights, fog smoothness, idle emotes, camera zoom steps. Never lower the budgets. Stretch items (stealth mode, time of day, photo mode) are off by default and are removed if they cost more than 2 ms per frame on the i3.
+If a feature misses its budget after reasonable optimisation, it is cut in this order: rain, reflections, ambient traffic, searchlights, fog smoothness, idle emotes, camera zoom steps. Never lower the budgets. Stretch items (stealth mode, time of day, photo mode) are off by default and are removed if they cost more than 2 ms per frame on the i3. The Intruder event is never cut without the owner's say.
 
 ## 15. Acceptance (the owner's eyes)
 1. In five seconds a stranger says "spy city" without being told.
@@ -142,6 +163,7 @@ If a feature misses its budget after reasonable optimisation, it is cut in this 
 5. Every claim reachable by keyboard only, and every panel equals the ledger text.
 6. The i3 holds the Medium tier at p95 frame time under 20 ms.
 7. Turning JS off or choosing Lite still gives the whole story.
+8. Agent T reads as cold in the dark, dry and funny in the light, and mysterious in both, without a single line explaining him.
 
 ## 16. Copy rules
 Short, concrete, quiet. No exclamation marks, no gamer slang, no percent bars, no "mission accomplished" scores. Flavor lines may set mood ("The lights on this block are still off") but must state nothing the content does not state. All new strings in a `city` namespace in `content/ui.json` for vi and en, listed in `docs/city/copy-review.md`.

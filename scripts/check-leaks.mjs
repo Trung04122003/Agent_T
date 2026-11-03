@@ -47,6 +47,9 @@ const publicStrings = new Set(
 );
 const secrets = [];
 for (const c of claims) {
+  // A held entry's id is secret too (ROADMAP-v4 P31.6): city data carries ids (plots, deep links),
+  // so an id slipping through would name an entry that is never built.
+  if (c.visibility === "hold") secrets.push({ rule: `hold id (${c.id})`, s: c.id });
   if (c.visibility === "hold") {
     for (const s of collectStrings({ ...c, notes: undefined }, [])) {
       if (!publicStrings.has(norm(s))) secrets.push({ rule: `hold text (${c.id})`, s });
@@ -170,8 +173,11 @@ for (const d of files) {
   });
 }
 
+// Agent T City (ROADMAP-v4 P31.6): its route gets every rule above; say how much of it was scanned.
+const cityFiles = files.filter((d) => relative(target, join(d.parentPath, d.name)).split(/[\\/]/).includes("city")).length;
 console.log(
-  `check-leaks: scanned ${files.length} file(s) in ${relative(root, target) || "."}; ` +
+  `check-leaks: scanned ${files.length} file(s) in ${relative(root, target) || "."}` +
+    ` (city route: ${cityFiles ? `${cityFiles} file(s)` : "none, flag off"}); ` +
     `${secrets.length - denyCount} content string(s), ${denyCount} denylist word(s).`,
 );
 if (violations.length) {

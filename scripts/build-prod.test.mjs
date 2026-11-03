@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Real builds, end to end (ROADMAP 3.5, 5.2). Test datasets build into test-results/.
@@ -56,5 +57,38 @@ describe("pnpm build and translations", () => {
 
   it("passes on the same dataset with every string translated", () => {
     expect(build("e2e/fixtures/claims-verified.json").code).toBe(0);
+  }, 120_000);
+});
+
+// ROADMAP-v4 P31.3: Agent T City is built only with PUBLIC_CITY=1 (off in build:prod by default).
+// When off, no city route and no link to one anywhere in the output.
+function buildCity(flag) {
+  rmSync("test-results/dist-fixture", { recursive: true, force: true });
+  const env = { ...process.env, CUPID_CLAIMS: "e2e/fixtures/claims-verified.json" };
+  delete env["PUBLIC_CITY"];
+  if (flag) env["PUBLIC_CITY"] = "1";
+  const r = spawnSync("pnpm build:prod", { shell: true, encoding: "utf8", env });
+  return { code: r.status, out: r.stdout + r.stderr };
+}
+function htmlFiles(dir) {
+  return readdirSync(dir, { recursive: true })
+    .map(String)
+    .filter((f) => f.endsWith(".html"))
+    .map((f) => join(dir, f));
+}
+
+describe("PUBLIC_CITY build flag", () => {
+  it("off (the default): no city route, no link to it", () => {
+    const r = buildCity(false);
+    expect(r.code).toBe(0);
+    const out = "test-results/dist-fixture";
+    for (const l of ["vi", "en"]) expect(existsSync(join(out, l, "city"))).toBe(false);
+    for (const f of htmlFiles(out)) expect(readFileSync(f, "utf8"), f).not.toMatch(/href="[^"]*\/city\b/);
+  }, 120_000);
+
+  it("on: the city route exists in every language", () => {
+    const r = buildCity(true);
+    expect(r.code).toBe(0);
+    for (const l of ["vi", "en"]) expect(existsSync(join("test-results/dist-fixture", l, "city", "index.html"))).toBe(true);
   }, 120_000);
 });

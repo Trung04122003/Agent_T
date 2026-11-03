@@ -3,6 +3,46 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-02 · P31.4 · Baseline of the dossier before Agent T City
+
+Reference machine (ROADMAP-v4 rule 3): Intel Core i3-1115G4 @ 3.00 GHz, 7.7 GB RAM, integrated
+graphics, Windows 11 (this is the owner's machine). `build:prod` at commit 4fa90dc plus the P31
+changes (city flag off, so the output has no city route). Lighthouse from `node scripts/lighthouse.mjs`
+(mobile, default throttling), 3 runs, median; frames from the existing tools, 3 runs each, median.
+
+**Size** (`pnpm perf:size`, gzip -9 / brotli 11, whole `dist/`):
+
+| Group | Files | Raw | gzip | brotli |
+|---|---|---|---|---|
+| HTML | 4 | 378 577 B | 68 459 B | 49 694 B |
+| JS | 21 | 41 215 B | 18 380 B | 16 218 B |
+| CSS | 3 | 88 792 B | 15 276 B | 13 620 B |
+| Fonts | 50 | 556 736 B | 556 970 B | 554 549 B |
+| Images | 24 | 579 863 B | 563 026 B | 561 055 B |
+
+**Lighthouse** (runs 1 / 2 / 3, median in bold):
+
+| Page | Score | LCP | TBT | CLS |
+|---|---|---|---|---|
+| `/vi/` | 87 / 99 / 99, **99** | 2.5 / 1.8 / 1.9 s, **1.9 s** | 390 / 50 / 60 ms, **60 ms** | 0 |
+| `/en/` | 97 / 100 / 99, **99** | 1.9 / 1.8 / 2.1 s, **1.9 s** | 180 / 0 / 10 ms, **10 ms** | 0 |
+
+**Frames** (p95, median of 3; thresholds 20 ms at 1x, 40 ms at 4x):
+
+| Tool | Case | 1x | 4x |
+|---|---|---|---|
+| `cursor-frames` | Mat | **33.4 ms (over)** | 33.4 ms |
+| `cursor-frames` | Giai mat | 16.8 ms | 16.8 ms |
+| `chart-frames` | Mat | 16.8 ms | 16.8 ms |
+| `chart-frames` | Giai mat | 16.7 ms | 16.8 ms |
+| `ledger-frames` | 1280 px, row transition on | **33.4 ms (over)** | 33.3 ms |
+| `ledger-frames` | 1280 px, transition off | 16.8 ms | 33.4 ms |
+| `ledger-frames` | 375 px, transition on | 16.7 ms | 16.8 ms |
+
+**Reading.** The two red cells are the known P30 items (Mat sight lines; the ledger row-height
+transition), unchanged. The first Lighthouse run of each audit is the known cold-start swing. This
+is the reference the city must not move: dossier pages +0 B JS, no request caused by the city.
+
 ## 2026-11-01 (6) · Capability matrix; ledger rows linked to their place on the map
 
 Owner request. A new table section (no script) and, per ledger row, a "see it on the map" link plus

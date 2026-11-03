@@ -1,5 +1,6 @@
 import { defineCollection } from "astro:content";
 import { file } from "astro/loaders";
+import { dropHeld } from "./lib/ledger";
 import { CLAIMS_FILE, METRICS_FILE, RISKS_FILE } from "./lib/paths";
 import { claim, identity as identitySchema, localized, metric, place, risk, withoutInternal, withoutNotes } from "./lib/schema";
 
@@ -7,7 +8,7 @@ const claims = defineCollection({
   loader: file(CLAIMS_FILE, {
     // Drop `hold` entries before validation so they never reach a page. The file loader swallows
     // parser errors, so validation is left to `schema` (which fails the build).
-    parser: (text) => (JSON.parse(text) as { visibility?: string }[]).filter((c) => c.visibility !== "hold"),
+    parser: (text) => dropHeld(JSON.parse(text) as { visibility?: string }[]),
   }),
   schema: claim.transform((c) => (c.kind === "classified" ? c : withoutInternal(c))),
 });

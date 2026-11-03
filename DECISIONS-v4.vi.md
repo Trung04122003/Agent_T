@@ -11,6 +11,7 @@
 4. **Làm cho hoành tráng, đậm chất đặc vụ, và nhân vật Agent T phải độc lạ, nhìn là biết đặc vụ.** Chủ dự án duyệt tham vọng này. Chất lượng quan trọng hơn số lượng: ít thứ, mỗi thứ làm cho ra trò.
 5. **Ánh sáng và bóng tối chính là tiến trình của bản đồ.** Thành phố ban đêm = Mật. Thành phố lúc bình minh = Giải mật. Mỗi hồ sơ được giải mật thì sáng lên.
 6. **Claude Code được tự do sáng tạo** trong các giới hạn dưới đây. Mỗi thứ sáng tạo phải được ghi lại (xem "Quyền sáng tạo").
+7. **Nhân vật Agent T (02/11/2026).** Tính cách: lạnh lùng trong bóng tối, hài hước trên ánh sáng, bí ẩn ở cả hai. Đồ nghề: áo pardessus (áo khoác dài), mũ, giày chelsea boots, tẩu, vali đặc vụ, và dáng đi nhẹ không tiếng động. Cảnh đặc trưng: khi tội phạm xuất hiện trong thành phố, Agent T bước ra từ một con ngõ hẻm. Thiết kế là **nguyên bản**: không có nhân vật phim, game hay truyện tranh nào có sẵn làm mẫu. Màu theo dossier (đen mực, đồng thau, vàng).
 
 ## Quyền sáng tạo (Claude Code được tự quyết)
 Kiến trúc tòa nhà, hình khối, ánh sáng, hoạt ảnh, hạt, âm thanh tạo bằng code, phong cách HUD, tên tòa nhà và mật danh khu phố, và **chữ tạo không khí** (câu ngắn gợi bối cảnh).
@@ -23,6 +24,7 @@ Kiến trúc tòa nhà, hình khối, ánh sáng, hoạt ảnh, hạt, âm thanh
 - Không có bất cứ điều gì về vai trò trợ lý bí mật nêu ở DECISIONS-v3, dưới mọi hình thức (không tòa nhà, không thanh che, không gợi ý).
 - Không chính trị hay địa chính trị, trừ bản đồ chủ quyền đã duyệt: **Hoàng Sa và Trường Sa được ghi "(Việt Nam)" đúng như bản đồ hiện có**, miễn trừ khỏi sương mù, thanh che và hiệu ứng mờ dần. Không gõ lại các nhãn này: lấy từ cùng nguồn với bản đồ 2D và thêm bài test báo lỗi nếu chúng khác nhau hoặc biến mất. Không vẽ bất kỳ đường nào trên biển.
 - Không logo hay huy hiệu của tổ chức thật (kể cả Prudential), không số liệu giả, không chữ nào ngụ ý hiệu suất đầu tư, không chữ ký tay, không trang phục mang hơi hướng quân đội trên nhân vật.
+- Chiếc tẩu chỉ là món đạo cụ trong bóng dáng với ánh than hồng (không hoạt ảnh hút thuốc). Sự kiện Kẻ đột nhập (UX-v4 mục 6b) luôn trừu tượng và không bạo lực: không bao giờ đại diện cho người thật, nhóm, quốc tịch, nghề nghiệp, khách hàng hay tổ chức nào, không nêu tên tội danh, không vũ khí, không rượt đuổi, không hình ảnh bắt giữ.
 - Mục `hold` không bao giờ được biên dịch. Thành phố chỉ đọc **dữ liệu build đã lọc** mà sổ cái dùng. Tính đến 02/11/2026: vai trò DFL24 IC đã xóa; Prudential đã duyệt và hiện lên; mục `classified` chỉ hiện nhãn loại.
 - Chỉ các địa chỉ trong allowlist rò rỉ mới được xuất hiện (email công việc cho "Yêu cầu giải mật"). Không phương thức liên hệ mới, không biểu mẫu, không backend, không analytics ngoài phần đo cục bộ đã duyệt, không cookie.
 - Không nơi chốn riêng tư: Atlas chỉ hiện các nơi đã có trong `content/places.json`.

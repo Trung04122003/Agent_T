@@ -9,6 +9,7 @@ Read together with `ROADMAP-v4.md` and `UX-v4.md`. Language rules: talk to the o
 4. **Make it spectacular, make it feel like a spy world, and make the Agent T character unusual and unmistakably "agent".** The owner approves ambition here. Quality over quantity: few elements, each done well.
 5. **Light and shadow = the map's progress.** Night city = Mat. Dawn city = Giai mat. Each dossier lights up as it is declassified.
 6. **Creative freedom for Claude Code** inside the limits below. Every creative invention must be logged (see "Creative license").
+7. **Agent T the character (02/11/2026).** Personality: cold in the dark, funny in the light, mysterious in both. Kit: pardessus (long overcoat), hat, chelsea boots, pipe, briefcase, and a soft silent walk. Signature scene: when a criminal appears in the city, Agent T steps out of an alley. The design is **original**: no existing film, game or comic character is a model for it. Colours follow the dossier (ink black, brass, gold).
 
 ## Creative license (what Claude Code may decide alone)
 Architecture of buildings, shapes, lighting, animation, particles, procedural sound, HUD style, building names and district codenames, and **atmosphere microcopy** (short flavor lines).
@@ -21,6 +22,7 @@ Conditions:
 - Nothing about the confidential assistant role described in DECISIONS-v3, in any form (no building, no redaction bar, no hint).
 - No politics or geopolitics, except the approved sovereignty map: **Hoang Sa and Truong Sa are labelled "(Viet Nam)" exactly as the existing map does**, exempt from fog, redaction and fading. No lines of any kind drawn in the sea. Do not re-type these labels: take them from the same source as the 2D map and add a test that fails if they differ or disappear.
 - No real organisation logos or badges (Prudential included), no fake figures, no wording that implies investment performance, no handwritten signature, no military-looking clothing on the character.
+- The pipe is a silhouette prop with an ember glow only (no smoking animation). The Intruder event (UX-v4 section 6b) stays abstract and non-violent: it never represents a real person, group, nationality, profession, client or organisation, never names a crime, and has no weapons, chase or arrest imagery.
 - `hold` items are never compiled. The city reads **only the filtered build data** that the ledger uses. As of 02/11/2026: DFL24 IC role is deleted; Prudential is approved and shown; `classified` items show their type label only.
 - Only addresses in the leak allowlist may appear (the work email for "Request declassification"). No new contact methods, no form, no backend, no analytics beyond the local-only measurement already approved, no cookies.
 - No private places: the atlas shows only the places already in `content/places.json`.

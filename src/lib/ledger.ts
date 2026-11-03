@@ -20,6 +20,14 @@ export function formatPeriod(period: Period, presentLabel: string): string {
   return `${start} – ${formatPoint(period.end)}`;
 }
 
+/**
+ * The loader's filter (content.config.ts): `hold` entries are dropped before validation, so they
+ * never reach a page. Shared so that tests and the city read exactly what the ledger reads.
+ */
+export function dropHeld<T extends { visibility?: string }>(raw: T[]): T[] {
+  return raw.filter((c) => c.visibility !== "hold");
+}
+
 /** Entries that may be rendered: `hold` never is (SPEC section 6), even if one slips past the loader. */
 export function publicClaims<T extends Claim>(claims: T[]): T[] {
   return claims.filter((c) => c.kind === "classified" || c.visibility !== "hold");

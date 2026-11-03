@@ -139,6 +139,39 @@ describe("check-leaks noindex rule", () => {
   });
 });
 
+describe("check-leaks on the city route (ROADMAP-v4 P31.6)", () => {
+  it("a held entry's id alone is a leak (a city deep link, say)", () => {
+    const r = run("city-seeded", {
+      "index.html": page("<p>dossier</p>"),
+      "city.html": page(`<a href="#d-${held.id}">x</a>`),
+    });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain(`hold id (${held.id})`);
+  });
+
+  it("scans the <lang>/city/ folder and reports it", () => {
+    const dir = join(base, "city-route");
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(join(dir, "vi", "city"), { recursive: true });
+    writeFileSync(join(dir, "vi", "index.html"), page("<p>dossier</p>"));
+    writeFileSync(join(dir, "vi", "city", "index.html"), page('<p>Contact: someone@example.org, 0905 123 456</p>'));
+    writeFileSync(join(dir, "vi", "city", "atlas.json"), JSON.stringify({ plot: held.id }));
+    const r = spawnSync(process.execPath, ["scripts/check-leaks.mjs", dir], { encoding: "utf8", env: { ...process.env, CUPID_CLAIMS: withHold } });
+    const out = r.stdout + r.stderr;
+    expect(r.status).toBe(1);
+    expect(out).toContain("(city route: 2 file(s))");
+    const page1 = `${join("vi", "city", "index.html")}:1`;
+    expect(out).toContain(`${page1}: email address`);
+    expect(out).toContain(`${page1}: VN phone number`);
+    expect(out).toContain(`${join("vi", "city", "atlas.json")}:1: hold id (${held.id})`);
+  });
+
+  it("a clean city page passes", () => {
+    const r = run("city-clean", { "index.html": page("<p>Agent T City</p>") });
+    expect(r.out).toContain("check-leaks: OK");
+  });
+});
+
 describe("check-leaks shared text", () => {
   it("does not flag text a hold entry shares with a public entry", () => {
     const shared = pub.evidence[0].note.vi;

@@ -35,6 +35,7 @@ Bố cục gợi ý (Claude Code được tinh chỉnh, giữ nguyên logic):
 - Kiểu tòa nhà chọn theo `kind` và `domain` (từ `content/domains.json`), không bao giờ theo con người: giáo dục = sảnh học viện bậc thang; công nghệ = tháp ăng-ten hoặc nhà máy chủ; kinh doanh = sảnh chợ; tài chính – bảo hiểm = tháp kính (không logo, chỉ chữ tên tổ chức trên biển); ngoại giao = gian thấp có cột cờ trơn (trừu tượng, **không biểu tượng quốc gia, không cờ, không huy hiệu**); dự án = đài quan sát hoặc cột cảm biến.
 - Các địa danh cho thành phần dossier có sẵn: Tháp lưu trữ (sổ cái), Phòng tổng kết (AAR), Sổ rủi ro (risks), Phòng thí nghiệm (ma trận năng lực và chuỗi truy nguồn), **Hộp thư chết** (liên hệ: một ki-ốt buồng điện thoại/hộp thư mở nút "Yêu cầu giải mật", thứ duy nhất chạm tới email). Địa danh chỉ xuất hiện nếu nội dung của nó có và không `null`.
 - Một con sông hay kênh và vài cây cầu được phép để đường chân trời đa dạng. Không khẳng định bờ biển nào trong thành phố (Atlas mới có bờ biển thật).
+- **Ngõ hẻm:** ít nhất ba ngõ hẹp, một ngõ nhìn thấy từ quảng trường (xem mục 6b). Đó là nơi Agent T bước vào thành phố.
 - Quy tắc đường chân trời: tòa cao nhất không phải mục "quan trọng nhất". Độ cao đến từ kiểu tòa nhà, không bao giờ từ bậc bằng chứng, số liệu hay trọng số lens.
 
 ## 3. Phép chiếu, camera, điều khiển
@@ -69,17 +70,36 @@ Bộ đếm tiến trình "mức sáng n trên N" ở HUD, không bao giờ than
 - Trước/sau sáp nhập tỉnh 2025: theo đúng cách `Map.astro` làm ở từng chế độ. Đừng tự nghĩ ra quy tắc mới.
 
 ## 6. Agent T: cuốn "kinh thánh" nhân vật
-Mục tiêu: độc lạ, nhớ lâu, nhìn là biết đặc vụ, và nguyên bản 100%. Dựng bằng code từ các đa giác (không sprite, không ảnh), 8 hướng, vẫn đọc được ở chiều cao 48 px.
-1. **Chiếc áo khoác dài.** Áo khoác dài màu tối. Gấu áo tách thành năm mảnh đuôi trễ theo chuyển động bằng chuỗi lò xo, như những trang hồ sơ bị xé. Cổ áo bất đối xứng: bên trái cao và cứng như tab tệp hồ sơ, bên phải thấp.
-2. **Mặt nạ.** Đầu nhẵn, mờ, không mặt, chỉ có một khe ngang mảnh màu đồng thau. Khe dịch về hướng đang nhìn (cũng là dấu hiệu hướng). Cứ vài giây lại có một tia sáng quét qua. Không mặt, không ảnh, không giống người thật: chiếc mặt nạ chính là nhân vật.
-3. **Chiếc đèn.** Một hình trụ đồng nhỏ cầm trong tay, tạo ra chùm sáng. Nó đung đưa theo nhịp bước và được giơ lên khi tới cửa.
-4. **Cái bóng.** Bóng đổ là một bản sao nghiêng của hình bóng nhân vật. Sau khoảng 8 giây đứng yên, bóng quay đầu từ từ về phía khu bị niêm phong gần nhất (một gợi ý lặng lẽ, và là một khoảnh khắc đặc trưng). Ngoài ra bóng không có gì siêu nhiên.
-5. **Dải ruy băng.** Phía sau nhân vật là một dải mảnh: ở Mật là các thanh đen (lối đi bị che dần phía sau, mặt đất sau lưng tối lại); ở Giải mật là một sợi vàng mảnh. Nó mờ đi sau vài giây. Chỉ để trang trí: không có trục, không có giá trị, không đọc ra xu hướng đi lên.
-6. **Vòng thông hành** dưới chân: một hình elip mảnh có kiểu nét đứt cho biết mức thông hành của khu đang đứng (ký hiệu T1, T2, T3, từ bậc bằng chứng đã tính).
-7. **Nhàn rỗi và cử chỉ** (hai kiểu nhàn rỗi, hai cử chỉ, không hơn): xem cổ tay (vòng đồng nhấp nháy); chạm cổ áo; giơ đèn ở cửa; chạm tai nghe ở Hộp thư chết.
-8. **Biến hình khi giải mật:** năm mảnh gấu áo lật như trang giấy, lần lượt từ cổ xuống gấu (cách nhau khoảng 60 ms), để lộ **lớp lót vàng**; khe mặt nạ mở thành một vòng thấu kính với tia sáng ấm; đèn đổi từ trắng lạnh sang vàng ấm; bảng tên đổi từ "Agent T" sang "Lê Thái Trung" (đúng hai nhãn như khung ảnh chân dung). Ở cả hai chế độ nhân vật vẫn đeo mặt nạ.
-9. **Quy tắc nguyên bản.** Tránh các diện mạo gắn với nhân vật có sẵn: vest tối với kính đen và sơ mi trắng; mũ phớt và áo choàng đỏ; mã vạch trên đầu trọc; sát thủ trùm mũ. Viết một ghi chú ngắn về tính nguyên bản trong `docs/city/creative-log.md`. Chủ dự án sẽ tìm ảnh theo bóng dáng nhân vật ở checkpoint P43; đổi thiết kế nếu có gì trùng.
-10. Không vũ khí, không đồng phục, không huy hiệu, không trang phục quân đội. Nhân vật là người quan sát mang theo một ngọn đèn.
+Mục tiêu: độc lạ, nhớ lâu, nhìn là biết đặc vụ, và nguyên bản 100%. Chính chủ dự án mô tả nhân vật; không có nhân vật phim, game hay truyện tranh nào có sẵn làm mẫu, và không được dùng làm mẫu. Dựng bằng code từ các đa giác (không sprite, không ảnh), 8 hướng, vẫn đọc được ở chiều cao 48 px.
+
+**Tính cách (quyết định mọi hoạt ảnh và mọi dòng chữ):** lạnh lùng trong bóng tối, hài hước trên ánh sáng, bí ẩn ở cả hai.
+- Mật (tối): tĩnh, tiết kiệm, không động tác thừa. Lúc nghỉ chỉ đứng yên và áo khoác buông xuống. Không đùa. Chữ ngắn gọn.
+- Giải mật (sáng): vẫn là con người đó, nhưng khô khan, đùa mặt lạnh: những cử chỉ nhỏ tự làm nhẹ đi vẻ nghiêm trọng của chính mình. Tối đa hai trò đùa (bên dưới). Chữ có thể hóm, không bao giờ ngớ ngẩn.
+- Cả hai: không bao giờ thấy mặt. Vành mũ và mặt nạ giữ nó trong bóng. Chiếc vali không bao giờ mở ra cho thấy đồ bên trong. Nhân vật không bao giờ giải thích về mình.
+
+**Trang phục và đồ nghề (theo danh sách của chủ dự án):**
+1. **Áo pardessus.** Áo khoác dài màu tối. Gấu áo tách thành năm mảnh đuôi trễ theo chuyển động trên chuỗi lò xo, như những trang hồ sơ bị xé. Cổ áo bất đối xứng: bên trái cao và cứng như tab tệp hồ sơ, bên phải thấp.
+2. **Mũ đặc vụ.** Mũ thân thấp, vành phẳng, màu mực mờ, một dải đồng thau mảnh, và một khía nhỏ bên trái lặp lại đường cổ áo cao bên trái. Vành mũ phủ bóng lên mặt nạ.
+3. **Giày chelsea boots.** Giày cổ thấp, mảnh chun hai bên nhìn thấy được trong bóng dáng. Đi không phát ra tiếng.
+4. **Mặt nạ.** Đầu nhẵn, mờ, không mặt, chỉ có một khe ngang mảnh màu đồng thau dưới vành mũ. Khe dịch về hướng đang nhìn (cũng là dấu hiệu hướng). Cứ vài giây lại có một tia sáng quét qua. Không mặt, không ảnh, không giống người thật.
+5. **Chiếc vali đặc vụ.** Màu mực mờ, góc đồng thau, một chốt khóa, cầm ở tay phải. Không bao giờ mở ra cho thấy đồ bên trong; khi mở chỉ có ánh sáng vàng tràn ra.
+6. **Chiếc tẩu.** Một món đạo cụ nhìn thấy trong bóng dáng dưới mặt nạ, và là một điểm sáng ấm nhỏ: điểm ấm duy nhất trong đêm Mật. Chỉ vẽ ánh than hồng và thỉnh thoảng một sợi khói mảnh. Không hoạt ảnh rít hơi, không đám khói lớn.
+7. **Chiếc đèn.** Một hình trụ đồng nhỏ ở tay trái, tạo ra chùm sáng. Nó đung đưa theo nhịp bước và được giơ lên khi tới cửa.
+8. **Dáng đi không tiếng động.** Lướt nhẹ với một nhịp nhún nhỏ. Không tiếng bước chân, không dấu chân. Độ trễ của gấu áo là chuyển động duy nhất "lên tiếng". Khi nhân vật đi, tiếng ù nền dịu xuống một chút, như thể thành phố nín thở.
+9. **Cái bóng.** Bóng đổ là một bản sao nghiêng của hình bóng nhân vật. Sau khoảng 8 giây đứng yên, bóng quay đầu từ từ về phía khu bị niêm phong gần nhất (một gợi ý lặng lẽ). Ngoài ra bóng không có gì siêu nhiên.
+10. **Dải ruy băng.** Phía sau nhân vật là một dải mảnh: ở Mật là các thanh đen (lối đi bị che dần phía sau, mặt đất sau lưng tối lại); ở Giải mật là một sợi vàng mảnh. Nó mờ đi sau vài giây. Chỉ để trang trí: không có trục, không có giá trị, không đọc ra xu hướng đi lên.
+11. **Vòng thông hành** dưới chân: một hình elip mảnh có kiểu nét đứt cho biết mức thông hành của khu đang đứng (ký hiệu T1, T2, T3, từ bậc bằng chứng đã tính).
+12. **Cử chỉ.** Mật: áo khoác buông xuống, vòng đồng ở cổ tay nhấp nháy, giơ đèn ở cửa. Giải mật thêm hai trò đùa duy nhất: nhân vật chạm mũ chào một tòa nhà đang sáng như chào một người quen; chốt vali bật mở bằng một ngón tay, lóe ánh vàng, nhân vật đóng lại ngay rồi nhìn đi chỗ khác. Không gì khác.
+13. **Biến hình khi giải mật.** Năm mảnh gấu áo lật như trang giấy, lần lượt từ cổ xuống gấu (cách nhau khoảng 60 ms), để lộ **lớp lót vàng**; khe mặt nạ mở thành một vòng thấu kính với tia sáng ấm; đèn đổi từ trắng lạnh sang vàng ấm; chốt vali lóe sáng; bảng tên đổi từ "Agent T" sang "Lê Thái Trung" (đúng hai nhãn như khung ảnh chân dung). Ở cả hai chế độ nhân vật vẫn giữ mũ và mặt nạ.
+14. **Quy tắc nguyên bản.** Tránh các diện mạo gắn với nhân vật có sẵn: vest tối với kính đen và sơ mi trắng; mũ phớt và áo choàng đỏ; mã vạch trên đầu trọc; sát thủ trùm mũ; và bất kỳ nhân vật nào trong phim, series, game hay truyện tranh mà chủ dự án từng xem. Áo màu đen mực với lớp lót vàng; mặt là chiếc mặt nạ; đồ nghề là danh sách của chủ dự án. Viết một ghi chú ngắn về tính nguyên bản trong `docs/city/creative-log.md`. Chủ dự án sẽ tìm ảnh theo bóng dáng nhân vật ở checkpoint P43; đổi thiết kế nếu có gì trùng.
+15. Không vũ khí, không đồng phục, không huy hiệu, không trang phục quân đội. Nhân vật là người quan sát mang theo một ngọn đèn và một chiếc vali.
+
+## 6b. Ngõ hẻm, màn xuất hiện và sự kiện Kẻ đột nhập
+- **Ngõ hẻm.** Quy hoạch có ít nhất ba ngõ hẹp (một ngõ nhìn thấy từ quảng trường): những túi tối có hốc cửa và một cột đèn tắt. Không biển hiệu thương hiệu, không chữ vẽ bậy.
+- **Cảnh mở đầu.** Khi thành phố mở ra, Agent T đã đứng sẵn trong ngõ gần nhất. Ở thao tác đầu tiên (hoặc sau khoảng 1,2 giây) nhân vật bước ra ánh sáng không một tiếng động. Bỏ qua được; khi giảm chuyển động thì nhân vật bắt đầu ở trạng thái đứng ngay cửa ngõ.
+- **Sự kiện Kẻ đột nhập** (tùy chọn, hiếm, không bạo lực). Tối đa ba phút một lần, chỉ bắt đầu sau khi người chơi đứng yên 6 giây (không bao giờ giành quyền điều khiển khi đang đi), không bao giờ trong lúc mở bản tóm tắt, lao xuống Atlas hay Giải mật, không bao giờ ở mức Thấp hoặc khi giảm chuyển động, và không bao giờ trong Thành phố yên tĩnh. Một "nghi phạm" xuất hiện ở rìa ánh sáng: một bóng đen không đặc điểm, không vũ khí, không trang phục, không chữ. Một dòng HUD ghi "Có chuyển động ở rìa ánh sáng." (câu nháp để duyệt). Agent T đáp lại: nhân vật bước vào túi tối gần nhất rồi bước ra từ ngõ gần nghi phạm nhất (đoạn cắt được bóng tối che, khoảng 400 ms). Đèn bắt lấy nghi phạm, bóng đó tan thành các thanh che rồi biến mất; chốt vali lóe sáng; ở Giải mật nhân vật chạm mũ. Quyền điều khiển trả lại. Tổng tối đa 4 giây, bấm phím bất kỳ để bỏ qua. Không cộng điểm và không chặn gì.
+- **Rào chắn.** Nghi phạm không bao giờ đại diện cho bất kỳ người thật, nhóm, quốc tịch, nghề nghiệp, khách hàng hay tổ chức nào. Không nêu tên tội danh nào. Không bạo lực, không rượt đuổi, không hình ảnh bắt giữ, không màu báo động đỏ, không âm thanh nào to hơn tiếng ù nền. Không bao giờ gắn với một mục hồ sơ hay một bậc bằng chứng.
+
 
 ## 7. HUD và các bảng
 - HUD (DOM, không phải canvas, để truy cập được): góc trên trái là bảng tên "AGENT T" và chế độ; góc trên phải là công tắc chế độ, công tắc âm thanh, chất lượng, trợ giúp phím, "Về dossier"; góc dưới trái là nhật ký nhiệm vụ (một dòng mỗi hồ sơ, kèm biểu tượng trạng thái); góc dưới phải là la bàn với mục tiêu kế tiếp xếp theo trọng số **lens** trong `content/lenses.json` (người xem Đối tác thấy lộ trình Đối tác trước). La bàn chỉ là gợi ý, không phải cổng chặn.
@@ -102,7 +122,7 @@ Mục tiêu: độc lạ, nhớ lâu, nhìn là biết đặc vụ, và nguyên 
 Mốc thời gian (ms, gợi ý): 0 nín thở (âm nền dịu xuống) · 0–300 đèn bùng lên · 300–1700 sóng bình minh lan từ Agent T ra cả thành phố như một đợt quét clip/ghép lớp, các tòa nhà đổi bảng màu khi sóng đi qua, thanh che trượt khỏi biển hiệu · 400–900 lớp lót áo lật · 1700–2100 lắng xuống, đổi bảng tên · tổng ≤ 2,1 giây ở mức Cao, ≤ 1,2 giây ở mức Thấp, tức thì khi giảm chuyển động. Bấm phím hay chuột bất kỳ để nhảy tới trạng thái cuối. Không bao giờ chạy hai chuyển cảnh như vậy cùng lúc. Chỉ dùng `transform`, `opacity` và ghép lớp canvas; không đụng bố cục.
 
 ## 10. Âm thanh
-Chỉ dùng Web Audio tạo bằng code (không file mẫu): bước chân (tiếng tách nhẹ), tiếng bật đèn, chuông cửa, tiếng quét giải mật, tiếng thành phố xa. Mặc định tắt, một công tắc, âm lượng thấp; `prefers-reduced-motion` không đổi âm thanh nhưng công tắc luôn với tới được. Bản nhạc nền vẫn nằm dưới cổng nhạc có sẵn (`check:audio`, cần giấy phép).
+Chỉ dùng Web Audio tạo bằng code (không file mẫu): tiếng bật đèn, chuông cửa, chốt vali, tiếng quét giải mật, tiếng thành phố xa. **Agent T không phát ra tiếng bước chân**: khi nhân vật đi, tiếng ù nền dịu xuống một chút. Mặc định tắt, một công tắc, âm lượng thấp; `prefers-reduced-motion` không đổi âm thanh nhưng công tắc luôn với tới được. Bản nhạc nền vẫn nằm dưới cổng nhạc có sẵn (`check:audio`, cần giấy phép).
 
 ## 11. Những khoảnh khắc đặc trưng (ít nhất một mỗi phase)
 1. Ngọn đèn cắt một hình quạt xuyên bóng tối, bị các tòa nhà che.
@@ -115,6 +135,7 @@ Chỉ dùng Web Audio tạo bằng code (không file mẫu): bước chân (ti�
 8. Mưa trên tháp kính (chỉ mức Cao).
 9. Mọi khu đều sáng: thành phố trọn ánh sáng, cột sáng đứng yên.
 10. Hộp thư chết: nơi duy nhất thế giới này chạm tới hộp thư thật.
+11. Agent T bước ra khỏi ngõ hẻm vào ánh sáng, không một tiếng động.
 
 ## 12. Khả năng truy cập và phương án dự phòng
 - Toàn bộ nội dung với tới được mà không cần canvas: danh sách khu phố tĩnh (liên kết), danh sách địa danh, cùng các bảng.
@@ -134,7 +155,7 @@ Chỉ dùng Web Audio tạo bằng code (không file mẫu): bước chân (ti�
 Tự hạ mức theo trung bình trượt của khung hình (không bao giờ tự nâng lại trong cùng phiên); có nút "Chất lượng" thủ công ở HUD. Dừng mọi thứ khi `document.hidden`; hạ chuyển động nền xuống ~20 fps sau 20 giây không thao tác.
 
 ## 14. Danh sách cắt và tiêu chí loại bỏ
-Nếu một tính năng vượt ngân sách sau khi đã tối ưu hợp lý, nó bị cắt theo thứ tự: mưa, phản chiếu, xe cộ nền, đèn pha quét, độ mượt của sương mù, cử chỉ nhàn rỗi, các mức zoom camera. Không bao giờ hạ ngân sách. Các hạng mục phụ (chế độ ẩn nấp, giờ trong ngày, chế độ chụp ảnh) tắt mặc định và bị gỡ nếu tốn quá 2 ms mỗi khung trên máy i3.
+Nếu một tính năng vượt ngân sách sau khi đã tối ưu hợp lý, nó bị cắt theo thứ tự: mưa, phản chiếu, xe cộ nền, đèn pha quét, độ mượt của sương mù, cử chỉ nhàn rỗi, các mức zoom camera. Không bao giờ hạ ngân sách. Các hạng mục phụ (chế độ ẩn nấp, giờ trong ngày, chế độ chụp ảnh) tắt mặc định và bị gỡ nếu tốn quá 2 ms mỗi khung trên máy i3. Sự kiện Kẻ đột nhập không bao giờ bị cắt nếu chủ dự án chưa đồng ý.
 
 ## 15. Nghiệm thu (bằng mắt chủ dự án)
 1. Trong năm giây một người lạ nói "thành phố đặc vụ" mà không cần ai bảo.
@@ -144,6 +165,7 @@ Nếu một tính năng vượt ngân sách sau khi đã tối ưu hợp lý, n�
 5. Mọi mục hồ sơ với tới được chỉ bằng bàn phím, và mọi bảng khớp với chữ của sổ cái.
 6. Máy i3 giữ được mức Vừa với p95 thời gian khung dưới 20 ms.
 7. Tắt JS hoặc chọn Lite vẫn kể được cả câu chuyện.
+8. Agent T đọc ra là lạnh lùng trong bóng tối, khô khan và hài hước trên ánh sáng, bí ẩn ở cả hai, mà không có dòng chữ nào giải thích về nhân vật.
 
 ## 16. Quy tắc chữ
 Ngắn, cụ thể, trầm. Không dấu chấm than, không tiếng lóng game, không thanh phần trăm, không "hoàn thành nhiệm vụ" hay điểm số. Câu tạo không khí được gợi tâm trạng ("Đèn khu này vẫn chưa bật") nhưng không được nêu điều gì mà nội dung không nêu. Mọi chuỗi mới nằm trong namespace `city` của `content/ui.json` cho cả vi và en, liệt kê trong `docs/city/copy-review.md`.

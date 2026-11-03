@@ -55,6 +55,7 @@ Checkpoint: owner clicks through the empty shell and the fallback.
 - 34.2 Archetypes: stepped campus hall, antenna tower / server hall, market hall, glass tower, low pavilion with mast (abstract, no flags or emblems), observatory, vault monolith, landmark kiosks (Dead Drop, Debrief Room, Archive Tower, Risk Registry, Lab). Picked from `kind` and domain, never from tier, metrics or lens weights. -> verify: snapshot of archetype per entry; test that skyline height does not correlate with tier.
 - 34.3 Face shading from one fixed light direction, window grids, roof clutter, edge highlights; static layer baked once per zoom bucket. -> verify: bake time logged; memory logged.
 - 34.4 Dev page `/dev/city-sheet` showing all archetypes side by side in both palettes. -> verify: screenshots in `docs/city/review/P34/`.
+- 34.5 Alley kit: at least three narrow alleys, one visible from the plaza, each a dark pocket with a doorway recess and a dead lamp, no brand signage or text; they are Agent T's entrances. -> verify: invariants test (every alley connects to the road graph, at least one is within view of the plaza), screenshot.
 Checkpoint (taste): owner picks between two skyline directions if Claude Code produced two.
 
 ### P35 — Night engine (the Mat look)
@@ -71,7 +72,8 @@ Checkpoint: **signature moments 1 and 8** screenshot-ready; owner reviews the ni
 - 36.3 Lantern cone with occlusion by building footprints (2D visibility polygon, ray casting against footprint edges, cached per position cell). -> verify: unit test on a known layout; frame time with the cone on.
 - 36.4 Camera follow with easing, bounds, three zoom steps. -> verify: no jitter at zoom edges; reduced motion removes easing.
 - 36.5 Long cast shadow from the fixed light direction. -> verify: screenshot.
-Checkpoint: **signature moment 1** live; owner walks the city.
+- 36.6 Opening shot: Agent T starts hidden in the nearest alley and steps silently into the light on the first input (or after about 1.2 s); skippable; under reduced motion he starts standing at the alley mouth. -> verify: e2e for the entrance, the skip and the reduced-motion start.
+Checkpoint: **signature moments 1 and 11** live; owner walks the city.
 
 ### P37 — Districts, missions, briefings
 - 37.1 Proximity and door prompts; interaction on `E`/`Enter`/click. -> verify: e2e.
@@ -118,12 +120,13 @@ Checkpoint: owner reviews Act II end to end.
 ## Act III — Agent T, the character
 
 ### P43 — Character v2: the signature
-- 43.1 The Long Coat with five lagging hem shards on a spring chain; asymmetric collar. -> verify: dev sprite sheet, 8 directions x walk/idle.
-- 43.2 The Visor (brass slit follows facing, periodic glint) and the Lantern (swing, raise at doors). -> verify: screenshot sheet.
-- 43.3 The Shadow with the idle hint turning toward the nearest sealed district after ~8 s. -> verify: unit test picks the nearest sealed plot; reduced motion shows no turn.
-- 43.4 The Ribbon (redaction bars in Mat, gold hairline in Giai mat), the clearance ring (T1/T2/T3 glyphs), two idles and two gestures. -> verify: draw cost per frame for the whole character <= 1.0 ms on the i3 at High.
-- 43.5 Originality note in `docs/city/creative-log.md`: what makes the silhouette original and what was avoided (see UX-v4 section 6, rule 9). -> verify: note exists.
-Checkpoint (taste and safety): owner does an image search on the silhouette and chooses between two design directions if offered. **Signature moments 4 and 5 start here.**
+- 43.1 The pardessus (long overcoat) with five lagging hem shards on a spring chain and an asymmetric collar; the hat (shallow crown, flat brim, thin brass band, left notch, brim shadowing the visor); chelsea boots (elastic side gusset readable in silhouette). -> verify: dev sprite sheet, 8 directions x walk/idle, readable at 48 px.
+- 43.2 The visor (brass slit follows facing, periodic glint under the brim), the lantern (swing, raised at doors), the briefcase (matte ink, brass corners, one latch, never shown open with contents), the pipe (silhouette prop, ember glow as a tiny warm light, at most one thin wisp now and then, no puffing animation, no smoke clouds). -> verify: screenshot sheet.
+- 43.3 Silent, soft gait: a small glide and bob, no footstep sound, no footprints. -> verify: a test proving no footstep audio call exists.
+- 43.4 Personality states. Mat: still and economical, no jokes. Giai mat: deadpan, with exactly two jokes (tips the hat to a lit building; the briefcase latch clicks open a finger's width, a gold glint, he closes it and looks away). -> verify: e2e that the jokes never play in Mat; reduced motion shows neither as animation.
+- 43.5 The shadow with the idle hint (about 8 s, nearest sealed district), the ribbon (redaction bars in Mat, gold hairline in Giai mat), the clearance ring (T1/T2/T3 glyphs), the Mat idles (coat settles, wrist ring pulses). -> verify: unit test picks the nearest sealed plot; draw cost per frame for the whole character <= 1.0 ms on the i3 at High.
+- 43.6 Originality note in `docs/city/creative-log.md`: what makes the silhouette original and what was avoided (UX-v4 section 6, "Originality rule"). -> verify: note exists.
+Checkpoint (taste and safety): the owner does an image search on the silhouette and chooses between two design directions if offered. **Signature moments 4 and 5 start here.**
 
 ### P44 — Declassify sequence
 - 44.1 Sunrise wave from Agent T, palette change as it passes, bars slide off, coat lining flips with a 60 ms stagger, nameplate swaps from "Agent T" to "Le Thai Trung". -> verify: frame times during the sequence, no layout in a trace.
@@ -132,7 +135,7 @@ Checkpoint (taste and safety): owner does an image search on the silhouette and 
 Checkpoint: **signature moments 3 and 4 complete**; the owner decides whether the sequence is too long.
 
 ### P45 — Procedural sound
-- 45.1 Web Audio synthesis for footsteps, lantern click, door chime, declassify sweep, city hum. No sample files. Default muted, one control. -> verify: `dist/` has no audio file from the city; test that audio is muted at load.
+- 45.1 Web Audio synthesis for the lantern click, door chime, briefcase latch, declassify sweep and city hum. **No footstep sound**: Agent T walks in silence and the ambient hum dips slightly while he moves. No sample files. Default muted, one control. -> verify: `dist/` has no audio file from the city; test that audio is muted at load and that no footstep sound exists.
 - 45.2 Integrate with the music gate: the background track appears only if `check:audio` passes (licence). -> verify: with no licence, no track and no track toggle.
 - 45.3 Audio never starts before a user gesture; the context is closed when the tab is hidden for long. -> verify: manual and unit test with a mocked context.
 Checkpoint: owner listens with and without headphones.
@@ -143,6 +146,13 @@ Checkpoint: owner listens with and without headphones.
 - 46.1 Car light trails along roads (cap 6), two tower searchlight sweeps, blinking antennas, drifting paper/ash particles (cap per tier). No people, no crowds (no depiction of real people). -> verify: counters per tier in a test.
 - 46.2 All ambient motion off at Low, frozen under reduced motion, throttled at idle. -> verify: trace at idle shows <= ~20 fps.
 Checkpoint: owner reviews whether the city feels alive without feeling busy.
+
+### P46b — The Intruder event (optional, non-violent)
+- 46b.1 Event director: at most once per 3 minutes, only after 6 s of player idle, never during a briefing, the Atlas dive or Declassify, never at the Low tier or under reduced motion, off in Quiet city. -> verify: unit test of the scheduler.
+- 46b.2 The "suspect": a featureless dark silhouette at the edge of the light, no weapon, no costume, no text, never tied to a claim or tier. HUD line "Movement at the edge of the light." drafted into `docs/city/copy-review.md`. -> verify: screenshot; forbidden-word check on all event strings.
+- 46b.3 Agent T answers: he steps into the nearest dark pocket and comes out of the alley closest to the suspect (cut hidden in darkness, about 400 ms); the lantern catches the suspect, who dissolves into redaction bars; briefcase latch glint; in Giai mat the hat tip; control returns. At most 4 s, any key skips. -> verify: e2e for trigger, skip and return of control; frame times in a trace.
+- 46b.4 Guardrails test: no crime named, no person, group or place named, no red alarm colour, no sound louder than the ambient hum, no weapon, chase or arrest imagery. -> verify: test over strings and palette.
+Checkpoint: **signature moment 11** in context; the owner decides whether the event stays, moves behind Quiet city, or is cut.
 
 ### P47 — Finale and rewards
 - 47.1 When all districts are declassified: the city at full light, beacon steady, a calm closing panel built only from content ("Open the full dossier", "Print", "Request declassification"). No score, no confetti. -> verify: e2e; panel text from content only.
