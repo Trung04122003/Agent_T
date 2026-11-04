@@ -136,6 +136,37 @@ for (const mode of ["mat", "giai-mat"]) {
   await context.close();
 }
 
+// P41: moment 7, the dive into the table (a frame mid-plunge, with motion) and the real map open
+// in its overlay, in both modes.
+for (const mode of ["mat", "giai-mat"]) {
+  const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
+  await context.addInitScript((m) => {
+    localStorage.setItem("mode", m);
+    localStorage.setItem("cursorFx", "system");
+  }, mode);
+  const page = await context.newPage();
+  await page.goto(`${site}/vi/city/`);
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-atlas") === "ready");
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.getAttribute("data-entrance") === "done");
+  const stage = page.locator("[data-city-stage]");
+  await stage.scrollIntoViewIfNeeded();
+  const b = await page.evaluate(() => document.querySelector(".city-layer--top").atlasBeacon());
+  await stage.click({ position: { x: b.x, y: b.y + 10 } });
+  await page.waitForFunction(() => document.querySelector("[data-city-stage]")?.dataset.dive === "in", null, { timeout: 15_000 });
+  await page.waitForTimeout(260);
+  if (mode === "mat") {
+    const mid = join(out, "moment-7-dive.png");
+    await page.screenshot({ path: mid });
+    shots.push(mid);
+  }
+  await page.waitForFunction(() => document.querySelector("dialog[data-brief='atlas']")?.open);
+  await page.waitForTimeout(500);
+  const open = join(out, `atlas-map-${mode}.png`);
+  await page.screenshot({ path: open });
+  shots.push(open);
+  await context.close();
+}
+
 // P38: one district in its four states, night and dawn (still frames), and night beside dawn.
 {
   const states = ["sealed", "scouted", "briefed", "declassified"];

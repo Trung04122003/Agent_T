@@ -3,6 +3,25 @@
 Measured on the owner's machine (Windows 11, Playwright Chromium), on `build:prod` + `astro preview`,
 never on `pnpm dev`. Median of 3 runs. Thresholds: `docs/performance-playbook.md` section 1.
 
+## 2026-11-04 · P41 · The dive into the real map
+
+**INP** (`node tools/perf/atlas-inp.mjs`, Event Timing API, the longest interaction from input to next
+paint, as web-vitals reads it), reference graphics (Intel UHD, D3D11), `PUBLIC_CITY=1` build + `preview`,
+Mat, 1366x768, median of 3. Threshold 200 ms.
+
+| CPU | Click on the table (walk, then dive) | `Esc` back to the city | "The real map" button |
+|---|---|---|---|
+| 1x | 48 ms | 56 ms | 48 ms |
+| 4x | 32 ms | 40 ms | 88 ms |
+
+Within budget. The dive itself is a compositor animation (transform and opacity) and starts after the
+interaction has painted; the button opens the dialog directly, laying out the whole map component (likely
+most of its 88 ms at 4x; not traced).
+
+**Sizes** (`pnpm city:budget`): city JS **34 759 B gzip** (P40: 29 397 B; budget 81 920 B), the growth is the
+dive and, mostly, the dossier map's own script now bundled on the city page; city CSS **1 873 B** (budget 8 192 B); atlas data
+10 638 B, unchanged. Dossier pages: same JS with the city on as off (e2e 33.5).
+
 ## 2026-11-03 · P40 · The Atlas table
 
 The reference graphics (Intel UHD, D3D11), `PUBLIC_CITY=1 pnpm build:prod` + `pnpm preview`, Medium, the

@@ -17,6 +17,8 @@ export type CityText = {
   near: string;
   prompt: string;
   promptDrop: string;
+  /** At the Atlas (P41). */
+  promptAtlas: string;
   light: string;
   allLit: string;
   quietSealed: string;
@@ -192,9 +194,9 @@ export function createHud(stage: HTMLElement, text: CityText, states: States, on
       return;
     }
     const name = text.names[id] ?? "";
-    promptBtn.textContent = `E · ${(id === "dead-drop" ? text.promptDrop : text.prompt).replace("{name}", name)}`;
+    promptBtn.textContent = `E · ${(id === "dead-drop" ? text.promptDrop : id === "atlas" ? text.promptAtlas : text.prompt).replace("{name}", name)}`;
     promptBtn.hidden = false;
-    const quiet = id === "dead-drop" ? "" : ` ${RANK[states.get(id)] >= RANK.briefed ? text.quietLit : text.quietSealed}`;
+    const quiet = id === "dead-drop" || id === "atlas" ? "" : ` ${RANK[states.get(id)] >= RANK.briefed ? text.quietLit : text.quietSealed}`;
     near.textContent = `${text.near.replace("{name}", name)}${quiet}`;
   };
 

@@ -179,5 +179,9 @@
   "cityDropNote": { "vi": "Để lại lời nhắn ở đây. Thư đi thẳng tới hộp thư công việc.", "en": "Leave a note here. It goes to the work inbox." },
   "cityHint": { "vi": "Mũi tên: đi · E: mở · F: mục tiêu tiếp", "en": "Arrows: walk · E: open · F: next objective" },
   "cityFullscreen": { "vi": "Toàn màn hình", "en": "Full screen" },
-  "cityFullscreenExit": { "vi": "Thoát toàn màn hình", "en": "Exit full screen" }
+  "cityFullscreenExit": { "vi": "Thoát toàn màn hình", "en": "Exit full screen" },
+  "cityAtlas": { "vi": "Bàn Atlas", "en": "The Atlas" },
+  "cityPromptAtlas": { "vi": "Lặn vào bản đồ", "en": "Dive into the map" },
+  "cityAtlasOpen": { "vi": "Bản đồ thật", "en": "The real map" },
+  "cityAtlasBack": { "vi": "Về thành phố", "en": "Back to the city" }
 }

@@ -15,6 +15,7 @@ import { cityContentMap } from "./content-map";
 import { toScreen } from "./engine/iso";
 import { assignLots, CANAL, GRID, LANDMARK_LOTS, PLAZA, STREETS, type CityData, type Rect } from "./plan";
 import LedgerRow from "../components/LedgerRow.astro";
+import MapPanel from "../components/Map.astro";
 import RequestDocs from "../components/RequestDocs.astro";
 import { BUILT, fileNumber } from "../lib/dossier";
 import { codenameFor, getIdentity } from "../lib/identity";
@@ -45,6 +46,7 @@ const keys = [
   "cityStateSealed", "cityStateScouted", "cityStateBriefed", "cityStateDeclassified",
   "cityNear", "cityPrompt", "cityPromptDrop", "cityLight", "cityAllLit", "cityQuietSealed", "cityQuietLit",
   "cityFullscreen", "cityFullscreenExit",
+  "cityAtlas", "cityPromptAtlas", "cityAtlasOpen", "cityAtlasBack",
 ] as const;
 const s = Object.fromEntries(await Promise.all(keys.map(async (k) => [k, await t(k, locale)] as const))) as Record<(typeof keys)[number], string>;
 // Back to the dossier lands past its gate (any hash skips it) on the page's heading.
@@ -101,11 +103,12 @@ const dropName = hasDrop ? await t("cityLandmarkDeadDrop", locale) : "";
 // (a shared module would be split into a chunk those pages then fetch: +0 B rule).
 const shownIds = ledgerRows.map((c) => c.id);
 const text: CityText = {
-  names: Object.fromEntries([...briefings.map((b) => [b.claim.id, b.codename] as const), ...(hasDrop ? [["dead-drop", dropName] as const] : [])]),
+  names: Object.fromEntries([...briefings.map((b) => [b.claim.id, b.codename] as const), ...(hasDrop ? [["dead-drop", dropName] as const] : []), ["atlas", s.cityAtlas] as const]),
   states: { sealed: s.cityStateSealed, scouted: s.cityStateScouted, briefed: s.cityStateBriefed, declassified: s.cityStateDeclassified },
   near: s.cityNear,
   prompt: s.cityPrompt,
   promptDrop: s.cityPromptDrop,
+  promptAtlas: s.cityPromptAtlas,
   light: s.cityLight,
   allLit: s.cityAllLit,
   quietSealed: s.cityQuietSealed,
@@ -125,6 +128,8 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
       <h1 id="city-title" class="city__title">{s.cityTitle}</h1>
       <a class="city__action" href={back} data-city-back>{s.cityBack}</a>
       <a class="city__action" href="?lite" data-city-lite-link>{s.cityLite}</a>
+      {/* The real map, straight away (P41: the Lite view's way in; with JS only). */}
+      <button type="button" class="city__action city__map-open" data-atlas-open hidden>{s.cityAtlasOpen}</button>
     </div>
     <noscript><p class="city__note">{s.cityNoScript}</p></noscript>
 
@@ -163,6 +168,15 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
         <button type="button" class="city-hud__full" data-hud-full data-on={s.cityFullscreen} data-off={s.cityFullscreenExit} hidden>{s.cityFullscreen}</button>
       </div>
     </div>
+
+    {/* The real map (P41): the dossier's own Map component, unchanged, in an overlay. */}
+    <dialog class="city-brief city-atlas" id="brief-atlas" data-brief="atlas" aria-labelledby="map-title">
+      <div class="city-brief__bar">
+        <p class="city-brief__title">{s.cityAtlas}</p>
+        <button type="button" class="city-brief__close" data-brief-close>{s.cityAtlasBack}</button>
+      </div>
+      <MapPanel locale={locale} />
+    </dialog>
 
     {/* Briefings: the entry's ledger row, exactly as the dossier shows it (37.3, 37.5). */}
     {
@@ -249,6 +263,14 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
   const data = document.querySelector("[data-city-data]")?.textContent;
   const text = document.querySelector("[data-city-text]")?.textContent;
   if (section && stage && data && text) showView(section, bootCity(stage, JSON.parse(data), JSON.parse(text)).tier);
+  // The real map's button (P41): opens the overlay at once, in any view (the Lite view's only way in).
+  const mapOpen = document.querySelector<HTMLButtonElement>("[data-atlas-open]");
+  const mapDialog = document.querySelector<HTMLDialogElement>("dialog[data-brief='atlas']");
+  if (mapOpen && mapDialog) {
+    mapOpen.hidden = false;
+    mapOpen.addEventListener("click", () => mapDialog.showModal());
+    mapDialog.querySelector("[data-brief-close]")?.addEventListener("click", () => mapDialog.close());
+  }
 </script>
 
 <style>
@@ -584,6 +606,32 @@ const json = (v: unknown) => JSON.stringify(v).replaceAll("<", "\\u003c");
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     color: var(--accent);
+  }
+  /* The real map's overlay: wide, its own scroll; it fades in after the dive (none with reduced motion). */
+  .city-atlas {
+    width: min(96vw, 1280px);
+    max-height: 92vh;
+    overflow: auto;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .city-atlas[open] {
+      animation: city-atlas-in 260ms ease-out;
+    }
+  }
+  @keyframes city-atlas-in {
+    from {
+      opacity: 0;
+    }
+  }
+  .city__map-open {
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .city__map-open[hidden] {
+    display: none;
   }
   .city-brief__note {
     max-width: var(--measure);

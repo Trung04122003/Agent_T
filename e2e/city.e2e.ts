@@ -542,6 +542,59 @@ test.describe("P40 the Atlas table", () => {
   });
 });
 
+test.describe("P41 dive into the real map", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mode", "mat"));
+  });
+  const mapDialog = (page: Page) => page.locator("dialog[data-brief='atlas']");
+  /** Clicks the Atlas table (at Da Nang's beacon foot), once the city and its atlas are ready. */
+  const clickTable = async (page: Page) => {
+    await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-atlas", "ready");
+    await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-entrance", "done", { timeout: 6000 });
+    const b = await page.evaluate(() => (document.querySelector(".city-layer--top") as unknown as { atlasBeacon(): { x: number; y: number } }).atlasBeacon());
+    await page.locator("[data-city-stage]").click({ position: { x: b.x, y: b.y + 10 } });
+  };
+
+  test("41.1 a click on the table walks Agent T there, the camera dives, the real map opens with the focus; Esc comes back", async ({ page }) => {
+    await page.goto("/vi/city/");
+    await clickTable(page);
+    await expect(page.locator("[data-city-stage]")).toHaveAttribute("data-dive", "in", { timeout: 15_000 });
+    await expect(mapDialog(page)).toHaveAttribute("open", "", { timeout: 5000 });
+    // The dossier's own Map component, whole: its views, zoom and legend.
+    await expect(mapDialog(page).locator("[data-map]")).toHaveCount(1);
+    await expect(mapDialog(page).locator("[data-map] button").first()).toBeVisible();
+    expect(await page.evaluate(() => document.querySelector("dialog[data-brief='atlas']")!.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(mapDialog(page)).not.toHaveAttribute("open");
+    await expect(page.locator("[data-city-stage]")).toBeFocused();
+    await expect(page.locator("[data-city-stage]")).not.toHaveAttribute("data-dive", /./, { timeout: 3000 });
+    // Agent T stands at the table: E dives again.
+    await page.keyboard.press("e");
+    await expect(mapDialog(page)).toHaveAttribute("open", "", { timeout: 5000 });
+  });
+
+  test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+    test("41.2 the swap is instant: no animation on the city's layers", async ({ page }) => {
+      await page.goto("/vi/city/");
+      await clickTable(page);
+      await expect(mapDialog(page)).toHaveAttribute("open", "", { timeout: 15_000 });
+      expect(await page.evaluate(() => [...document.querySelectorAll(".city-layer")].flatMap((c) => c.getAnimations()).length)).toBe(0);
+      await expect(page.locator("[data-city-stage]")).not.toHaveAttribute("data-dive", /./);
+    });
+  });
+
+  test("41.2 the Lite view opens the real map directly", async ({ page }) => {
+    await page.goto("/vi/city/?lite");
+    await expect(page.locator("[data-city]")).toHaveAttribute("data-view", "lite");
+    await page.locator("[data-atlas-open]").click();
+    await expect(mapDialog(page)).toHaveAttribute("open", "");
+    await expect(mapDialog(page).locator("[data-map]")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(mapDialog(page)).not.toHaveAttribute("open");
+  });
+});
+
 test("33.5 with the city on, dossier pages load the same JS as with it off, and no more of it", async ({ request }) => {
   // Every script a dossier page loads, through its static imports, by name (hash removed) and size.
   const reach = async (base: string, page: string) => {

@@ -108,3 +108,12 @@ Size: 43 986 B raw, **10 638 B gzip** (budget 61 440 B): no simplification neede
 | Per frame | The sea's sweep line (6 s a pass, none with reduced motion); the province under the cursor rises `RISE.by` (180 ms up, 160 ms down, ease-out, instant with reduced motion), Da Nang's when Agent T stands at the table. Drawn before or after Agent T by depth. | Canvas only: a trace of 3 s of hovering shows no Layout and no style recalc (`tools/perf/atlas-layout.mjs`). |
 | The top canvas | A full-resolution canvas above the darkness: the beacon (a column of light from Da Nang to the top of the view, a slow pulse, steady with reduced motion) and Hoang Sa and Truong Sa (islands at the near step, their labels at a fixed 11 px with a halo). | Never under fog, redaction or fade; drawn at every zoom step, never culled. The label text is the atlas's, which is the 2D map's string. e2e: pixels at the label boxes and up the beacon at all three zoom steps in Mat. |
 | `main.ts` | Fetches `/city/atlas.json` (the city's own file, P39) once; the plaza glows around the hologram at night. | The stage reports `data-atlas` (ready, failed). |
+
+## The dive into the real map (P41)
+| Piece | What it does | Rules it enforces |
+|---|---|---|
+| `route.astro` `dialog[data-brief='atlas']` | The dossier's own `Map.astro`, unchanged (both views, zoom, pan, legend, place list, its own script), in a native modal dialog with a "Back to the city" button. | No second map: the same component, the same strings, Hoang Sa and Truong Sa from the same source. The dialog's top layer handles focus in and `Esc`. |
+| `main.ts` `dive()` | A click on the table walks Agent T to its nearest side, then dives; beside the table `E` dives (prompt "Dive into the map"). The camera plunges into the table (`scale(3.2)` and fade of the dynamic, darkness and top canvases and the HUD, 520 ms, transform-origin at the table's top), then opens the dialog. Closing plays the plunge backwards (360 ms) and gives the focus back to the stage. | Transform and opacity only (compositor); no redraw of the chunks. Reduced motion: the dialog opens at once, no animation (e2e 41.2). The stage reports `data-dive` (in, open, out). |
+| `[data-atlas-open]` | "The real map" in the bar under the title: opens the dialog at once, in any view. | The Lite view's way in (e2e 41.2). |
+
+INP (Event Timing API, `node tools/perf/atlas-inp.mjs`): see `docs/perf-log.md` P41.

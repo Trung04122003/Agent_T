@@ -16,7 +16,7 @@ import { createStaticLayer, ZOOMS, type View } from "./bake";
 import { follow } from "./camera";
 import { decideTier, readCapabilities } from "./engine/capabilities";
 import { createInput } from "./engine/input";
-import { TILE } from "./engine/iso";
+import { TILE, Z_PX } from "./engine/iso";
 import { LAYERS, planLayers, type LayerPlan } from "./engine/layers";
 import { createLoop } from "./engine/loop";
 import { createQuality, TIERS, type Tier } from "./engine/quality";
@@ -55,6 +55,10 @@ const SHADOW_DIR = { x: 0.999, y: -0.05 } as const;
 
 /** Close enough to a door for its prompt, in tiles; near enough to a district to have scouted it. */
 const AT_DOOR = 1.3;
+/** At the Atlas: within this of the table's edge (|dx| + |dy| from its centre, beyond its radius). */
+const AT_TABLE = 1.6;
+/** The dive into the table (P41): how far the camera plunges, and how long, ms. */
+const DIVE = { scale: 3.2, in: 520, out: 360 } as const;
 const SCOUT = 6;
 
 export function bootCity(stage: HTMLElement, data: CityData, text: CityText): CityHandle {
@@ -105,6 +109,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   const rain = createRain(glassWalls(layout));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const world = walkWorld(layout);
+  const nearTable = (): boolean => Math.abs(agent.x - ATLAS_TABLE.x) + Math.abs(agent.y - ATLAS_TABLE.y) < ATLAS_TABLE.r + AT_TABLE + 0.5;
   // He enters from the alley whose mouth is nearest the plaza's centre (UX-v4 section 6b).
   const pcx = PLAZA.x + PLAZA.w / 2;
   const pcy = PLAZA.y + PLAZA.d / 2;
@@ -183,6 +188,56 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
   let firstComposite = true;
   let presses = 0;
   let atHand: string | null = null;
+  // The dive into the real map (P41): walking to the table to dive, and the animations under way.
+  let diveOnArrival = false;
+  let diveAnims: Animation[] = [];
+  const mapDialog = document.querySelector<HTMLDialogElement>("dialog[data-brief='atlas']");
+  /**
+   * Plunges the camera into the table (transform and opacity only, on the stage's own layers), then
+   * opens the real map; reduced motion opens it at once. Closing it plays the plunge backwards.
+   */
+  const dive = (): void => {
+    if (!mapDialog || mapDialog.open || diveAnims.length) return;
+    if (reduced.matches) {
+      hud.open("atlas");
+      return;
+    }
+    const z = cam.zoom;
+    const tx = (ATLAS_TABLE.x - ATLAS_TABLE.y) * HX * z - nv.ox;
+    const ty = ((ATLAS_TABLE.x + ATLAS_TABLE.y) * HY - ATLAS_TABLE.h * Z_PX) * z - nv.oy;
+    const layers = [dynamic, darkness, topLayer, stage.querySelector<HTMLElement>("[data-city-hud]")].filter((e): e is HTMLElement => !!e);
+    stage.dataset["dive"] = "in";
+    diveAnims = layers.map((el) => {
+      el.style.transformOrigin = `${tx.toFixed(1)}px ${ty.toFixed(1)}px`;
+      return el.animate([{ transform: "none", opacity: 1 }, { transform: `scale(${DIVE.scale})`, opacity: 0 }], { duration: DIVE.in, easing: "cubic-bezier(0.55, 0, 0.25, 1)", fill: "forwards" });
+    });
+    void diveAnims[0]!.finished.then(() => {
+      stage.dataset["dive"] = "open";
+      hud.open("atlas");
+    }, () => {});
+  };
+  const surface = (): void => {
+    if (!diveAnims.length) return;
+    const anims = diveAnims;
+    stage.dataset["dive"] = "out";
+    for (const a of anims) {
+      a.updatePlaybackRate(DIVE.in / DIVE.out);
+      a.reverse();
+    }
+    void anims[0]!.finished.then(() => {
+      for (const a of anims) a.cancel();
+      if (diveAnims === anims) diveAnims = [];
+      delete stage.dataset["dive"];
+    }, () => {});
+  };
+  const onMapClose = (): void => {
+    if (reduced.matches) {
+      for (const a of diveAnims) a.cancel();
+      diveAnims = [];
+      delete stage.dataset["dive"];
+    } else surface();
+  };
+  mapDialog?.addEventListener("close", onMapClose);
   // The Atlas (P40): its data comes with the city's own file, /city/atlas.json (P39).
   let atlas: AtlasView | null = null;
   let hoverCode: string | null = null;
@@ -317,7 +372,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
       // M: the dossier's own mode switch (mode.ts is the one source of truth, 38.2).
       if (c === "mode") switchMode(modeNow() === "mat" ? "giai-mat" : "mat", stage);
       // E or Enter at a door opens it; F walks to the next objective (and opens it on arrival).
-      if (c === "interact" && atHand) hud.open(atHand);
+      if (c === "interact" && atHand === "atlas") dive();
+      else if (c === "interact" && atHand) hud.open(atHand);
       if (c === "next" && objective && agent.entrance === "done") {
         const t = targets.find((x) => x.id === objective);
         if (t) agent.goTo(t.cx, t.cy);
@@ -337,6 +393,17 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
       const t = st.taps[i]!;
       const sx = (t.x + nv.ox) / cam.zoom;
       const sy = (t.y + nv.oy) / cam.zoom;
+      // The Atlas table: walk to its nearest side, then dive (P41).
+      const b = atlas?.box;
+      if (b && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1) {
+        const reach = ATLAS_TABLE.r + 0.9;
+        const sides: readonly (readonly [number, number])[] = [[reach, 0], [-reach, 0], [0, reach], [0, -reach]];
+        let best = sides[0]!;
+        for (const s of sides) if (Math.hypot(ATLAS_TABLE.x + s[0] - agent.x, ATLAS_TABLE.y + s[1] - agent.y) < Math.hypot(ATLAS_TABLE.x + best[0] - agent.x, ATLAS_TABLE.y + best[1] - agent.y)) best = s;
+        diveOnArrival = agent.goTo(ATLAS_TABLE.x + best[0], ATLAS_TABLE.y + best[1]) || nearTable();
+        continue;
+      }
+      diveOnArrival = false;
       let hit: Hit | null = null;
       for (let j = 0; j < occluders.length && !hit; j++) if (insidePolygon(occluders[j]!.hull, sx, sy)) hit = occluders[j]!;
       if (hit) agent.goTo((hit.x0 + hit.x1) / 2, (hit.y0 + hit.y1) / 2);
@@ -347,6 +414,11 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
     const vx = (held.has("right") ? 1 : 0) - (held.has("left") ? 1 : 0);
     const vy = (held.has("down") ? 1 : 0) - (held.has("up") ? 1 : 0);
     const changed = agent.update(dt, vx, vy, held.has("fast"), pressed);
+    if (vx || vy) diveOnArrival = false;
+    if (diveOnArrival && !agent.moving && agent.entrance === "done") {
+      diveOnArrival = false;
+      if (nearTable()) dive();
+    }
     // The door at hand (prompt), districts scouted on the way, the compass.
     let best = AT_DOOR;
     let hand: string | null = null;
@@ -364,6 +436,8 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
         hud.point(Math.atan2((ex + ey) * HY, (ex - ey) * HX));
       }
     }
+    // The Atlas: nothing else at hand and Agent T beside the table.
+    if (!hand && agent.entrance === "done" && nearTable()) hand = "atlas";
     atHand = hand;
     hud.prompt(hand);
     // The camera follows him; reduced motion snaps it.
@@ -487,6 +561,7 @@ export function bootCity(stage: HTMLElement, data: CityData, text: CityText): Ci
       resize.disconnect();
       modeWatch.disconnect();
       reduced.removeEventListener("change", onReduced);
+      mapDialog?.removeEventListener("close", onMapClose);
       layer.dispose();
       hud.dispose();
       removeEventListener("hashchange", openFromHash);

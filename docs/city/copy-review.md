@@ -67,3 +67,11 @@ Flavor lines (`cityQuiet*`, `cityAllLit`, `cityDropNote`) were drafted with the 
 |---|---|---|---|---|
 | cityFullscreen | Toàn màn hình | Full screen | HUD button, PC and laptop | draft |
 | cityFullscreenExit | Thoát toàn màn hình | Exit full screen | The same button while full screen | draft |
+
+## P41: the dive into the real map
+| Key | vi | en | Purpose | Status |
+|---|---|---|---|---|
+| cityAtlas | Bàn Atlas | The Atlas | Landmark name (HUD, screen readers) and the overlay's title | draft |
+| cityPromptAtlas | Lặn vào bản đồ | Dive into the map | Prompt beside the table (with the key E) | draft |
+| cityAtlasOpen | Bản đồ thật | The real map | Button under the title: opens the map at once (the Lite view's way in) | draft |
+| cityAtlasBack | Về thành phố | Back to the city | Closes the map overlay | draft |
